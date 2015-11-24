@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+<!--	
+		
+		<menage>read</menage>
+		<menage>name</menage>
+		<played>10/07/2014</played>
+	-->	
+	<!--
+	<writePlayLists>false</writePlayLists>
+	<writeItems>false</writeItems>
+	<writePreSel>false</writePreSel>
+	<genFeed>false</genFeed>
+	<simulation>true</simulation>
+-->		
+
+	<rootIt>auto</rootIt>
+	
+	<writePlayLists>true</writePlayLists>
+	<writeItems>false</writeItems>
+	<writePreSel>false</writePreSel>
+	<writeUse>false</writeUse>
+	<writeExclu>false</writeExclu>
+	<genFeed>true</genFeed>
+	<genFeedPrior>0</genFeedPrior>
+	<onlyEnabled>true</onlyEnabled>
+	<onlyUnRead>true</onlyUnRead>	
+	<logGen>false</logGen>	
+	
+   <playedDates> 
+    <date rating="0">16/09/2014</date>
+    <date rating="20">16/09/2014</date>
+    <date rating="40">16/09/2014</date>
+    <date rating="60">16/09/2014</date>
+    <date rating="80">16/09/2014</date>
+    <date rating="100">06/12/2014</date>
+  </playedDates>
+  
+  
+  <!--	
+   <playedDates> 
+    <date rating="0">30/09/2014</date>
+    <date rating="20">30/09/2014</date>
+    <date rating="40">30/09/2014</date>
+    <date rating="60">11/10/2014</date>
+    <date rating="80">13/11/2014</date>
+    <date rating="100">06/12/2014</date>
+  </playedDates>
+  -->
+		<abortOpe>false</abortOpe>
+		<ordo enable="true">
+		<gcCollect>true</gcCollect>
+		<gcCollectLoop>false</gcCollectLoop>
+		<gcCollectElu>true</gcCollectElu>
+		<gcCollectReset>false</gcCollectReset>
+		
+		
+		<taskDelayError>1000</taskDelayError>
+		
+		<duration>0</duration>	
+		<chronoSeuil>3</chronoSeuil>
+		<formatChrono>{0 ,-40}</formatChrono>
+		<formatPhase>{0,3}:{1,-4:####}</formatPhase>
+		
+		<proc>
+			<procIni>0</procIni>
+			<tsMin>1</tsMin>
+			<cms>1</cms>
+			<nbDuration>1000</nbDuration>
+			<duration1>1000000</duration1>
+			<duration2>100000</duration2>
+			<duration3>10000</duration3>
+			<duration4>1000</duration4>
+			<duration5>100</duration5>
+			<!--max min somme moy produit produitM -->
+			<!--<mode>somme</mode>
+			<proportion1>1</proportion1>
+			<proportion2>0,1</proportion2>
+			<proportion3>0,01</proportion3>
+			<proportion4>0,001</proportion4>
+			<proportion5>0,0001</proportion5>-->
+			<mode>produit</mode>
+			<proportion1>0,2</proportion1>
+			<proportion2>0,2</proportion2>
+			<proportion3>0,2</proportion3>
+			<proportion4>0,2</proportion4>
+			<proportion5>0,2</proportion5>
+		</proc>
+		<cms>1</cms>		
+		<bg exact="Classement" p="0" />
+		<bg exact="FirstClass" p="1" />
+		<bg exact="SeconClass" p="1" />
+		<bg exact="PriorG" p="1" />
+		<bg exact="Track" p="1" />		
+		<bg exact="Group" p="1" />
+		<bg exact="SeconG" p="1" />		
+		<bg start="TrackList" p="11" abort="true" />	
+		<bg start="AddTrack" p="11" abort="true" />
+		<scan class="0" high="0" medium="11" low="12" />
+	</ordo>
+	<it>
+		<delay>1000</delay>
+		<scanListLimit>false</scanListLimit>
+		<singleThread>false</singleThread>
+		<lockWarn>1000</lockWarn>
+		<lockAbort>120000</lockAbort>
+		<maxScan>4</maxScan>
+		<refreshMax>60</refreshMax>
+		<refresh>-1</refresh>
+		<playListAddFile>true</playListAddFile>
+		<dbTrack>db\TrackPod2.txt</dbTrack>
+		<dbTrackList>db\TrackListPod2.txt</dbTrackList>
+		<deleteFile>false</deleteFile>
+		<autoPlay>false</autoPlay>
+		<deleteCurrentAlbum>true</deleteCurrentAlbum>
+		<autoList>0</autoList>
+		<checkFileExist>true</checkFileExist>
+		<proxyTrack>true</proxyTrack>
+		<proxyTrackList>true</proxyTrackList>
+		<persistIt>true</persistIt>
+		<complexSearch>true</complexSearch>
+		<detect>
+			<cancelLoad>true</cancelLoad>
+			<cancelLoad2>false</cancelLoad2>
+			<confirm>2</confirm>
+			<confirmTick>12</confirmTick>			
+			<tickRefresk>600</tickRefresk>
+			<important>0</important>
+			<zero>12</zero>
+		</detect>
+		<includeLists>
+			<list>auto</list>
+		</includeLists>
+		<logicalLists>
+			<list>auto</list>
+			<!--<list>auto\Feed</list>
+			<list>auto\POD</list>
+			<list>auto\Select</list>
+			<list>auto\_sel</list>
+			<list>auto\_preSel</list>-->
+		</logicalLists>
+	</it>
+	<move>
+		<zique></zique>
+		<delta>32000</delta>
+	</move>
+	<deleteDoublon>false</deleteDoublon>
+	<getDescription>false</getDescription>
+	<volumeMin>40</volumeMin>
+	
+	
+	<buildLimitMulti>false</buildLimitMulti>
+	<single>false</single>
+	<!--<copyAll>I:\Podcasts</copyAll>-->
+	<transmit>true</transmit>
+	<transmitTotal>false</transmitTotal>
+	<transmitTotalGuest>false</transmitTotalGuest>
+	<autoSequence>false</autoSequence>
+	
+	<!-- pod nano 16 rose -->
+	
+	<select>
+		<param name="m1" level="0" nb="1" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m2" level="0" nb="2" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m3" level="0" nb="3" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m4" level="0" nb="4" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m5" level="0" nb="5" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m6" level="0" nb="6" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+		<param name="m10" level="0" nb="10" nbSerial="-1" nbHisto="-1" dateCroissante="true" modeSemaine="false" etendue="0" />
+	</select>
+	<journal nbJour="20" nb="2" fd="10" d="180" />
+	
+	<html>
+		<low>30</low>
+		<med>70</med>
+		<high>120</high>
+		<big>200</big>
+	</html>
+	
+	<date0>01/10/2012</date0>
+	<dir name="POD" c="50"> 
+	
+	
+		<auto name="poddate" type="maxdate">
+			<target>40</target>
+			<delta>1</delta>
+			<write>300</write>
+			<cloop>20</cloop>
+			<verif>4</verif>
+			<levels>
+				<level d="6" inf="0,3" sup="0,3" />			
+				<level d="-5" inf="0,1" sup="0,1" />
+			</levels>
+		</auto>
+		<auto name="all2" type="maxdate">
+			<target>40</target>
+			<delta>1</delta>
+			<write>300</write>
+			<cloop>20</cloop>
+			<verif>4</verif>
+			<levels>
+				<level d="6" inf="0,3" sup="0,3" />			
+				<level d="-5" inf="0,1" sup="0,1" />
+			</levels>
+		</auto>
+		
+	
+		
+	
+		<dir name="Histo" all="true" d="60" auto="poddate" nb="4" maxdate="10,43850751" c="20000" fd="12" cascading="true" transmit="true">	
+		
+			<list l="0" date="0">		
+					<td nb="4" d="12000" fd="15" maxdate="4" />				
+					<td nb="3" d="12000" fd="12" maxdate="4" />					
+					<td nb="2" d="12000" fd="9" maxdate="4" />					
+					<td nb="1" d="12000" fd="3" maxdate="4" />					
+					<td />
+					<td nb="3" fd="9" />				
+					<td nb="2" fd="6" />				
+					<td nb="1" fd="3" />				
+			</list>
+		
+			<dir name="all" all="true" d="12000" maxdate="4,18079038" auto="all" c="120000" fd="12" cascading="false" transmit="true">	
+				<auto name="all" type="maxdate">
+					<target>20</target>
+					<delta>1</delta>
+					<write>300</write>
+					<cloop>20</cloop>
+					<verif>4</verif>
+					<levels>
+						<level d="6" inf="0,3" sup="0,3" />			
+						<level d="-5" inf="0,1" sup="0,1" />
+					</levels>
+				</auto>
+				<list l="0" date="0" c="12000" nb="4" fd="12">			
+					<td nb="4" d="12000" fd="15" maxdate="4" />				
+					<td nb="3" d="12000" fd="12" maxdate="4" />					
+					<td nb="2" d="12000" fd="9" maxdate="4" />					
+					<td nb="1" d="12000" fd="3" maxdate="4" />					
+					<td />
+					<td nb="3" fd="9" />				
+					<td nb="2" fd="6" />				
+					<td nb="1" fd="3" />	
+				</list>
+				<list l="1" nb="0" />
+			
+			</dir>
+			
+			
+			
+			
+		</dir>
+		
+		
+		
+	</dir>
+	
+</root>
