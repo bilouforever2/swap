@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-   <file path="\pdb.podcast\Load\FeedLimitItemLoader.cs">
+  <file path="\pdb.podcast\Load\FeedLimitItemLoader.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using pdb.podcast.Tuning;
@@ -157,7 +157,7 @@ namespace pdb.podcast.Load
             if (!ok)
                 return false;
 
-            if (select)
+            if (select && real)
             {
                 var selected = selectMode.simple;
                 if (dir.Histo)
@@ -492,18 +492,20 @@ namespace pdb.podcast.Load
                 // vérification à postériori par rapports aux différents niveaux
                 bool newContribut = candidat.Contribute;
 
+                var newDuration = currentDuration + candidat.Duration;
+                bool okDuration = newDuration <= durationMax; 
 
-                if (!control(candidat, select, true))
+                if (!control(candidat, select, okDuration))
                     continue;
                 if (increment)
                 {
-                    currentDuration += candidat.Duration;
-                    if (currentDuration > durationMax)
+                    
+                    if (!okDuration)
                     {
                         log.log("duration {0}", (currentDuration).TotalMinutes.ToString("0"));
                         limit.DurationLimitAtteinte = true;
                         limit.checkBorderDuration(candidat, currentDuration, false);
-
+                        
                         break;
                     }
                     else
@@ -520,6 +522,7 @@ namespace pdb.podcast.Load
                             }
                             use.Add(candidat);
                         }
+                        currentDuration = newDuration;
                         limit.checkBorderDuration(candidat, currentDuration, true);
                     }
 
@@ -1311,7 +1314,7 @@ namespace pdb.podcast.Tuning
             else
             {
             }
-        }
+            }
 
         public void checkBorderDuration(TrackInfoItunes candidat, TimeSpan duration, bool selected)
         {
