@@ -1,1190 +1,4 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  <file path="\pdb.podcast\pdb.podcast.csproj">
-    <content><![CDATA[<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6503C759-0373-4B68-A28B-1CB5FF0E6208}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pdb.podcast</RootNamespace>
-    <AssemblyName>pdb.podcast</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;vendee_</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;MOVE_</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\pdb.podcast.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Release\pdb.podcast.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>bin\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>bin\Release\</OutputPath>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Interop.iTunesLib">
-      <HintPath>..\pieceDb.iT\bin\Interop.iTunesLib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Auto\AutoBuilder.cs" />
-    <Compile Include="Auto\AutoBuilderItem.cs" />
-    <Compile Include="Auto\Interfaces.cs" />
-    <Compile Include="Auto\TrackBorderItem.cs" />
-    <Compile Include="Build\FilePub.cs" />
-    <Compile Include="Build\IPub.cs" />
-    <Compile Include="Build\PubLoader.cs" />
-    <Compile Include="Delta\Memory.cs" />
-    <Compile Include="Load\LimitItemLoader.cs" />
-    <Compile Include="Load\LimitLoader.cs" />
-    <Compile Include="Load\LimitsLoader.cs" />
-    <Compile Include="Menage.cs" />
-    <Compile Include="Feed.cs" />
-    <Compile Include="Feeds.cs" />
-    <Compile Include="Load\FeedsLoader.cs" />
-    <Compile Include="Load\FeedLimitItemLoader.cs" />
-    <Compile Include="Report\DirStat.cs" />
-    <Compile Include="Report\FeedLimitItemStat.cs" />
-    <Compile Include="Report\FeedsLimitItemStat.cs" />
-    <Compile Include="Report\FeedStat.cs" />
-    <Compile Include="Report\GroupStat.cs" />
-    <Compile Include="Report\IStat.cs" />
-    <Compile Include="Report\LimitItemStat.cs" />
-    <Compile Include="Report\LimitStat.cs" />
-    <Compile Include="Report\Stat.cs" />
-    <Compile Include="Loader.cs" />
-    <Compile Include="PlayListFilter.cs" />
-    <Compile Include="PodcastComparer.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Report\DoubleStat.cs" />
-    <Compile Include="Report\StatFloat.cs" />
-    <Compile Include="Report\TrackConteneur.cs" />
-    <Compile Include="Report\TripleStat.cs" />
-    <Compile Include="TrackInfoItunes.cs" />
-    <Compile Include="Tuning\Auto.cs" />
-    <Compile Include="Tuning\Conf.cs" />
-    <Compile Include="Tuning\ConfDate.cs" />
-    <Compile Include="Tuning\DirConf.cs" />
-    <Compile Include="Tuning\Html.cs" />
-    <Compile Include="Tuning\Journal.cs" />
-    <Compile Include="Tuning\Limit.cs" />
-    <Compile Include="Tuning\LimitItem.cs" />
-    <Compile Include="Tuning\LimitItemBase.cs" />
-    <Compile Include="Tuning\Limits.cs" />
-    <Compile Include="Tuning\Move.cs" />
-    <Compile Include="Tuning\SelectParam.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pdb.ordo\pdb.ordo.csproj">
-      <Project>{30823D1D-851C-456B-AC4C-B0BEEC173361}</Project>
-      <Name>pdb.ordo</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\pdb.util\pdb.util.csproj">
-      <Project>{C2B34CA9-3BB2-464F-8691-5F5B7CB2B997}</Project>
-      <Name>pdb.util</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\pieceDb.iT\pdb.it.csproj">
-      <Project>{CF5DB63F-4790-4351-9050-B30DED32F052}</Project>
-      <Name>pdb.it</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PieceDb.obj\pdb.obj.csproj">
-      <Project>{9B849072-2B8E-4CE4-8AD7-D173724A9644}</Project>
-      <Name>pdb.obj</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="conf.xml">
-      <SubType>Designer</SubType>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-</Project>]]></content>
-  </file>
-  <file path="\pdb.podcast\TrackInfoItunes.cs">
-    <content><![CDATA[using System;
-using System.Globalization;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Xml;
-using iTunesLib;
-using pdb.ordo;
-using pdb.podcast.Build;
-using pdb.util;
-using System.Collections.Generic;
-using pdb.podcast.Tuning;
-using pdb.util.list;
-
-namespace pdb.podcast
-{
-    public enum selectMode
-    {
-        none = 0,
-        standAlone = 1,
-        simple = 2,
-        serial = 3,
-        histo = 4
-    }
-
-    public class TrackInfoItunes : pdb.it.TrackInfoItunes, IPub
-    {
-        private int albumRating;
-
-        private static volatile object _lock = new object();
-        private static int volumeMin = int.MinValue;
-        public static int VolumeMin { set { volumeMin = value; } }
-
-        private static BackGroundTaskMgr bgMove;  //new BackGroundTaskMgr("Move"); 
-
-        private SequentialDictString<LimitItem> listSelected = new SequentialDictString<LimitItem>();
-        //public List<LimitItem> Providers { get { return listSelected; } }
-
-        private SequentialDictString<LimitItem> listLoad0 = new SequentialDictString<LimitItem>();
-        private SequentialDictString<LimitItem> listStandAlone = new SequentialDictString<LimitItem>();
-        // public List<LimitItem> Providers0 { get { return listLoad0; } }
-
-        //private List<LimitItem> listLoadRecursif = new List<LimitItem>();
-        //public List<LimitItem> ProvidersRecursif { get { return listLoadRecursif; } }
-
-        //private List<LimitItem> listLoadGuest = new List<LimitItem>();
-        //public List<LimitItem> ProvidersGuest { get { return listLoadGuest; } }
-
-       
-
-        /// <summary>
-        /// Seule limite contenant le track
-        /// </summary>
-        private LimitItem exclu;
-        public LimitItem Exclu { get { return exclu; } set { exclu = value; } }
-
-        public void addPhase1(LimitItem item)
-        {
-            var key = item.ID;
-            if (!listLoad0.ContainsKey(key))
-                listLoad0.Add(key, item);
-        }
-        public bool containsload(LimitItem item)
-        {
-            var key = item.ID;
-            return listLoad0.ContainsKey(key);
-        }
-
-        //public bool containsStandAlone(LimitItem item)
-        //{
-        //    var key = item.ID;
-        //    return listStandAlone.ContainsKey(key);
-        //}
-
-        public bool containsSelect(LimitItem item)
-        {
-            var key = item.ID;
-            return listSelected.ContainsKey(key);
-        }
-        public bool isPreselected { get { return listLoad0.Count > 0; } }
-        public ICollection<LimitItem> Providers1 { get { return listStandAlone.Values; } }
-        public ICollection<LimitItem> Providers { get { return listSelected.Values; } }
-        public LimitItem Provider { get { return listSelected.List[0]; } }
-        public string GetProvider()
-        {
-            if (listSelected.Count == 0)
-                return "";
-            return Provider.ToString(); 
-        }
-
-        public void addRecursif(LimitItem item)
-        {
-            //if (!listLoadRecursif.Contains(item))
-            //    listLoadRecursif.Add(item);
-        }
-
-        public void addGuest(LimitItem item)
-        {
-            //if (!listLoadGuest.Contains(item))
-            //    listLoadGuest.Add(item);
-        }
-
-        const string REFONTE = "v1";
-        public override void build(IITFileOrCDTrack track)
-        {
-            base.build(track);
-
-            if (Strange)
-                return;
-
-#if MOVE
-            var loc = track.Location;
-            FileInfo file = new FileInfo(loc);
-            if (loc.StartsWith("Y:"))
-                return;
-            string dest = "Y" + loc.Substring(1);
-
-
-            try
-            {
-                misc.log("deplacer " + loc);
-                string newDest = file.moveTree(dest, false);
-                misc.log("-------> " + newDest);
-                track.Location = newDest;
-                //try
-                //{
-                //    File.Delete(loc);
-                //}
-
-                //catch (Exception del)
-                //{
-
-                //    misc.log(del.ToString());
-                //}
-
-            }
-            catch (Exception ex)
-            {
-                misc.log(ex.ToString());
-            }
-#else
-
-            if (!isPodcast)
-                return;
-
-            duree = new util.timeSpan(Duration); 
-
-            if (track.PlayedCount > 0)
-            {
-                played = markAsPlayed(Rating, PlayedDate);
-            }
-
-            var loc = track.Location;
-            //if (loc.ToUpper().Contains("FABRIQUE"))
-            //{
-            //    int toto = 0; 
-            //}
-            bool target = true;
-            var cuDtFileFormat = new DateTimeFormatInfo();
-            cuDtFileFormat.FullDateTimePattern = "yyyy.MM.dd_HH.mm";
-            string[] tab = loc.Split('_'); 
-            var count = tab.GetLength(0); 
-            if (count>=2)
-            {
-                var part = tab[0]+"_"+ tab[1];
-                DateTime dtFile;
-                bool fileIsDate = DateTime.TryParse(part, cuDtFileFormat, DateTimeStyles.None, out dtFile);
-                target = !fileIsDate; 
-            }
-
-        
-            //bool target = loc.ToUpper().Contains(@"D:\ZIQUE\PODCASTS\LA FABRIQUE DE L") && loc.ToUpper().Contains("HISTOIRE");
-
-            try
-            {
-
-                pub = track.ReleaseDate;
-
-                var cuDtFormat = new DateTimeFormatInfo();
-                cuDtFormat.FullDateTimePattern = "yyyy/MM/dd";
-
-                var cuDtFormat2 = new DateTimeFormatInfo();
-                cuDtFormat2.FullDateTimePattern = "yyyy/MM/dd HH:mm";
-
-                if (pub > MIN)
-                {
-                    string commentByReleaseDate = pub.ToString(cuDtFormat2.FullDateTimePattern);
-                    if (Comment != commentByReleaseDate)
-                    {
-                        misc.log("chgt Comment � partir de releaseDate {0} de {1} vers {2} {3}", pub, Comment, commentByReleaseDate, this);
-                        Comment = commentByReleaseDate;
-                    }
-
-                    return;
-                }
-
-                // ici pas de release Date
-
-                string comment = track.Comment;
-
-                try
-                {
-                    string partDate = comment.Split(' ')[0];
-                    DateTime dtComment = DateTime.MinValue;
-
-                    bool dtCommentBuild = false;
-
-                    dtCommentBuild = DateTime.TryParse(partDate, cuDtFormat, DateTimeStyles.None, out dtComment);
-
-                    bool dtCommentBuild2 = false;
-                    if (dtCommentBuild)
-                        dtCommentBuild2 = DateTime.TryParse(comment, cuDtFormat2, DateTimeStyles.None, out dtComment);
-
-
-                    //if (dtComment.DayOfYear > 1)
-                    //    return;
-
-                    Regex reg = new Regex(@"(\d{2}.\d{2}.\d{4})");
-                    string description = track.Description;
-
-                    if (string.IsNullOrEmpty(description))
-                        description = "";
-
-                    DateTime dtDesc = DateTime.MinValue;
-                    if (reg.IsMatch(description))
-                    {
-                        string strDescriptionDate = reg.Match(description).Groups[1].Value;
-
-                        dtDesc = Convert.ToDateTime(strDescriptionDate);
-                    }
-
-                    if (dtDesc > DateTime.MinValue)
-                    {
-                        string newComment = dtDesc.ToString(cuDtFormat2.FullDateTimePattern);
-                        if (newComment != track.Comment)
-                        {
-                            if (dtCommentBuild2 && dtComment.Minute != 0)
-                                return;
-                            misc.log("chgt Comment � partir de description {0} de {1} vers {2} {3}", description, comment, newComment, this);
-                            track.Comment = newComment;
-                        }
-                    }
-                    else if (dtCommentBuild2)
-                    {
-
-                    }
-
-
-
-
-
-
-                }
-                catch (Exception ex)
-                {
-                    misc.logError("impossible de g�rer " + this, ex);
-                }
-            }
-            finally
-            {
-
-                if (target)
-                {
-                   
-                    FileInfo file = new FileInfo(loc);
-                    DirectoryInfo dirTrack = file.Directory;
-                    DirectoryInfo dirPodcast = dirTrack.Parent;
-                    if (!dirPodcast.Name.Equals(REFONTE))
-                    {
-                        DirectoryInfo dirV1 = new DirectoryInfo(dirPodcast.FullName + Path.DirectorySeparatorChar + REFONTE);
-                        if (!dirV1.Exists)
-                            dirV1.Create();
-
-                        string dest = dirV1.FullName + Path.DirectorySeparatorChar + dirTrack.Name + Path.DirectorySeparatorChar + file.Name;  // loc.Replace(@"D:\", @"E:\");
-
-                        string dirDest = Path.GetDirectoryName(dest);
-                        string fileName = Path.GetFileName(dest);
-                        fileName = pub.ToString("yyyy.MM.dd_HH.mm") + "_" + fileName;
-
-                        dest = dirDest + Path.DirectorySeparatorChar + fileName;
-                        try
-                        {
-                            misc.log("deplacer " + loc);
-                            string newDest = file.copyTree(dest, false);
-                            misc.log("-------> " + newDest);
-                            track.Location = newDest;
-                            try
-                            {
-                                File.Delete(loc);
-                            }
-
-                            catch (Exception del)
-                            {
-
-                                misc.log(del.ToString());
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            misc.log(ex.ToString());
-                        }
-                    }
-                }
-
-            }
-#endif
-
-        }
-
-
-        private static IDictionary<int, DateTime> maxPlayed = new Dictionary<int, DateTime>();
-        public static IDictionary<int, DateTime> MaxPlayed { set { maxPlayed = value; } }
-        public static bool markAsPlayed(int rating, DateTime date)
-        {
-            if (maxPlayed.ContainsKey(rating))
-                return date > maxPlayed[rating];
-            return true;
-        }
-        public override void build(XmlNode xTrack)
-        {
-            base.build(xTrack);
-            //if (Name.Contains("Aubenas"))
-            //{
-            //    int toto = 0;
-            //}
-            if (!isPodcast)
-                return;
-            if (Strange)
-                return;
-            string key = "";
-
-            foreach (XmlNode node in xTrack.ChildNodes)
-            {
-                string value = node.InnerText;
-                if (node.Name == "key")
-                {
-                    key = value;
-                    continue;
-                }
-
-                if (string.IsNullOrEmpty(value))
-                    continue;
-                switch (key)
-                {
-                    case "Date Added": added = Convert.ToDateTime(value); break;
-                    case "Release Date": pub = Convert.ToDateTime(value); break;
-                    case "Play Count": int playCount = Convert.ToInt32(value);
-                        if (playCount > 0)
-                            played = markAsPlayed(Rating, PlayedDate);
-                        break;
-                    case "Album Rating": albumRating = Convert.ToInt32(value); break;
-                }
-
-            }
-
-            //for (int i = 0; i < xTrack.ChildNodes.Count; i += 2)
-            //{
-            //    XmlNode xKey = xTrack.ChildNodes[i];
-            //    string value = xTrack.ChildNodes[i + 1].InnerText;
-            //    string key = xKey.InnerText;
-
-            //    if (string.IsNullOrEmpty(value))
-            //        continue;
-            //    switch (xKey.InnerText)
-            //    {
-            //        case "Date Added": added = Convert.ToDateTime(value); break;
-            //        case "Release Date": pub = Convert.ToDateTime(value); break;
-            //        case "Play Count": int playCount = Convert.ToInt32(value); if (playCount > 0) played = true; break;
-            //        case "Album Rating": albumRating = Convert.ToInt32(value); break;
-
-
-            //    }
-            //}
-
-
-            new PubLoader(this).setPub();
-
-            #region move vers pubLoader
-            //
-            //string _comment = Comment;
-            //DateTime dateComment = DateTime.MinValue;
-
-            //try
-            //{
-            //    dateComment = Convert.ToDateTime(_comment);
-            //}
-            //catch
-            //{
-            //}
-
-            //if ((pub < MIN || pub.DayOfYear == 1)  && (dateComment > MIN && dateComment.DayOfYear > 1))
-            //{
-            //    pub = dateComment; 
-            //}
-            //string name = Name;
-            //checkDate1(name);
-            //checkDate2(name);
-            //checkDate3(name);
-
-            //bool pubYear = false;
-
-            //if (!string.IsNullOrEmpty(Location))
-            //{
-            //    string fileName = Path.GetFileName(Location);
-            //    checkDate1(fileName);
-            //    checkDate2(fileName);
-            //    checkDate3(fileName);
-            //}
-
-            //if (pub <= MIN)
-            //{
-            //    if (Year > 1970)
-            //    {
-            //        DateTime dtYear = new DateTime(Year, 1, 1);
-            //        pub = dtYear;
-            //        pubYear = true;
-            //    }
-            //}
-
-
-
-            //if (added < MIN) added = MIN;
-
-            //// DateTime dt_ = pub;
-            //if (pub <= MIN)
-            //    pub = added;
-            //string comment = pub.ToString("yyyy/MM/dd HH:mm"); // dt_.Year + "-" + dt_.Month + "-" + dt_.Day;
-            //if (pubYear)
-            //    comment = getFileNameCmp(comment);
-            //if (this.Comment != comment)
-            //{
-            //    try
-            //    {
-            //        string commentFound = this.Comment;
-            //        string truc = commentFound;
-            //        if (truc.Contains("_")) 
-            //        {
-            //            //d�j� fait
-            //            return; 
-            //        }
-            //          //  truc = truc.Split('_')[0];
-
-            //        DateTime iComment = Convert.ToDateTime(truc);
-            //        if (iComment.DayOfYear != 1 && pub.DayOfYear == 1)
-            //        {
-            //            pub = iComment;
-            //        }
-            //        else
-            //        {
-
-            //            this.Comment = comment;
-            //        }
-            //    }
-            //    catch
-            //    {
-            //        this.Comment = comment;
-            //    }
-            //}
-
-
-            //
-
-            #endregion
-
-
-
-
-            duree = new util.timeSpan(Duration); 
-        }
-
-
-
-        public static DateTime MIN = new DateTime(1970, 1, 1);
-        #region move verspubLoader
-
-        //
-        //private static Regex regex1 = new Regex(@".*(\d\d\.\d\d\.\d\d\d\d).*");
-        //private static Regex regex2 = new Regex(@".*(\d\d\d\d)(\d\d)(\d\d).*");
-        //private static Regex regex3 = new Regex(@".*(\d\d)\.(\d\d)\.(\d\d)_(\d\d)\.(\d\d)_.*");
-
-        //private string getFileNameCmp(string comment)
-        //{
-        //    string fileName = Path.GetFileNameWithoutExtension(location);
-
-        //    if (fileName.Contains(" "))
-        //    {
-        //        var tab = fileName.Split(' ');
-        //        fileName = tab[tab.GetLength(0) - 1];
-        //    }
-
-        //    if (fileName.Contains("_"))
-        //    {
-        //        var tab = fileName.Split('_');
-        //        fileName = tab[tab.GetLength(0) - 1];
-        //    }
-
-        //    if (fileName.Length > 3)
-        //        return comment;
-
-        //    int nb = 0;
-        //    bool isNum = Int32.TryParse(fileName, out nb);
-
-        //    if (!isNum)
-        //        return comment;
-
-        //    while (fileName.Length < 3)
-        //    {
-        //        fileName = "0" + fileName;
-        //    }
-        //    return comment + "_" + fileName;
-        //}
-        //private void checkDate1(string info)
-        //{
-        //    if (pub > MIN)
-        //        return;
-        //    if (pub < MIN)
-        //        pub = MIN;
-
-        //    if (regex1.IsMatch(info))
-        //    {
-        //        try
-        //        {
-        //            Match m = regex1.Match(info);
-        //            string strDate = m.Groups[1].Value;
-        //            DateTime dt = Convert.ToDateTime(strDate);
-        //            pub = dt;
-        //        }
-        //        catch { }
-        //    }
-        //}
-
-        //private void checkDate2(string info)
-        //{
-        //    if (pub > MIN)
-        //        return;
-        //    if (pub < MIN)
-        //        pub = MIN;
-
-        //    if (regex2.IsMatch(info))
-        //    {
-        //        try
-        //        {
-        //            Match m = regex2.Match(info);
-        //            int year = Convert.ToInt16(m.Groups[1].Value);
-        //            int month = Convert.ToInt16(m.Groups[2].Value);
-        //            int day = Convert.ToInt16(m.Groups[3].Value);
-        //            DateTime dt = new DateTime(year, month, day);
-        //            pub = dt;
-        //        }
-        //        catch { }
-        //    }
-        //}
-
-        //private void checkDate3(string info)
-        //{
-        //    if (pub > MIN)
-        //        return;
-        //    if (pub < MIN)
-        //        pub = MIN;
-
-        //    if (regex3.IsMatch(info))
-        //    {
-        //        try
-        //        {
-        //            Match m = regex2.Match(info);
-        //            int year = Convert.ToInt16(m.Groups[1].Value);
-        //            int month = Convert.ToInt16(m.Groups[2].Value);
-        //            int day = Convert.ToInt16(m.Groups[3].Value);
-        //            int hh = Convert.ToInt16(m.Groups[4].Value);
-        //            int mm = Convert.ToInt16(m.Groups[5].Value);
-
-        //            DateTime dt = new DateTime(year, month, day, hh, mm, 0);
-        //            pub = dt;
-        //        }
-        //        catch { }
-        //    }
-        //}
-
-        #endregion
-
-        //public TrackInfoItunes(IITFileOrCDTrack track)
-        //{
-        //    this.track = track;
-        //    this.artist = track.Artist;
-        //    this.album = track.Album;
-        //    this.name = track.Name;
-        //    this.trackNumber = track.TrackNumber;
-        //    this.rating = track.Rating;
-        //    this.year = track.Year;
-        //    this.comment = track.Comment;
-        //    this.enabled = track.Enabled;
-        //    this._isPodCast = track.Podcast;
-        //    this.playedDate = track.PlayedDate;
-        //    this.location = track.Location;
-        //    this.duration = TimeSpan.FromSeconds(track.Duration);
-        //    this.played = track.PlayedCount > 0;
-        //    this.pub = track.ReleaseDate;
-
-        //    checkDate1(name);
-        //    checkDate2(name);
-
-        //    if (!string.IsNullOrEmpty(location))
-        //    {
-        //        string fileName = Path.GetFileName(location);
-        //        checkDate1(fileName);
-        //        checkDate2(fileName);
-        //    }
-
-        //    if (pub <= MIN)
-        //    {
-        //        if (year > 1970)
-        //        {
-        //            DateTime dtYear = new DateTime(year, 1, 1);
-        //            pub = dtYear;
-        //        }
-        //    }
-
-
-        //    this.added = track.DateAdded;
-        //    if (added < MIN) added = MIN;
-
-        //    // DateTime dt_ = pub;
-        //    if (pub <= MIN)
-        //        pub = added;
-        //    string comment = pub.ToString("yyyy/MM/dd HH:mm"); // dt_.Year + "-" + dt_.Month + "-" + dt_.Day;
-        //    if (track.Comment != comment)
-        //        track.Comment = comment;
-
-        //}
-
-
-
-
-        //public int TrackId { get { return track.trackID; } }
-        //public int ID { get { return track.TrackDatabaseID; } }
-
-        //public IITFileOrCDTrack Track { get { return track; } }
-
-
-        #region ITrackNative Membres
-
-
-
-
-        /// <summary>
-        /// Date de publication
-        /// </summary>
-        private DateTime pub;
-        public DateTime Pub { get { return pub; } }
-
-        /// <summary>
-        /// date d'ajout
-        /// </summary>
-        private DateTime added;
-        public DateTime Added { get { return added; } }
-
-        /// <summary>
-        /// Podcast de type info
-        /// </summary>
-        private bool info;
-
-        public bool Info
-        {
-            get { return info; }
-            set { if (value) info = true; }
-        }
-
-        /// <summary>
-        /// Podcast rare (moins de trois fois par semaine)
-        /// </summary>
-        private bool rare;
-        public bool Rare
-        {
-            get { return rare; }
-            set { if (value) rare = true; }
-        }
-
-        private bool played;
-        public bool Played { get { return played; } }
-
-        //private string feed;
-        //public string Feed { get { return feed; } set { feed = value; } }
-
-        private selectMode selected;
-        private bool inJournal = false;
-
-        public bool FreeInJournal { get { return Selected && !inJournal; } }
-        public void markInJournal() { inJournal = true; }
-        public bool Selected { get { return selected > selectMode.none; } }
-        public bool Contribute { get { return selected >= selectMode.simple; } }
-        public bool Histo { get { return selected == selectMode.histo; } }
-        public bool Serial { get { return selected == selectMode.serial; } }
-        public selectMode Select { get { return selected; } }
-       
-
-        public void clearLists()
-        {
-            selected = selectMode.none;
-            exclu = null; 
-            inJournal = false; 
-            listSelected.Clear();
-            listLoad0.Clear();
-            listStandAlone.Clear();
-            //listLoadGuest.Clear();
-            //listLoadRecursif.Clear();
-
-        }
-
-        private static Regex regInfoShort = new Regex(@".+(\d\d\.\d\d\.\d\d)"); 
-        public void select(selectMode value, LimitItem limit)
-        {
-
-            var key = limit.ID;
-
-            if (value == selectMode.standAlone)
-            {
-                if (!listStandAlone.ContainsKey(key))
-                    listStandAlone.Add(key, limit);
-            }
-            else if (!listSelected.ContainsKey(key))
-                listSelected.Add(key, limit);
-
-          
-            if (selected == value)
-                return;
-
-            if (value > selectMode.standAlone)
-            {
-
-                selected = value;
-                int volume = Volume;
-                if (Album.Contains("RFI"))
-                {
-                    if (volume != -20)
-                        Volume = -20;
-                }
-                else if (volume < volumeMin)
-                    Volume = volumeMin;
-
-
-                if (pub > MIN)
-                {
-
-
-                    string infoShort = pub.ToString("dd.MM.yy");
-                    string infoPubName = pub.ToString("dd.MM.yyyy");
-                    string infoPubName2 = pub.ToString("dd/MM/yyyy");
-                    string infoPubName3 = pub.ToString("dd/MM/yy");
-                    string infoYear = Year.ToString();
-                    if (pub.DayOfYear == 1)
-                    {
-                        infoPubName = pub.Year.ToString();
-                        infoPubName2 = infoPubName;
-                        infoPubName3 = infoPubName;
-                        infoShort = infoPubName;
-                    }
-
-                    string name = Name;
-                    string str = name;
-
-                    if (regInfoShort.IsMatch(str))
-                    {
-                        var strdate = regInfoShort.Match(str).Groups[1].Value;
-                        str = str.Replace(strdate, ""); 
-                    }
-                        
-
-
-
-
-
-                    if (str.Contains(infoPubName))
-                        str = str.Replace(infoPubName, infoShort);
-                    else if (name.Contains(infoPubName2))
-                        str = str.Replace(infoPubName2, infoShort);
-
-                    else
-                    {
-                        if (!str.Contains(infoShort))
-                        {
-                            str = str + " " + infoShort;
-                        }
-                        else
-                        {
-                            if (Year > 1980 && str.Contains(infoYear))
-                                str = str.Replace(infoYear, "").Trim();
-                        }
-                    }
-                    var strBUG = "30.12.99";
-                    if (str.Contains(strBUG)) 
-                        str = str.Replace(strBUG,""); 
-
-                    str = str.Replace("  ", " ");
-                    str = str.Replace("  ", " ");
-                    str = str.Replace("  ", " ").Trim();
-
-                    if (!str.Equals(name))
-                        Name = str;
-                }
-
-            }
-
-        }
-
-
-        #endregion
-
-        public override string ToString()
-        {
-            int level = Rating / 20;
-            string strPub = pub > MIN ? pub.ToShortDateString() : "";
-            string strYear = Year > 0 ? Year.ToString() : "";
-            return level.ToString() + " " + Album + " " + Name + " " + strYear + " " + strPub;
-        }
-
-        public void copy(string ziqueDest, string log)
-        {
-            if (string.IsNullOrEmpty(location))
-                return;
-
-            FileInfo file = new FileInfo(location);
-            DirectoryInfo dir = file.Directory;
-            if (file.Exists)
-            {
-                string strPub1 = pub.ToString("dd.MM.yyyy");
-                string strPub2 = pub.ToString("yy.MM.dd");
-
-                string fileName = Path.GetFileName(location);
-
-                if (pub > MIN && !fileName.StartsWith(strPub1) && !fileName.StartsWith(strPub2))
-                    fileName = strPub2 + "_" + fileName;
-
-                string strDir = dir.Name;
-                if (!string.IsNullOrEmpty(Album))
-                    strDir = Album;
-
-
-
-                string dest = ziqueDest + Path.DirectorySeparatorChar + strDir + Path.DirectorySeparatorChar + fileName;
-                misc.log(" {0} {1} � copier vers {2}", log, location, dest);
-                try
-                {
-                    string newDest = file.copyTree(dest, false);
-
-                }
-                catch (Exception ex)
-                {
-                    misc.log(ex.ToString());
-                }
-            }
-
-        }
-
-        public void move(string ziqueOrg, string ziqueDest, DateTime limit)
-        {
-            if (pub >= limit)
-                return;
-
-            if (string.IsNullOrEmpty(location))
-                return;
-            FileInfo file = new FileInfo(location);
-            DirectoryInfo dir = file.Directory;
-            if (file.Exists)
-            {
-                if (location.StartsWith(ziqueOrg + @"Podcasts"))
-                {
-                    misc.log(" � d�placer" + location);
-                    string dest = location.Replace(ziqueOrg, ziqueDest);
-
-                    string dirDest = Path.GetDirectoryName(dest);
-                    string fileName = Path.GetFileName(dest);
-                    fileName = pub.ToString("yy.MM.dd_HH.mm") + "_" + fileName;
-
-                    dest = dirDest + Path.DirectorySeparatorChar + fileName;
-                    try
-                    {
-                        string newDest = file.copyTree(dest, false);
-                        if (bgMove == null)
-                        {
-                            lock (_lock)
-                            {
-                                if (bgMove == null)
-                                    bgMove = BackGroundTaskMgr.getMgrlarge("Move");
-                            }
-                        }
-                        //  file.CopyTo(dest, true);
-                        bgMove.add(new BgTaskCopy(this, location, newDest));
-                    }
-                    catch (Exception ex)
-                    {
-                        misc.log(ex.ToString());
-                    }
-                }
-            }
-
-
-        }
-
-        private class BgTaskCopy : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-            string value;
-            public BgTaskCopy(TrackInfoItunes info, string desc, string value)
-                : base(desc)
-            {
-                this.info = info;
-                this.value = value;
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.Track;
-                    if (_track == null)
-                    {
-                        success = false;
-                        return;
-                    }
-
-                    _track.Location = value;
-
-                    misc.log("copie effectu�e " + value);
-                    try
-                    {
-                        File.Delete(Desc);
-                    }
-                    catch (Exception ex)
-                    {
-                        misc.log("impossible de supprimer " + Desc + " " + ex.ToString());
-                    }
-                    success = true;
-                }
-                catch (Exception e)
-                { misc.log("NIET " + e.Message); }
-
-                if (!success && info.Track != null)
-                {
-                    //misc.log("invalidation track " + info);
-                    ////  info.track = null;
-                }
-
-            }
-        }
-
-
-
-        DateTime IPub.Pub
-        {
-            get
-            {
-                return pub;
-            }
-            set
-            {
-                pub = value;
-            }
-        }
-
-        string IPub.Comment
-        {
-            get
-            {
-                return Comment;
-            }
-            set
-            {
-                setGrouping(this.Comment, true); 
-                Comment = value;
-            }
-        }
-
-        string IPub.Name
-        {
-            get { return Name; }
-        }
-
-        string IPub.Location
-        {
-            get { return location; }
-        }
-
-        int IPub.Year
-        {
-            get { return Year; }
-        }
-
-        DateTime IPub.Added
-        {
-            get
-            {
-                return added;
-            }
-            set
-            {
-                added = value;
-            }
-        }
-        private pdb.util.timeSpan duree;
-        public pdb.util.timeSpan Duree { get { return duree; } }
-
-
-    }
-}
-
-
-
-]]></content>
-  </file>
- 
   <file path="\pdb.podcast\Auto\AutoBuilder.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -1239,7 +53,9 @@ namespace pdb.podcast.Auto
         private pdb.podcast.Tuning.Auto conf;
         private static List<AutoBuilder> list = new List<AutoBuilder>();
         private static int index;
-        private IBuilderSource source;
+        private IBuilderSource source; public IBuilderSource Source { get { return source; } }
+
+        private LimitItemBase client;
         private static XmlElement xmlRoot;
         private static XmlDocument doc;
         private static bool started = false;
@@ -1247,6 +63,9 @@ namespace pdb.podcast.Auto
         private builderstate state;
         private int naturalOrder = 1;
         private List<AutoBuilderItem> items = new List<AutoBuilderItem>();
+        private AutoBuilderItem choose;
+
+     
 
         private AutoBuilder(pdb.podcast.Tuning.Auto conf)
         {
@@ -1298,6 +117,18 @@ namespace pdb.podcast.Auto
                 builder.setSource(source);
 
             }
+        }
+        public static void setClient(LimitItemBase client, XmlNode node)
+        {
+            var att = node.Attributes["auto"];
+            if (att == null)
+                return ;
+            var name = att.Value;
+            AutoBuilder builder = list.Find(a => a.name == name);
+            if (builder == null)
+                return;
+            builder.client = client; 
+
         }
         private void makeDelta(Memory mem, string mode, string file)
         {
@@ -2006,10 +837,15 @@ namespace pdb.podcast.Auto
             sb = new StringBuilder();
             sb.AppendLine();
             makeDelta(mem0, "virtuel", DAT + "vhisto." + conf.name + ".txt");
+            if (mem0.ajouts.Count > 0 || mem0.suppressions.Count > 0)
+            {
+                if (choose != null)
+                    choose.makePertinent();
+            }
             mustUpdate = false;
             canGo = false;
             var newEmpreinte = source.getEmpreinte();
-            AutoBuilderItem choose = null;
+            choose = null;
             try
             {
                 if (state == builderstate.none)
@@ -2059,12 +895,17 @@ namespace pdb.podcast.Auto
                         aux = item.Tension;
                     else
                         aux = item.Dt;
+                    if (conf.selectAbs)
+                        aux = Math.Abs(aux); 
 
                     TrackBorderItem tb = up ? item.Rejected : item.Selected;
                     if (tb == null || tb.Virtual)
                     {
                         if (Conf.BorderGranSlam)
+                        {
+                            choose = null;
                             break;
+                        }
                         if (!Conf.BorderIdem)
                             continue;
                     }
@@ -2083,10 +924,10 @@ namespace pdb.podcast.Auto
                     foreach (AutoBuilderItem item in items)
                     {
                         double aux = double.MaxValue;
-                        if (conf.selectFix)
-                            aux = item.Tension;
-                        else
-                            aux = item.Dt;
+                        //if (conf.selectFix)
+                        aux = item.Tension;
+                        //else
+                        //    aux = item.Dt;
                         if (aux < dt)
                         {
                             dt = aux;
@@ -2095,6 +936,8 @@ namespace pdb.podcast.Auto
                         }
                     }
                 }
+                else
+                    log("REEL!!!!");
 
                 org = choose.Org;
 
@@ -2250,6 +1093,11 @@ namespace pdb.podcast.Auto
             var item = items.Find(i => i.type == tb.type);
             if (item != null)
             {
+                if (client != null)
+                {
+                    if (!tb.source.isChildOf(client))
+                        return; 
+                }
                 item.signal(tb);
                 checkSignal = true;
             }
@@ -2273,7 +1121,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using pdb.podcast.Delta;
-using TimeSpan = pdb.util.timeSpan; 
+using TimeSpan = pdb.util.timeSpan;
 
 namespace pdb.podcast.Auto
 {
@@ -2285,9 +1133,10 @@ namespace pdb.podcast.Auto
         /// Valeur initiale de la valeur gérée
         /// </summary>
         private double org;
+        private double pertinentOrg = -1;
         private TimeSpan torg;
         private TimeSpan tmin;
-        private TimeSpan tmax; 
+        private TimeSpan tmax;
         /// <summary>
         /// Valeur modifiée
         /// </summary>
@@ -2295,6 +1144,7 @@ namespace pdb.podcast.Auto
         public double NewV { get { return newv; } }
         internal TrackBorderItem Rejected { get { return _rejected; } }
         internal TrackBorderItem Selected { get { return _selected; } }
+        internal void makePertinent() { pertinentOrg = org; }
 
         private string name;
 
@@ -2308,6 +1158,7 @@ namespace pdb.podcast.Auto
 
         private pdb.podcast.Tuning.Auto conf;
         public readonly borderType type;
+        private AutoBuilder parent;
         public AutoBuilderItem(pdb.podcast.Tuning.Auto conf)
         {
             this.conf = conf;
@@ -2331,33 +1182,57 @@ namespace pdb.podcast.Auto
         private TrackBorderItem _selected;
         private TrackBorderItem _rejected;
 
-        private bool verify(TrackBorderItem tb)
-        {
-            double sourceValue = -1;
-            var source = tb.source;
-            switch (type)
-            {
-                case borderType.d: sourceValue = source.Duration; break;
-                case borderType.fd: sourceValue = source.FeedDuration; break;
-                case borderType.maxdate: sourceValue = (source.DateMax - Conf.Date0).TotalDays; break;
-                default: return false;
-            }
+        //private bool verify(TrackBorderItem tb)
+        //{
+        //    return true;
+        //    double sourceValue = -1;
+        //    var source = tb.source;
+        //    switch (type)
+        //    {
+        //        case borderType.d: sourceValue = source.Duration; break;
+        //        case borderType.fd: sourceValue = source.FeedDuration; break;
+        //        case borderType.maxdate: sourceValue = (source.DateMax - Conf.Date0).TotalDays; break;
+        //        default: return false;
+        //    }
 
-            if (Math.Abs(org - sourceValue) > 2.0E-7)
-                return false;
-            return true;
-        }
+        //    if (Math.Abs(org - sourceValue) > 2.0E-7)
+        //        return false;
+        //    return true;
+        //}
         private void setSelect(TrackBorderItem tb)
         {
-            if (verify(tb))
-                _selected = tb;
-        
-}
+            // pour down mémo des track sélectionnés
+
+            _selected = tb;
+
+        }
 
         private void setRejec(TrackBorderItem tb)
         {
-            if (verify(tb))
-                _rejected = tb;
+            // A REVOIR
+
+            //// pour up mémo des tracks rejetés
+            ////1. S'il est par ailleurs déjà intégré, pas pertinent
+            //if (parent.Source.contains(tb.candidat))
+            //{
+            //    return;
+            //    if (_rejected != null)
+            //    {
+            //        if (_rejected.status > borderStatus.rejectedXtraLight)
+            //            return;
+            //        if (tb.val >= _rejected.val)
+            //            return; 
+            //    }
+               
+            //    tb.status = borderStatus.rejectedXtraLight; 
+            //}
+
+        
+            ////2. On est en cours de construction donc il se peut que ce candidat soit in fine ajouté par d'autres
+            //// intéret en up . S'il est dans la mémoire pas pertinent en up
+            //if (parent.Mem.dict.ContainsKey(tb.candidat.Location))
+            //    return;
+            _rejected = tb;
         }
         public void signal(TrackBorderItem tb)
         {
@@ -2368,7 +1243,7 @@ namespace pdb.podcast.Auto
             {
                 if (tb.val >= torg)
                     return;
-                if (tb.val <=tmin)
+                if (tb.val <= tmin)
                     return;
                 if (_selected == null)
                     setSelect(tb);
@@ -2376,8 +1251,11 @@ namespace pdb.podcast.Auto
                 {
                     if (tb.status > _selected.status) // && !Conf.BorderIdem)
                         setSelect(tb);
-                    else if (tb.val > _selected.val)
-                        setSelect(tb);
+                    else if (tb.status == _selected.status)
+                    {
+                        if (tb.val > _selected.val)
+                            setSelect(tb);
+                    }
                 }
 
             }
@@ -2391,13 +1269,16 @@ namespace pdb.podcast.Auto
 
 
                 if (_rejected == null)
-                    setRejec(tb); 
+                    setRejec(tb);
                 else
                 {
                     if (tb.status > _rejected.status)// && !Conf.BorderIdem)
-                        setRejec(tb); 
-                    else if (tb.val < _rejected.val)
-                        setRejec(tb); 
+                        setRejec(tb);
+                    else if (tb.status == _rejected.status)
+                    {
+                        if (tb.val < _rejected.val)
+                            setRejec(tb);
+                    }
                 }
 
             }
@@ -2431,7 +1312,9 @@ namespace pdb.podcast.Auto
             }
             torg = getValue(org);
             tmin = getValue(conf.min);
-            tmax = getValue(conf.max); 
+            tmax = getValue(conf.max);
+            if (pertinentOrg < 0)
+                pertinentOrg = org;
             //  misc.log(ToString());
         }
         private double dt; public double Dt { get { return dt; } }
@@ -2445,7 +1328,7 @@ namespace pdb.podcast.Auto
 
         private double getDt(bool up)
         {
-            double t0 = _getTension(org);
+            double t0 = _getTension(pertinentOrg);
             double t1 = _getTension(up);
             return (t1 - t0) / conf.coeff;
 
@@ -2460,17 +1343,17 @@ namespace pdb.podcast.Auto
         {
             switch (type)
             {
-                case borderType.none: break; 
-                case borderType.d:                  
+                case borderType.none: break;
+                case borderType.d:
                 case borderType.fd:
                     return val.TotalMinute;
-                case borderType.maxdate: return val.TotalDay; 
+                case borderType.maxdate: return val.TotalDay;
                 case borderType.c:
                     break;
-                default: return -1; 
-                    
+                default: return -1;
+
             }
-            return -1; 
+            return -1;
         }
 
         private TimeSpan getValue(double val)
@@ -2480,14 +1363,14 @@ namespace pdb.podcast.Auto
                 case borderType.none: break;
                 case borderType.d:
                 case borderType.fd:
-                    return TimeSpan.FromMinutes(val); 
+                    return TimeSpan.FromMinutes(val);
                 case borderType.maxdate: return TimeSpan.FromDays(val);
                 case borderType.c:
                     break;
-                default: return new TimeSpan() ;
+                default: return new TimeSpan();
 
             }
-            return new TimeSpan(); 
+            return new TimeSpan();
         }
 
         private double _getTension(bool up)
@@ -2499,14 +1382,14 @@ namespace pdb.podcast.Auto
             {
                 if (_rejected == null)
                     return int.MaxValue;
-                newv = Math.Round(getValue( _rejected.val) + 1.0E-5, 8); 
+                newv = Math.Round(getValue(_rejected.val), 8);
 
             }
             else
             {
                 if (_selected == null)
                     return int.MaxValue;
-                newv = Math.Round(getValue( _selected.val) - 1.0E-5, 8); 
+                newv = Math.Round(getValue(_selected.val), 8);
             }
             return _getTension(newv);
         }
@@ -2584,14 +1467,14 @@ namespace pdb.podcast.Auto
         selectedStrict = 3
     }
 
-    [Flags]
-    public enum border : byte
-    {
-        virtuel = 0,
-        strict = 1,
-        rejected = 0,
-        selected = 2
-    }
+    //[Flags]
+    //public enum border : byte
+    //{
+    //    virtuel = 0,
+    //    strict = 1,
+    //    rejected = 0,
+    //    selected = 2
+    //}
 
     /// <summary>
     /// Infos sur la sélection ou la non sélection d'un podcast
@@ -2705,7 +1588,7 @@ using pdb.podcast.Tuning;
 using pdb.util;
 using pdb.util.list;
 using pdb.podcast.Auto;
-using TimeSpan = pdb.util.timeSpan; 
+using timeSpan = pdb.util.timeSpan; 
 
 namespace pdb.podcast.Load
 {
@@ -2753,8 +1636,8 @@ namespace pdb.podcast.Load
         /// <summary>
         /// Durée cumulée max
         /// </summary>
-        TimeSpan durationMax;
-        TimeSpan loadDurationMax;
+        timeSpan durationMax;
+        timeSpan loadDurationMax;
 
         ///// <summary>
         ///// Date de publication min
@@ -2768,8 +1651,8 @@ namespace pdb.podcast.Load
         /// <summary>
         /// Durée cumulée
         /// </summary>
-        TimeSpan currentDuration = new TimeSpan();
-        TimeSpan currentDurationVirtuel = new TimeSpan(); 
+        timeSpan currentDuration = new timeSpan();
+        timeSpan currentDurationVirtuel = new timeSpan(); 
 
         /// <summary>
         /// Nombre total
@@ -2782,8 +1665,8 @@ namespace pdb.podcast.Load
 
         public void phase2()
         {
-            currentDuration = new TimeSpan();
-            currentDurationVirtuel = new TimeSpan(); 
+            currentDuration = new timeSpan();
+            currentDurationVirtuel = new timeSpan(); 
             nb = 0;
             state = loadState.selection;
             endByFd = null; 
@@ -2807,7 +1690,7 @@ namespace pdb.podcast.Load
 
             var feedDuration = limit.FeedDuration;
             int rating = limit.Rating;
-            durationMax = TimeSpan.FromMinutes(feedDuration);
+            durationMax = timeSpan.FromMinutes(feedDuration);
 
 
             loadDurationMax = durationMax;
@@ -2821,7 +1704,7 @@ namespace pdb.podcast.Load
                     loadNbMax = limit.LoadNb;
                 if (limit.LoadFeedDuration > feedDuration)
                 {
-                    loadDurationMax = TimeSpan.FromMinutes(limit.LoadFeedDuration);
+                    loadDurationMax = timeSpan.FromMinutes(limit.LoadFeedDuration);
                     loadEqSel = false; 
                 }
 
@@ -2845,9 +1728,9 @@ namespace pdb.podcast.Load
         }
 
 
-      
 
-        public TimeSpan getCurrentDuration(bool real)
+
+        public timeSpan getCurrentDuration(bool real)
         {
             if (real)
                 return currentDuration;
@@ -2919,10 +1802,10 @@ namespace pdb.podcast.Load
 
             var _nb = nb + 1;
             var durationBase = real ? currentDuration : currentDurationVirtuel;
-            var dur = durationBase + track.Duration;
+            var dur = durationBase + track.Duree;
 
             int _nbMax = select ? this.nbMax : this.loadNbMax;
-            TimeSpan _durationMax = select ? this.durationMax : this.loadDurationMax;
+            var _durationMax = select ? this.durationMax : this.loadDurationMax;
 
             if (_nb > _nbMax)
             {
@@ -2944,7 +1827,7 @@ namespace pdb.podcast.Load
 
 
             // vérification des valeurs cumulées
-            if (dur >= _durationMax)
+            if (dur > _durationMax)
             {
                
                 if (real)
@@ -2998,10 +1881,10 @@ namespace pdb.podcast.Load
             if (real)
             {
                 nb = _nb;
-                currentDuration += track.Duration;
+                currentDuration += track.Duree;
             }
 
-            currentDurationVirtuel += track.Duration; 
+            currentDurationVirtuel += track.Duree; 
 
             return ret;
 
@@ -3011,578 +1894,288 @@ namespace pdb.podcast.Load
 }
 ]]></content>
   </file>
-  <file path="\pdb.podcast\Load\LimitItemLoader.cs">
+  <file path="\pdb.podcast\Tuning\Auto.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using pdb.podcast.Tuning;
+using System.Xml;
 using pdb.util;
-using pdb.util.list;
 using pdb.podcast.Auto;
-using TimeSpan = pdb.util.timeSpan; 
-
-namespace pdb.podcast.Load
+namespace pdb.podcast.Tuning
 {
-    class LimitItemLoader
+    class Auto
     {
-        private LimitItem limit;
-        private LimitsLoader parent;
-        private IDictionary<string, FeedLimitItemLoader> loaders = new BgDictString0<FeedLimitItemLoader>();
-        //  public SequentialDictString<TrackInfoItunes> preloaded = new SequentialDictString<TrackInfoItunes>();
-        public SequentialDictString<TrackInfoItunes> standAlone = new SequentialDictString<TrackInfoItunes>();
-        public SequentialDictString<TrackInfoItunes> legacy = new SequentialDictString<TrackInfoItunes>();
-        public SequentialDictString<TrackInfoItunes> legacyRelax = new SequentialDictString<TrackInfoItunes>();
-        private SequentialDictString<TrackInfoItunes> selected = new SequentialDictString<TrackInfoItunes>();
-        public SequentialDictString<TrackInfoItunes> exclu = new SequentialDictString<TrackInfoItunes>();
-        /// <summary>
-        /// Ensemble des tracks chargés en premier par la limite
-        /// </summary>
-        public List<TrackInfoItunes> use = new List<TrackInfoItunes>();
-        private Logger log;
-        TimeSpan currentDuration = new TimeSpan();
-        TimeSpan currentDurationVirtual = new TimeSpan();
-        TimeSpan currentContrib = new TimeSpan();
-        TimeSpan trackDurationMax;
-        TimeSpan trackDurationMin;
+        delegate void sets(string value);
+        delegate void setd(double value);
+        delegate void seti(int value);
+        delegate void setb(bool value);
 
-        bool loadEqSel;
-
-        public LimitItemLoader(LimitsLoader parent, LimitItem limit)
+        private void buildd(XmlNode parent, XmlNode child, string name, setd setd)
         {
-            this.parent = parent;
-            this.limit = limit;
-            log = limit.Logger;
+            XmlAttribute att = null;
+            if (parent != null)
+                att = parent.Attributes[name];
+            if (att != null)
+                setd(Convert.ToDouble(att.InnerText));
+            att = child.Attributes[name];
+            if (att != null)
+                setd(Convert.ToDouble(att.InnerText));
 
-            trackDurationMax = TimeSpan.FromMinutes(limit.Td);
-            trackDurationMin = TimeSpan.FromMinutes(limit.TdMin);
+            XmlElement elt = null;
+            if (parent != null)
+                elt = parent[name];
+            if (elt != null)
+                setd(Convert.ToDouble(elt.InnerText));
+            elt = child[name];
+            if (elt != null)
+                setd(Convert.ToDouble(elt.InnerText));
         }
 
-        public void loadCandidats(List<TrackInfoItunes> _loaded)
+        private void buildi(XmlNode parent, XmlNode child, string name, seti seti)
         {
-            if (limit.Nb == 0 || limit.FeedDuration == 0 || limit.Duration == 0)
-                return;
+            XmlAttribute att = null;
+            if (parent != null)
+                att = parent.Attributes[name];
+            if (att != null)
+                seti(Convert.ToInt32(att.InnerText));
+            att = child.Attributes[name];
+            if (att != null)
+                seti(Convert.ToInt32(att.InnerText));
 
-            var duration = limit.Duration;
-            loadEqSel = true;
-            if (limit.Dir.Cascading)
+            XmlElement elt = null;
+            if (parent != null)
+                elt = parent[name];
+            if (elt != null)
+                seti(Convert.ToInt32(elt.InnerText));
+            elt = child[name];
+            if (elt != null)
+                seti(Convert.ToInt32(elt.InnerText));
+        }
+
+        private void builds(XmlNode parent, XmlNode child, string name, sets sets)
+        {
+            XmlAttribute att = null;
+            if (parent != null)
+                att = parent.Attributes[name];
+            if (att != null)
+                sets(att.InnerText);
+            att = child.Attributes[name];
+            if (att != null)
+                sets(att.InnerText);
+
+            XmlElement elt = null;
+            if (parent != null)
+                elt = parent[name];
+            if (elt != null)
+                sets(elt.InnerText);
+            elt = child[name];
+            if (elt != null)
+                sets(elt.InnerText);
+        }
+
+        private void buildb(XmlNode parent, XmlNode child, string name, setb setb)
+        {
+            XmlAttribute att = null;
+            if (parent != null)
+                att = parent.Attributes[name];
+            if (att != null)
+                setb("true" == att.InnerText);
+            att = child.Attributes[name];
+            if (att != null)
+                setb("true" == att.InnerText);
+
+            XmlElement elt = null;
+            if (parent != null)
+                elt = parent[name];
+            if (elt != null)
+                setb("true" == elt.InnerText);
+            elt = child[name];
+            if (elt != null)
+                setb("true" == elt.InnerText);
+        }
+
+        public string name = "";
+        public borderType type = borderType.none;
+        public double target;
+        public double delta;
+        public double write;
+        public int cloop = 20;
+        public int verif = 4;
+        public int idem = 4;
+        public int order = int.MaxValue;
+        public double min = -int.MaxValue;
+        public double max = int.MaxValue;
+        public double coeff = 0;
+        public bool selectFix;
+        public bool selectAbs;
+        public double pente; 
+        public List<Level> levels = new List<Level>();
+        public List<Auto> items = new List<Auto>();
+
+        public Auto()
+        {
+        }
+        public Auto(Auto parent, XmlElement xparent, XmlElement node)
+        {
+            if (node == null)
+                return;
+            //if (parent != null)
+            //{
+            //    name = parent.name; 
+            //    type = parent.type; 
+            //    target = parent.target; 
+            //    write = parent.write; 
+            //    delta = parent.delta; 
+            //    write = parent.write; 
+            //    cloop = parent.cloop; 
+            //    verif = parent.verif; 
+            //    idem = parent.idem; 
+            //    order = parent.order; 
+            //    min = parent.min; 
+            //    max = parent.max; 
+            //    coeff = parent.coeff; 
+            //    levels = new List<Level>(parent.levels); 
+            //}
+            XMLTool xml = new XMLTool(node);
+
+            if (node.Attributes["type"] != null)
+                type = (borderType)Enum.Parse(typeof(borderType), node.Attributes["type"].Value, true);
+            builds(xparent, node, "name", (v) => name = v);
+            buildd(xparent, node, "target", (v) => target = v);
+            buildd(xparent, node, "delta", (v) => delta = v);
+            buildd(xparent, node, "write", (v) => write = v);
+            buildi(xparent, node, "cloop", (v) => cloop = v);
+            buildi(xparent, node, "verif", (v) => verif = v);
+            buildi(xparent, node, "verif", (v) => idem = v);
+            buildi(xparent, node, "order", (v) => order = v);
+
+            buildd(xparent, node, "min", (v) => min = v);
+            buildd(xparent, node, "max", (v) => max = v);
+            buildd(xparent, node, "coeff", (v) => coeff = v);
+            buildb(xparent, node, "selectFix", (v) => selectFix = v);
+            buildb(xparent, node, "selectAbs", (v) => selectAbs = v);
+            buildd(xparent, node, "pente", (v) => pente = v); 
+
+            /*//  type = xml.getAttValue("type");
+            //  target = xml.getDoubleAttValue("target");
+             // delta = xml.getDoubleAttValue("delta");
+             // write = xml.getDoubleAttValue("write");
+            //  cloop = xml.getIntAttValue("cloop", 20);
+            //  verif = xml.getIntAttValue("verif", 4);
+             // idem = xml.getIntAttValue("idem", 4);
+             // order = xml.getIntAttValue("order", int.MaxValue);
+              min = xml.getDoubleAttValue("min", -int.MaxValue);
+              max = xml.getDoubleAttValue("max", int.MaxValue);
+              coeff = xml.getDoubleAttValue("coeff", 0);
+           
+              string str = "";
+              if (target < 0)
+              {
+                  str = xml.getNodeValue("target");
+                  if (!string.IsNullOrEmpty(str))
+                      target = Convert.ToDouble(str);
+              }
+              if (delta < 0)
+              {
+                  str = xml.getNodeValue("delta");
+                  if (!string.IsNullOrEmpty(str))
+                      delta = Convert.ToDouble(str);
+              }
+              if (write < 0)
+              {
+                  str = xml.getNodeValue("write");
+                  if (!string.IsNullOrEmpty(str))
+                      write = Convert.ToDouble(str);
+              }
+              str = xml.getNodeValue("cloop");
+              if (!string.IsNullOrEmpty(str))
+                  cloop = Convert.ToInt16(str);
+              str = xml.getNodeValue("verif");
+              if (!string.IsNullOrEmpty(str))
+                  verif = Convert.ToInt16(str);
+              str = xml.getNodeValue("idem");
+              if (!string.IsNullOrEmpty(str))
+                  idem = Convert.ToInt16(str);
+              str = xml.getNodeValue("order");
+              if (!string.IsNullOrEmpty(str))
+                  order = Convert.ToInt16(str);
+              str = xml.getNodeValue("min");
+              if (!string.IsNullOrEmpty(str))
+                  min = Convert.ToDouble(str);
+              str = xml.getNodeValue("max");
+              if (!string.IsNullOrEmpty(str))
+                  max = Convert.ToDouble(str);
+              str = xml.getNodeValue("coeff");
+              if (!string.IsNullOrEmpty(str))
+                  coeff = Convert.ToDouble(str);
+              levels = new List<Level>();*/
+
+            if (parent != null)
+                levels = new List<Level>(parent.levels);
+
+            var xlevels = xml.NodeLookUp("levels");
+
+            if (xlevels != null)
             {
-                var dd = limit.LoadDuration;
-                if (dd > duration)
+                levels.Clear();
+                foreach (XmlNode sub in xlevels.ChildNodes)
                 {
-                    loadEqSel = false;
-                    duration = dd;
+                    if (sub is XmlElement)
+                    {
+                        var level = new Level(sub as XmlElement);
+                        levels.Add(level);
+                    }
                 }
             }
-            var durationMax = TimeSpan.FromMinutes(duration);
-            var dateMin = limit.DateMin;
-            var dateMax = limit.DateMax;
-
-            foreach (TrackInfoItunes candidat in _loaded)
+            else if (levels.Count == 0)
             {
-                var location = candidat.Location;
-                if (string.IsNullOrEmpty(location))
-                    continue;
-
-                if (standAlone.ContainsKey(location))
-                    continue;
-
-                var d = candidat.Pub;
-                if (d < dateMin)
-                    continue;
-
-                bool okDate = d <= dateMax;
-                //if (Conf.BorderVirtual)
-                //    limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, okDate, false));
-                //if (!okDate)
-                //    continue;
-                //  var tb = new TrackBorderItem(limit, candidat, borderType.m    axdate, candidat.Pub, okDate);
-                //  limit.signal(tb);
-
-                //if (Conf.BorderVirtual)
-                //{
-                //     var tb = new TrackBorderItem(limit, candidat, borderType.maxdate, candidat.Pub, border.);
-                //      limit.signal(tb);
-                //}
-
-                //if (!okDate && !Conf.BorderVirtual)
-                //    continue;
-
-
-                var loader = getLoader(candidat.Album);
-                bool _control = loader.control(candidat, false, okDate);
-
-                //if (!_control && !Conf.BorderVirtual)
-                //    continue;
-
-                var currentDurationBase = (okDate && _control) ? currentDuration : currentDurationVirtual;
-                var newDuration = currentDurationBase + candidat.Duration;
-                bool okTotalDuration = newDuration <= durationMax;
-                bool selected = _control && okTotalDuration; //
-
-                //question fd
-                if (loader.LoadEqSel)
+                var level = new Level(node);
+                levels.Add(level);
+            }
+            var xitems = xml.NodeLookUp("items");
+            if (xitems != null)
+            {
+                foreach (XmlNode sub in xitems.ChildNodes)
                 {
-                    if (okDate && _control && okTotalDuration)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.selectedStrict));
-                    else if (okDate && okTotalDuration)
+                    if (sub is XmlElement)
                     {
-                        if (loader.EndByFd)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.rejectedStrict));
+                        var subAuto = new Auto(this, node, sub as XmlElement);
+                        items.Add(subAuto);
                     }
-                    else if (Conf.BorderVirtual)
-                    {
-                        if (_control)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.selectedLight));
-                        else if (loader.EndByFd)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.rejectedLight));
-                    }
-
-
-                    //if (!_control)
-                    //{
-                    //    if (okDate && okTotalDuration && loader.EndByFd)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.rejectedStrict);
-                    //        limit.signal(tb);
-                    //    }
-                    //    else if (Conf.BorderVirtual)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.rejectedLight);
-                    //        limit.signal(tb);
-                    //    }
-                    //}
                 }
-
-                if (loadEqSel)
-                {
-                    // question d
-                    if (okDate && _control && okTotalDuration)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.selectedStrict));
-                    else if (okDate && _control)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedStrict));
-                    else if (Conf.BorderVirtual)
-                    {
-                        if (okTotalDuration)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.selectedLight));
-                        else
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedLight));
-                    }
-                    //if (!okTotalDuration)
-                    //{
-                    //    if (okDate && _control)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedStrict);
-                    //        limit.signal(tb);
-                    //    }
-                    //    else if (Conf.BorderVirtual)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedLight);
-                    //        limit.signal(tb);
-                    //    }
-                    //}
-
-                    // question date
-                    if (okDate && _control && okTotalDuration)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.selectedStrict));
-                    else if (_control && okTotalDuration)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.rejectedStrict));
-                    else if (Conf.BorderVirtual)
-                    {
-                        if (okDate)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.selectedLight));
-                        else
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.rejectedLight));
-                    }
-
-                }
-
-
-
-                //if (loadEqSel)
-                //{
-                //    if ((okDate && _control) || Conf.BorderVirtual)
-                //    {
-                //       var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, okTotalDuration);
-                //        limit.signal(tb);
-                //    }
-                //}
-
-                //if ((okDate && _control))
-                //{                   
-                //    var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, okTotalDuration,true);
-                //    limit.signal(tb);
-                //}
-
-                //if (_control && okTotalDuration)
-                //{
-                //    var tb = new TrackBorderItem(limit, candidat, borderType.maxdate, candidat.Pub, okDate);
-                //    limit.signal(tb);
-                //}
-
-                //if (okDate && okTotalDuration)
-                //{
-                //    if (!loader.limit.NbFeedLimit)
-                //    {
-                //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.CurrentDuration, _control);
-                //        limit.signal(tb); 
-                //    }
-                //}
-
-                // limit.checkBorderDates(candidat, selected);
-
-                // preloaded.Add(location, candidat);
-                if (selected)
-                {
-                    standAlone.Add(location, candidat);
-                    candidat.select(selectMode.standAlone, limit);
-
-                }
-                else if (okDate && _control && !okTotalDuration)
-                {
-                    if (!limit.LoadDurationLimitAtteinte)
-                        log.log("loadCandidats duréée limite atteinte {0}", (currentDuration)); //.TotalMinutes.ToString("0"));
-                    limit.LoadDurationLimitAtteinte = true;
-                }
-
-                if (okDate && _control)
-                    currentDuration += candidat.Duration;
-                currentDurationVirtual += candidat.Duration;
-
             }
 
         }
-
-        private bool control(TrackInfoItunes track, bool select, bool real)
-        {
-            var loader = getLoader(track.Album);
-            return loader.control(track, select, real);
-        }
-
-        private FeedLimitItemLoader getLoader(string album)
-        {
-
-            FeedLimitItemLoader loader = null;
-            if (!loaders.ContainsKey(album))
-            {
-                loader = new FeedLimitItemLoader(limit, album, parent);
-                loaders.Add(album, loader);
-                if (parent.state == loadState.selection)
-                    loader.phase2();
-            }
-            else
-                loader = loaders[album];
-            return loader;
-        }
-
-        public void phase2()
-        {
-            currentDuration = new TimeSpan();
-            currentDurationVirtual = new TimeSpan();
-            currentContrib = new TimeSpan();
-            limit.DurationLimitAtteinte = false;
-            limit.ContributionLimitAtteinte = false;
-            limit.DurationFeedLimit = false;
-            limit.NbFeedLimit = false;
-            foreach (FeedLimitItemLoader loader in loaders.Values)
-                loader.phase2();
-        }
-
-        public void recordGuest(TrackInfoItunes track, LimitItem itemSource)
-        {
-            if (itemSource == limit)
-                return;
-            var location = track.Location;
-            if (string.IsNullOrEmpty(location))
-                return;
-            if (standAlone.ContainsKey(location))
-                return;
-            bool transmitTotal = limit.Dir.TransmitTotalGuest;
-            if (transmitTotal && legacy.ContainsKey(location))
-                return;
-            if (!transmitTotal && legacyRelax.ContainsKey(location))
-                return;
-
-
-            if (track.Duree <= trackDurationMax && track.Duree >= trackDurationMin) // && track.Pub >= dateMin)
-            {
-
-                if (transmitTotal)
-                    legacy.Add(location, track);
-                else
-                    legacyRelax.Add(location, track);
-            }
-        }
-
-        public void recordTrackFromChild(TrackInfoItunes track, LimitItem itemSource, bool transmitTotal)
-        {
-            var location = track.Location;
-            if (string.IsNullOrEmpty(location))
-                return;
-            if (standAlone.ContainsKey(location))
-                return;
-            if (transmitTotal && legacy.ContainsKey(location))
-                return;
-            if (!transmitTotal && legacyRelax.ContainsKey(location))
-                return;
-            if (track.Duree <= trackDurationMax && track.Duree >= trackDurationMin) // && track.Pub >= dateMin)
-            {
-                if (transmitTotal)
-                    legacy.Add(location, track);
-                else
-                    legacyRelax.Add(location, track);
-
-            }
-        }
-
-        public void Selection()
-        {
-            if (limit.Nb == 0 || limit.FeedDuration == 0 || limit.Duration == 0)
-                return;
-
-            var histo = limit.Dir.Histo;
-
-            var relax = legacyRelax.List;
-
-            if (histo)
-                relax.Sort(new PodCastComparer());
-            else
-                relax.Sort(new PodCastComparerInv());
-            selection(relax, false, false);
-
-            var list = legacy.List;
-            if (histo)
-                list.Sort(new PodCastComparer());
-            else
-                list.Sort(new PodCastComparerInv());
-
-            selection(list, false, true);
-
-
-
-            var list2 = standAlone.List;
-            if (histo)
-                list2.Sort(new PodCastComparer());
-            else
-                list2.Sort(new PodCastComparerInv());
-
-            selection(list2, true, true);
-
-        }
-
-        private void selection(ICollection<TrackInfoItunes> list, bool select, bool increment)
-        {
-            var duration = limit.Duration;
-            var durationMax = TimeSpan.FromMinutes(duration);
-            var contributionMax = TimeSpan.FromMinutes(limit.Contribution);
-
-
-       
-            foreach (TrackInfoItunes candidat in list)
-            {
-                var location = candidat.Location;
-                if (string.IsNullOrEmpty(location))
-                    continue;
-                if (selected.ContainsKey(location))
-                    continue;
-                // vérification à postériori par rapports aux différents niveaux
-                bool newContribut = candidat.Contribute;
-
-                var d = candidat.Pub; 
-                bool okDate =d <= limit.DateMax;
-                var loader = getLoader(candidat.Album);
-                bool _control = loader.control(candidat, select, okDate);
-
-                if (!loader.LoadEqSel && Conf.BorderVirtual)
-                {
-
-                    if (_control)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.selectedLight));
-                    else if (loader.EndByFd)
-                        limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.rejectedLight));
-
-                }
-
-                //if (!control(candidat, select, okDuration))
-                //    continue;
-
-                if (increment)
-                {
-
-
-
-
-
-                    if (okDate && _control)
-                        currentDuration += candidat.Duration;
-                    currentDurationVirtual += candidat.Duration;
-
-                    var newDuration = okDate && _control ? currentDuration : currentDurationVirtual;
-
-                    bool okTotalDuration = newDuration <= durationMax;
-
-
-                    //question fd
-                    if (!loader.LoadEqSel)
-                    {
-                        if (okDate && _control && okTotalDuration)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.selectedStrict));
-                        else if (okDate && okTotalDuration)
-                        {
-                            if (loader.EndByFd)
-                                limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.rejectedStrict));
-                        }
-                        //else if (Conf.BorderVirtual)
-                        //{
-                        //    if (_control)
-                        //        limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.selectedLight));
-                        //    else if (loader.EndByFd)
-                        //        limit.signal(new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.rejectedLight));
-                        //}
-
-
-                    }
-
-                    if (!loadEqSel)
-                    {
-                        // question d
-                        if (okDate && _control && okTotalDuration)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.selectedStrict));
-                        else if (okDate && _control)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedStrict));
-                        else if (Conf.BorderVirtual)
-                        {
-                            if (okTotalDuration)
-                                limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.selectedLight));
-                            else
-                                limit.signal(new TrackBorderItem(limit, candidat, borderType.d, newDuration, borderStatus.rejectedLight));
-                        }
-                       
-
-                        // question date
-                        if (okDate && _control && okTotalDuration)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.selectedStrict));
-                        else if (_control && okTotalDuration)
-                            limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.rejectedStrict));
-                        else if (Conf.BorderVirtual)
-                        {
-                            if (okDate)
-                                limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.selectedLight));
-                            else
-                                limit.signal(new TrackBorderItem(limit, candidat, borderType.maxdate, d, borderStatus.rejectedLight));
-                        }
-
-                    }
-
-
-
-                    ////question duree
-                    //if (okDate && _control) // || Conf.BorderVirtual)
-                    //{
-                    //    var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, okDuration, true); limit.signal(tb);
-                    //}
-                    //else if (Conf.BorderVirtual)
-                    //{
-                    //    var tb = new TrackBorderItem(limit, candidat, borderType.d, newDuration, okDuration, false); limit.signal(tb);
-                    //}
-
-                    ////question fd
-
-                    //if (_control)
-                    //{
-                    //    if (okDate && okDuration)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.selectedStrict); limit.signal(tb);
-                    //    }
-                    //    else if (Conf.BorderVirtual)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.selectedLight); limit.signal(tb);
-
-                    //    }
-                    //}
-                    //else //if (!loader.limit.NbFeedLimit)
-                    //{
-                    //    if (okDate && okDuration)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(true), borderStatus.rejectedStrict);
-                    //        limit.signal(tb);
-                    //    }
-                    //    else if (Conf.BorderVirtual)
-                    //    {
-                    //        var tb = new TrackBorderItem(limit, candidat, borderType.fd, loader.getCurrentDuration(okDate), borderStatus.rejectedLight);
-                    //        limit.signal(tb);
-                    //    }
-                    //}
-                    ////question date
-                    //if (_control && okDuration)
-                    //{
-                    //    var tb = new TrackBorderItem(limit, candidat, borderType.maxdate, candidat.Pub, okDate, true);
-                    //    limit.signal(tb);
-                    //}
-                    //else if (Conf.BorderVirtual)
-                    //{
-                    //    var tb = new TrackBorderItem(limit, candidat, borderType.maxdate, candidat.Pub, okDate, false);
-                    //    limit.signal(tb);
-                    //}
-
-
-
-                    //if (!_control && !Conf.BorderVirtual)
-                    //    continue;
-                    if (!okDate)
-                        continue;
-
-                    if (!_control)
-                        continue;
-                    if (!okTotalDuration)
-                    {
-                        if (!Logger.CreateNullLoggers)
-                            log.log("duration {0}", (newDuration)); //.TotalMinutes.ToString("0"));
-                        limit.DurationLimitAtteinte = true;
-                        break;
-                    }
-
-                    if (!newContribut)
-                    {
-
-                        currentContrib += candidat.Duration;
-                        if (currentContrib > contributionMax)
-                        {
-                            log.log("contribution {0}", (currentContrib)); //.TotalMinutes.ToString("0"));
-                            limit.ContributionLimitAtteinte = true;
-                            break;
-                        }
-                        use.Add(candidat);
-                    }
-
-                  
-
-
-
-
-
-                    // enregistrement pour stockage et stats
-                    limit.Dir.recordTrack(candidat, limit);
-
-                    selected.Add(location, candidat);
-
-                    if (select)
-                        exclu.Add(location, candidat);
-
-
-
-
-
-                }
-
-            }
-        }
-
-        public LimitItem Item { get { return limit; } }
-
     }
-}
-]]></content>
+    class Level
+    {
+        public double d;
+        public double inf;
+        public double sup;
+        public Level()
+        {
+        }
+        public Level(XmlElement node)
+        {
+            if (node == null)
+                return;
+            XMLTool xml = new XMLTool(node);
+            d = xml.getDoubleAttValue("d");
+            inf = xml.getDoubleAttValue("inf");
+            sup = xml.getDoubleAttValue("sup");
+            string str = xml.getAttValue("d");
+            if (!string.IsNullOrEmpty(str))
+                d = Convert.ToDouble(str);
+            str = xml.getAttValue("inf");
+            if (!string.IsNullOrEmpty(str))
+                inf = Convert.ToDouble(str);
+            str = xml.getAttValue("sup");
+            if (!string.IsNullOrEmpty(str))
+                sup = Convert.ToDouble(str);
+        }
+    }
+}]]></content>
   </file>
   <file path="\pdb.podcast\Tuning\Conf.cs">
     <content><![CDATA[using System;
@@ -3801,6 +2394,7 @@ namespace pdb.podcast.Tuning
             buildLimit(xDir, rootLimit, null);
 
             root = new DirConf(rootLimit, xDir.Attributes["name"].InnerText, null);
+            root.build(null, xDir); 
             buildDirChilds(xDir, root);
 
             XmlElement xMove = l_xmlConf.NodeLookUp("move");
@@ -3851,6 +2445,7 @@ namespace pdb.podcast.Tuning
 
         private void buildDirChilds(XmlNode node, DirConf parent)
         {
+            AutoBuilder.setClient(parent, node); 
             foreach (XmlNode child in node.ChildNodes)
             {
                 if (child.Name == "auto")
@@ -3858,6 +2453,7 @@ namespace pdb.podcast.Tuning
                     AutoBuilder.build(child, parent);
                 }
                 else
+                {
                     if (child.Name == "dir")
                     {
                         string name = (child.Attributes["name"].InnerText);
@@ -3891,6 +2487,7 @@ namespace pdb.podcast.Tuning
                         buildDirChilds(child, sub);
 
                     }
+                }
             }
 
         }
@@ -3900,6 +2497,8 @@ namespace pdb.podcast.Tuning
             string strTd = child.InnerText;
             if (!string.IsNullOrEmpty(strTd) && child.Name == "td")
                 item.Td = Convert.ToInt32(strTd);
+
+            AutoBuilder.setClient(item, child); 
 
             foreach (XmlNode sub in child.ChildNodes)
             {
@@ -4150,6 +2749,8 @@ namespace pdb.podcast.Tuning
                     _limitItem.setDateMax(currentDateMax, false); 
                     _limitItem.Contribution = currentContrib;
 
+                    
+
                     if (dir != null)
                     {
                         if (_limitItem.Duration == int.MaxValue)
@@ -4174,6 +2775,8 @@ namespace pdb.podcast.Tuning
                             _limitItem.setDateMax(dir.DateMax,true);
                     }
 
+                    _limitItem.setParent(dir); 
+
                 }
 
                 //}
@@ -4185,484 +2788,6 @@ namespace pdb.podcast.Tuning
         #endregion
         #endregion
 
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.podcast\Tuning\DirConf.cs">
-    <content><![CDATA[using System.Collections.Generic;
-using pdb.podcast.Report;
-using pdb.util;
-using pdb.podcast.Load;
-using pdb.podcast.Auto;
-
-namespace pdb.podcast.Tuning
-{
-    /// <summary>
-    /// Répertoire de pistes
-    /// </summary>
-    public class DirConf : LimitItemBase, IEnumerable<DirConf>, IBuilderSource, IBorder
-    {
-        /// <summary>
-        /// logger
-        /// </summary>
-        private Logger log;
-        /// <summary>
-        /// Limites associées au noeud
-        /// </summary>
-        private Limits limites;
-        /// <summary>
-        /// Nom du répertoire
-        /// </summary>
-        private string name = "";
-
-        /// <summary>
-        /// Sous-répertoires
-        /// </summary>
-        private List<DirConf> childs = new List<DirConf>();
-
-        /// <summary>
-        /// Répertoire parent
-        /// </summary>
-        private readonly DirConf parent;
-
-        /// <summary>
-        /// Stats
-        /// </summary>
-        private DirStat stat;
-        internal DirStat Stat { set { stat = value; } get { return stat; } }
-        internal TrackConteneur Conteneur { get { return conteneur; } }
-
-
-        /// <summary>
-        /// Ajout d'un sous-répertoire
-        /// </summary>
-        /// <param name="dir"></param>
-        public void addChild(DirConf dir)
-        {
-            childs.Add(dir);
-
-        }
-        public DirConf Parent
-        {
-            get { return parent; }
-        }
-
-        public bool isChildOf(DirConf dir)
-        {
-            if (dir == this)
-                return true;
-            if (parent == null)
-                return false;
-            return parent.isChildOf(dir);
-        }
-
-        /// <summary>
-        /// Conteneur des pistes
-        /// </summary>
-        private TrackConteneur conteneur;
-
-        private FeedsLoader loader;
-        internal FeedsLoader Loader
-        {
-            get
-            {
-                if (loader == null)
-                    loader = new FeedsLoader(this);
-                return loader;
-            }
-
-        }
-
-        /// <summary>
-        /// Enregistrement d'une piste
-        /// </summary>
-        /// <param name="track">piste</param>
-        /// <param name="provider">item de limite</param>
-        public void recordTrack(TrackInfoItunes track, LimitItem limit)
-        {
-            conteneur.recordTrack(track, limit);
-            if (parent != null)
-                parent.recordTrackFromChild(track, limit, this);
-        }
-
-        //public void recordTrackStandAlone(TrackInfoItunes track, LimitItem limit)
-        //{
-        //    conteneur.recordTrackStandAlone(track, limit);
-        //}
-
-        /// <summary>
-        /// Récupération de la liste des pistes
-        /// </summary>
-        /// <returns></returns>
-        public List<TrackInfoItunes> getListe()
-        {
-            var list = conteneur.getListe();
-            if (Histo)
-                list.Sort(new PodCastComparer());
-            else
-                list.Sort(new PodCastComparerInv());
-            log.log("");
-            log.log(getPath() + " getListe " + list.Count + " elt.");
-            foreach (TrackInfoItunes track in list)
-            {
-                log.log(track.ToString());
-            }
-            return list;
-        }
-
-        public void recordTrackFromChild(TrackInfoItunes track, LimitItem itemSource, DirConf dirSource)
-        {
-            if (dirSource.transmitToParent)
-                Loader.recordTrackFromChild(track, itemSource, dirSource.transmitTotal);
-            if (parent != null)
-                parent.recordTrackFromChild(track, itemSource, this);
-        }
-
-        /// <summary>
-        /// Abandonné
-        /// </summary>
-        public void TransmissionListToParent(TrackInfoItunes track)
-        {
-        }
-
-
-        //public void recordTrackForStats(TrackInfoItunes track, LimitItem provider)
-        //{
-        //    conteneur.recordTrackForStats(track, provider);
-        //}
-
-
-
-
-
-
-
-
-        public Limits Limites { get { return limites; } set { limites = value; } }
-
-
-        public DirConf(Limits limites, string name, DirConf parent)
-            : base()
-        {
-            this.name = name;
-            this.limites = limites;
-            limites.Parent = this;
-            this.parent = parent;
-            this.setParent(parent);
-            this.log = Logger.getLogger(getPath() + "\\dir", false);
-            if (parent == null)
-                conteneur = new TrackConteneur(this, null, log);
-            else
-                conteneur = new TrackConteneur(this, parent.conteneur, log);
-            transmitToParent = Conf.Transmit;
-            transmitTotal = Conf.TransmitTotal;
-            transmitTotalGuest = Conf.TransmitTotalGuest;
-            cascading = Conf.Cascading;
-
-        }
-
-        ///// <summary>
-        ///// durée max de chaque item
-        ///// </summary>
-        //public float Duration
-        //{
-        //    set { duration = value; }
-        //    get
-        //    {
-        //        if (parent == null || duration < int.MaxValue)
-        //        {
-        //            return duration;
-        //        }
-        //        return parent.Duration;
-
-        //    }
-        //}
-
-        /// <summary>
-        /// Répertoire de type Info
-        /// </summary>
-        public bool? Info
-        {
-            get
-            {
-                if (name == "info")
-                    return true;
-                if (name == "PAS Info")
-                    return false;
-                if (parent == null)
-                    return null;
-                return parent.Info;
-            }
-        }
-
-        /// <summary>
-        /// Répertoire de type rare
-        /// </summary>
-        public bool? Rare
-        {
-            get
-            {
-                if (name == "RARE")
-                    return true;
-                if (name == "PAS RARE")
-                    return false;
-                if (parent == null)
-                    return null;
-                return parent.Rare;
-            }
-        }
-
-        /// <summary>
-        /// Répertoire de type historique
-        /// </summary>
-        public bool Histo
-        {
-            get
-            {
-                if (name == "Histo")
-                    return true;
-                if (parent == null)
-                    return false;
-                return parent.Histo;
-            }
-        }
-
-        /// <summary>
-        /// Généralisation de l'historique à tous les noeuds enfant ou simple sélection nominative(par album)
-        /// </summary>
-        private bool? histoAll;
-        public bool? HistoAll
-        {
-            get
-            {
-                if (histoAll.HasValue)
-                    return histoAll;
-                if (parent == null)
-                    return null;
-                return parent.HistoAll;
-            }
-            set
-            {
-                histoAll = value;
-            }
-        }
-
-        private bool? cascading;
-        public bool Cascading
-        {
-            get
-            {
-                if (cascading.HasValue)
-                    return cascading != false;
-                if (false == histoAll)
-                    return false;
-                if (parent == null)
-                    return true;
-                return parent.Cascading;
-            }
-            set
-            {
-                cascading = value;
-            }
-        }
-
-        private bool? selectionPre;
-        public bool SelectionPre
-        {
-            get
-            {
-                if (selectionPre.HasValue)
-                    return selectionPre != false;
-                if (false == selectionPre)
-                    return false;
-                if (parent == null)
-                    return false;
-                return parent.SelectionPre;
-            }
-            set
-            {
-                cascading = value;
-            }
-        }
-
-        private bool transmitToParent = true;
-        public bool TransmitToParent { get { return transmitToParent; } set { transmitToParent = value; } }
-
-        private bool transmitTotal = true;
-        public bool TransmitTotal { get { return transmitTotal; } set { transmitTotal = value; } }
-
-        private bool transmitTotalGuest = true;
-        public bool TransmitTotalGuest { get { return transmitTotalGuest; } set { transmitTotalGuest = value; } }
-
-
-
-        /// <summary>
-        /// Arbre généalogique du répertoire permettant de situer les listes à modifier
-        /// </summary>
-        public List<string> Folders
-        {
-            get
-            {
-
-                if (parent == null)
-                    return new List<string> { name };
-                var list = parent.Folders;
-                list.Add(name);
-                return list;
-
-            }
-
-        }
-        public string Name { get { return name; } }
-
-        /// <summary>
-        /// Représentation du chemin depuis le root
-        /// </summary>
-        /// <returns></returns>
-        public string getPath()
-        {
-            if (parent == null)
-                return name;
-            string path = parent.getPath();
-            if (string.IsNullOrEmpty(path))
-                return name;
-            return path + "\\" + name;
-        }
-
-
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-            sb.Append(getPath());
-            //sb.Append(" ");
-            ////double size = total / (1024.0 * 1024.0);
-            ////sb.Append(size.ToString("0.##")); 
-            ////sb.AppendLine();
-            //sb.Append(limites.ToString());
-            return sb.ToString();
-            // return getPath() + " " + Environment.NewLine + limites.ToString();
-        }
-
-        public string display()
-        {
-            var sb = new StringBuilder();
-            sb.Append(getPath());
-            sb.AppendLine();
-            ////double size = total / (1024.0 * 1024.0);
-            ////sb.Append(size.ToString("0.##")); 
-            ////sb.AppendLine();
-            sb.Append(limites.ToString());
-            return sb.ToString();
-        }
-
-
-
-        public IEnumerator<DirConf> GetEnumerator()
-        {
-            return childs.GetEnumerator();
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return childs.GetEnumerator();
-        }
-
-        public List<LimitItem> getAllListItems()
-        {
-            var list = new List<LimitItem>();
-            buildListLimitItems(list);
-            return list;
-        }
-
-        protected void buildListLimitItems(ICollection<LimitItem> depot)
-        {
-            foreach (DirConf sub in this)
-                sub.buildListLimitItems(depot);
-            foreach (Limit limit in limites)
-            {
-                foreach (LimitItem item in limit.Items)
-                    depot.Add(item);
-            }
-        }
-
-        #region ITrackReport Members
-
-        /// <summary>
-        /// Rapport
-        /// </summary>
-        /// <param name="sb"></param>
-        public void rapport(DescBuilder sb)
-        {
-            sb.beginLine();
-
-            conteneur.rapport(sb);
-            sb.AppendLine();
-
-
-            if (!LimitItem.includeDetail)
-                return;
-            foreach (DirConf sub in childs)
-            {
-                var descBuilder = sb.createChild(sub.getPath());
-                sub.rapport(descBuilder);
-            }
-
-        }
-        public double getTotalSize()
-        {
-            return conteneur.getTotalSize();
-        }
-
-
-
-
-
-        #endregion
-
-        #region IBuilderSource
-        public List<TrackInfoItunes> getSelectedTracks()
-        {
-            var items = new List<TrackInfoItunes>(conteneur.Tracks.Total.Use.List);
-            if (Histo)
-                items.Sort(new PodCastComparer());
-            else
-                items.Sort(new PodCastComparerInv());
-            return items;
-        }
-
-        public string getEmpreinte()
-        {
-            return conteneur.Tracks.Total.Use.getEmpreinte();
-        }
-
-        #region IBorder
-        private List<IBorderTransmit> borderObs = new List<IBorderTransmit>();
-        public void addBorderObs(IBorderTransmit auto)
-        {
-            borderObs.Add(auto);
-        }
-        #endregion
-        #endregion
-
-        public void signal(TrackBorderItem tb)
-        {
-            if (false == HistoAll)
-                return; 
-            bool _checked = false;
-            foreach (IBorderTransmit border in borderObs)
-            {
-                border.signal(tb);
-                if (border.Checked)
-                    _checked = true; 
-            }
-
-            if (_checked)
-                return; 
-            if (parent != null)
-                parent.signal(tb);
-        }
     }
 }
 ]]></content>
@@ -4990,7 +3115,7 @@ namespace pdb.podcast.Tuning
             var limitiItem =  new LimitItem(limit) { Nb = this.nb,  Td = this.td, TdMin = this.tdMin, DateMin = this.dateMin, Contribution = this.contribution, Stat = this.stat };
             limitiItem.duration = this.duration;
             limitiItem.feedDuration = this.feedDuration;
-            limitiItem.dateMax = this.dateMax;
+            limitiItem.dateMax = this.dateMax;            
             return limitiItem; 
 
         }
@@ -5079,7 +3204,17 @@ namespace pdb.podcast.Tuning
         delegate void setI(int value);
         delegate void setd(DateTime value);
 
+        public bool isChildOf(LimitItemBase p)
+        {
+            if (p == null)
+                return true;
+            if (this == p)
+                return true;
+            if (parent == null)
+                return false;
+            return parent.isChildOf(p); 
 
+        }
 
         public void setParent(LimitItemBase parent)
         {
@@ -5291,7 +3426,6 @@ namespace pdb.podcast.Tuning
 }
 ]]></content>
   </file>
- 
   <file path="\pdb.util\TimeSpan.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -5302,32 +3436,45 @@ namespace pdb.util
 {
     public struct timeSpan
     {
-        public static DateTime Date0; 
+        public static DateTime Date0;
         private int sec;
+        public const int SEC_IN_MIN = 60;
+        public const int SEC_IN_HOUR = SEC_IN_MIN * 60;
+        public const int SEC_IN_DAY = SEC_IN_HOUR * 24;
 
-       
+
 
         private timeSpan(double sec)
         {
-            this.sec = (int)sec; 
+            this.sec = (int)Math.Round(sec);
         }
         public timeSpan(System.TimeSpan ts)
         {
-            this.sec = (int)ts.TotalSeconds; 
+            this.sec = (int)Math.Round(ts.TotalSeconds);
         }
 
-        public static timeSpan  operator + (timeSpan t1, System.TimeSpan ts2)
+        //public static timeSpan operator +(timeSpan t1, System.TimeSpan ts2)
+        //{
+        //    return new timeSpan(t1.sec + ts2.TotalSeconds);
+        //}
+
+        public static timeSpan operator +(timeSpan t1, timeSpan t2)
         {
-            return new timeSpan(t1.sec + ts2.TotalSeconds); 
+            return new timeSpan(t1.sec + t2.sec);
         }
 
-        public static timeSpan operator -(timeSpan t1, System.TimeSpan ts2)
+        //public static timeSpan operator -(timeSpan t1, System.TimeSpan ts2)
+        //{
+        //    return new timeSpan(t1.sec - ts2.TotalSeconds);
+        //}
+
+        public static timeSpan operator -(timeSpan t1, timeSpan t2)
         {
-            return new timeSpan(t1.sec - ts2.TotalSeconds);
+            return new timeSpan(t1.sec - t2.sec);
         }
         public static bool operator ==(timeSpan t1, timeSpan t2)
         {
-            return t1.sec == t2.sec; 
+            return t1.sec == t2.sec;
         }
 
         public static bool operator !=(timeSpan t1, timeSpan t2)
@@ -5348,21 +3495,27 @@ namespace pdb.util
         }
         public static bool operator <=(timeSpan t1, timeSpan t2)
         {
-            return t1.sec < t2.sec;
+            return t1.sec <= t2.sec;
         }
         public static timeSpan FromMinutes(double d)
         {
-            return new timeSpan(d * 60); 
+            var s = d * SEC_IN_MIN;
+            if (s > int.MaxValue)
+                return new timeSpan(int.MaxValue);
+            return new timeSpan(s);
         }
 
         public static timeSpan FromDays(double d)
         {
-            return new timeSpan(d*86400);
+            var s = d * SEC_IN_DAY;
+            if (s >= int.MaxValue)
+                return new timeSpan(int.MaxValue);
+            return new timeSpan(s);
         }
 
         public static timeSpan FromDate(DateTime t)
         {
-            return new timeSpan(t - Date0); 
+            return new timeSpan(t - Date0);
         }
 
         public double TotalMinute { get { return sec / 60.0; } }
@@ -5370,1081 +3523,40 @@ namespace pdb.util
 
         public override string ToString()
         {
-            int h = sec / (3600);
-            int r = sec - h * 3600;
-            int m = r /60;
-            r = r - 60 * m;
-            StringBuilder sb = new StringBuilder(); 
-           sb.Append (TotalMinute.ToString("#")); sb.Append(" "); 
-            if (h> 0)
-            {
-                sb.Append (h); sb.Append( " h "); 
-            }
-            if (m > 0)
-            {
-                sb.Append(m); sb.Append(" m "); 
-            }
-            sb.Append(r); sb.Append(" s "); 
+            int d = sec / SEC_IN_DAY;
+            int r = sec - d * SEC_IN_DAY;
+            int h = r / SEC_IN_HOUR;
+            r -= h * SEC_IN_HOUR;
+            int m = r / SEC_IN_MIN;
+            r -= SEC_IN_MIN * m;
+            StringBuilder sb = new StringBuilder();
+            sb.Append(TotalMinute.ToString("0.#")); sb.Append(" ");
 
-            return sb.ToString(); 
+            bool w = false; 
+            if (d > 0)
+            {
+                w = true; 
+                sb.Append(d); sb.Append("j ");
+            }
+            if (w || h > 0)
+            {
+                w = true; 
+                sb.Append(h); sb.Append("h ");
+            }
+            if (w||m > 0)
+            {
+                sb.Append(m); sb.Append("m ");
+            }
+            sb.Append(r); sb.Append("s");
+
+            return sb.ToString();
 
         }
-      
+
     }
 
 
 }
-]]></content>
-  </file>
-  <file path="\pieceDb.iT\TrackInfoItunes.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Xml;
-using iTunesLib;
-using pdb.it.persistance;
-using pdb.obj;
-using pdb.ordo;
-using pdb.util;
-using TimeSpan = System.TimeSpan; 
-
-namespace pdb.it
-{
-    public class TrackInfoItunes : ITrackInfoItunes
-    {
-        private static Logger log = Logger.getLogger("Track");
-        private static Loader loader;
-        public static Loader Loader { set { loader = value; } }
-        protected IITFileOrCDTrack track;
-        protected IITFileOrCDTrack tracktrack;
-
-        private TrackPlayListManager listManager = new TrackPlayListManager();
-        private string className = "";
-        // private int index;
-
-        private static BackGroundTaskMgr bg = BackGroundTaskMgr.getMgr("Track", 12);
-        private static BackGroundTaskMgr bgg = BackGroundTaskMgr.getMgr("Group", 12);
-        private static BackGroundTaskMgr bgGroupPrior = BackGroundTaskMgr.getMgr("PriorG", 11);
-        private static BackGroundTaskMgr bgGroup2nd = BackGroundTaskMgr.getMgr("SeconG", 13);
-        //private static BackGroundTaskMgr bgGroupDelta = BackGroundTaskMgr.getMgr("DeltaG", 11);
-        private static BackGroundTaskMgr bgFirstClass = BackGroundTaskMgr.getMgr("FirstClass", 10);
-        private static BackGroundTaskMgr bgSeconClass = BackGroundTaskMgr.getMgr("SeconClass", 10);
-        private static BackGroundTaskMgr bgClass = BackGroundTaskMgr.getMgr("Classement", 0);
-
-        // private TrackPersistantId persistentId;
-        private bool loaded;
-
-        // private ITrackNative local;
-        // public void registerDependency(ITrackNative local) { this.local = local; }
-        public void releaseDependency() { }
-
-        //public TrackPersistantId PersistantId { set { persistentId = value; } }
-
-
-
-        public class TrackClassNameEventArgs : EventArgs
-        {
-            public TrackClassNameEventArgs(string value) { this.Value = value; }
-            readonly public string Value;
-        }
-
-        public event EventHandler<TrackClassNameEventArgs> classNameChanged;
-
-        private void OnClassNameChange(string value) { if (classNameChanged != null) classNameChanged(this, new TrackClassNameEventArgs(value)); }
-
-#if VERIF
-        public void verif()
-        {
-            var toto = loader.getTrack(this);
-        }
-
-#endif
-
-        private int playCount = -1;
-        //public TrackInfoItunes(IITFileOrCDTrack track)
-        //{
-
-        //    this.track = track;
-        //    this.playedDate = track.PlayedDate;
-        //    this.duration = TimeSpan.FromSeconds(track.Duration);
-        //    this.comment = track.Comment;
-        //    this.grouping = track.Grouping;
-
-        //    Fill();
-
-
-        //}
-
-        private void Fill()
-        {
-            var track = this.track;
-            if (track == null)
-                track = this.tracktrack;
-            if (track == null)
-                return;
-
-            this.id = track.TrackDatabaseID;
-
-            this.artist = track.Artist;
-            this.album = track.Album;
-            this.name = track.Name;
-            this.trackNumber = track.TrackNumber;
-            this.rating = track.Rating;
-            this.year = track.Year;
-            // this.comment = track.Comment;
-            this.enabled = track.Enabled;
-            this._isPodCast = track.Podcast;
-            // this.playedDate = track.PlayedDate;
-            this.location = track.Location;
-            //this.grouping = track.Grouping;
-            this.playCount = track.PlayedCount;
-
-
-
-
-        }
-
-
-        //public TrackInfoItunes(XmlNode xTrack)
-        //{
-        //    build(xTrack);
-        //}
-
-        public TrackInfoItunes()
-        {
-        }
-
-        public void makeRead()
-        {
-            var track = this.track;
-            if (track == null)
-                track = tracktrack;
-            if (track == null)
-                return;
-            track.PlayedCount = 1;
-
-        }
-
-        public static int getID(XmlNode xTrack)
-        {
-
-            string key = "";
-            bool nextIgnore = false;
-
-            foreach (XmlNode node in xTrack.ChildNodes)
-            {
-                string value = node.InnerText;
-                if (node.Name == "key")
-                {
-                    key = value;
-                    if (key == "Podcast")
-                    {
-                        nextIgnore = true;
-                        continue;
-                    }
-
-                    if (key == "Disabled")
-                    {
-                        nextIgnore = true; continue;
-                    }
-                    continue;
-                }
-
-
-                if (nextIgnore)
-                {
-                    nextIgnore = false;
-                    continue;
-                }
-
-
-                if (string.IsNullOrEmpty(value))
-                    continue;
-
-                switch (key)
-                {
-                    case "Track ID": return Convert.ToInt32(value);
-
-
-                }
-            }
-            return -1;
-        }
-
-        public virtual void build(IITFileOrCDTrack track)
-        {
-
-            this.tracktrack = track;
-            this.track = track;
-            this.playedDate = track.PlayedDate;
-            this.duration = TimeSpan.FromSeconds(track.Duration);
-            this.comment = track.Comment;
-            this.grouping = track.Grouping;
-
-            Fill();
-        }
-
-        public virtual void build(XmlNode xTrack)
-        {
-            enabled = true;
-            string key = "";
-            bool nextIgnore = false;
-            rating = 0;
-
-            foreach (XmlNode node in xTrack.ChildNodes)
-            {
-                string value = node.InnerText;
-                if (node.Name == "key")
-                {
-                    key = value;
-                    if (key == "Podcast")
-                    {
-                        _isPodCast = true; nextIgnore = true;
-                        continue;
-                    }
-
-                    if (key == "Disabled")
-                    {
-                        enabled = false; nextIgnore = true; continue;
-                    }
-                    continue;
-                }
-
-
-                if (nextIgnore)
-                {
-                    nextIgnore = false;
-                    continue;
-                }
-
-
-                if (string.IsNullOrEmpty(value))
-                    continue;
-
-                switch (key)
-                {
-                    case "Track ID": id = Convert.ToInt32(value);
-                        break;
-                    case "Name": name = value; break;
-                    case "Artist": artist = value; break;
-                    case "Album": album = value; break;
-                    case "Total Time": duration = TimeSpan.FromMilliseconds(Convert.ToDouble(value)); break;
-                    case "Track Number": trackNumber = Convert.ToInt32(value); break;
-                    case "Comments": if (!loaded) comment = value; break;
-                    case "Play Date UTC": playedDate = Convert.ToDateTime(value); break;
-                    case "Rating": rating = Convert.ToInt32(value); break;
-                    case "Location": Uri uri = new Uri(value);
-                        location = uri.LocalPath.Replace(@"\\localhost\", "");
-                        break;
-                    case "Year": year = Convert.ToInt32(value); break;
-                    case "Grouping": if (!loaded) grouping = value; break;
-                    case "Kind": if (value.Equals("Flux audio sur Internet"))
-                            strange = true; break;
-                    case "Track Type": if (!"File".Equals(value)) strange = true; break;
-                    case "Play Count": playCount = Convert.ToInt32(value); break;
-
-                    case "Volume Adjustment": if (!loaded)
-                            volume = Convert.ToInt32(value);
-
-                        break;
-                }
-                //if (Name.Contains("Les cartes de la mémoire"))
-                //{
-                //    int toto = 0;
-                //}
-            }
-            loaded = true;
-        }
-
-
-
-        private int id;
-        //public int TrackId { get { return track.trackID; } }
-        public int ID { get { return id; } }
-
-        protected IITFileOrCDTrack TrackTrack
-        {
-            get
-            {
-                if (tracktrack == null)
-                {
-                    var _t = loader.getTrackTrack(this);
-                    if (_t != null)
-                    {
-                        tracktrack = _t.Track;
-                        // persistentId = _t.Id;
-                    }
-                }
-                return tracktrack;
-            }
-        }
-
-        protected IITFileOrCDTrack Track
-        {
-            get
-            {
-                if (track == null)
-                {
-                    var t = loader.getTrack(this);
-                    if (t != null)
-                    {
-                        track = t;
-                    }
-
-                }
-
-                if (track == null)
-                    return tracktrack;
-                return track;
-
-            }
-        }
-
-
-
-        #region ITrackNative Membres
-        private string artist = "";
-        public string Artist
-        {
-            get
-            {
-                return artist;
-            }
-            set
-            {
-                if (value == null || value.Equals(artist)) return;
-
-                bgClass.add(new Bgtask(() =>
-                {
-                    Track.Artist = value;
-                    artist = value;
-                }, this, "change artist from '{0}' to'{1}' {2}", artist, value, this
-                ));
-
-
-            }
-        }
-
-
-        private string album = "";
-        public string Album
-        {
-            get
-            {
-                return album;
-            }
-            set
-            {
-                if (value == null || value.Equals(album)) return;
-                bgClass.add(new Bgtask(() =>
-                {
-                    // log.log("change album from '{0}' to'{1}' {2}", album, value, this);
-                    Track.Album = value;
-                    album = value;
-                }, this,
-                "change album from '{0}' to'{1}' {2}", album, value, this
-                ));
-
-            }
-        }
-        private string name = "";
-        public string Name
-        {
-            get
-            {
-                return name;
-            }
-            set
-            {
-                if (value == null || value.Equals(name)) return;
-
-                var bgtaskName = new BgTaskName(this, string.Format("change name from '{0}' to '{1}' {2}", name, value, this), value);
-                bgClass.add(bgtaskName);
-
-                //bgClass.add(new Bgtask(() =>
-                //{
-                //    // log.log("change name from '{0}' to'{1}' {2}", name, value, this);
-                //    Track.Name = value;
-                //    name = value;
-                //}, this,
-                //   "change name from '{0}' to'{1}' {2}", name, value, this));
-            }
-        }
-        private int trackNumber;
-        public int TrackNumber
-        {
-            get
-            {
-                return trackNumber;
-            }
-            set
-            {
-                if (trackNumber != value)
-                {
-                    bgClass.add(new Bgtask(() =>
-                    {
-                        //    log.log("change trackNumber from '{0}' to'{1}' {2}", trackNumber, value, this);
-                        Track.TrackNumber = value;
-                        trackNumber = value;
-                    }, this,
-                    "change trackNumber from '{0}' to'{1}' {2}", trackNumber, value, this));
-                }
-            }
-        }
-        private int rating = 0;
-        public int Rating
-        {
-            get
-            {
-                return rating;
-            }
-            set
-            {
-                if (rating != value)
-                {
-                    bgClass.add(new Bgtask(() =>
-                    {
-                        //     log.log("change rating from '{0}' to'{1}' {2}", rating, value, this);
-                        Track.Rating = value;
-                        rating = value;
-                    }, this,
-                     "change rating from '{0}' to'{1}' {2}", rating, value, this));
-                }
-            }
-        }
-        private int year;
-        public int Year
-        {
-            get
-            {
-                return year;
-            }
-            set
-            {
-                if (year != value)
-                {
-                    bgClass.add(new Bgtask(() =>
-                    {
-                        // log.log("change year from '{0}' to'{1}' {2}", year, value, this);
-                        Track.Year = value;
-                        year = value;
-                    }, this,
-                    "change year from '{0}' to'{1}' {2}", year, value, this));
-
-                }
-            }
-        }
-        private string comment = "";
-        private bool firstClass;
-        public bool FirstClass { get { return firstClass; } set { firstClass = value; } }
-        // public void makeFirstClass() { firstClass = true; }
-        public string Comment
-        {
-            get
-            {
-                return comment;
-            }
-            set
-            {
-                firstClass = false;
-                if (comment != value)
-                {
-                    try
-                    {
-                        var tab0 = comment.Split(' ');
-                        var tab1 = value.Split(' ');
-
-                        var count0 = tab0.GetLength(0);
-                        var count1 = tab1.GetLength(0);
-
-                        if (count0 != count1)
-                            firstClass = true;
-
-                        else if (comment.Length > 3)
-                        {
-                            string org = tab0[count0 - 1];
-                            string fin = tab1[count1 - 1];
-
-                            firstClass = !org.Equals(fin);
-                        }
-                    }
-
-                    catch
-                    {
-                        firstClass = true;
-                    }
-
-                    var sb = new StringBuilder();
-                    sb.Append(ClassName);
-                    sb.Append(".");
-                    sb.Append((Rating / 20).ToString());
-
-                    var task = new BgTaskComment(this, string.Format("{0} change comment from '{1}' to '{2}' {3}", sb.ToString(), comment, value, this), value);
-
-                    if (firstClass)
-                        bgFirstClass.add(task);
-                    else
-                        bg.add(task);
-                    // comment = value;
-                }
-            }
-        }
-        private bool enabled;
-        public bool Enabled
-        {
-            get
-            {
-                return enabled;
-            }
-            set
-            {
-                if (enabled != value)
-                {
-                    bgClass.add(new BgTaskCheck(this, "uncheck " + this));
-
-                    //bg.add(new Bgtask(() =>
-                    //{
-                    //    // log.log("change enbled from '{0}' to'{1}' {2}", enabled, value, this);
-                    //    Track.Enabled = value;
-                    //    enabled = value;
-                    //}, this,
-                    //"change enabled from '{0}' to'{1}' {2}", enabled, value, this));
-                }
-            }
-        }
-        private bool _isPodCast;
-        public bool isPodcast
-        {
-            get { return _isPodCast; }
-        }
-        private DateTime playedDate;
-        public DateTime PlayedDate
-        {
-            get
-            {
-                if (playCount > 0)
-                    return playedDate;
-                return DateTime.MinValue;
-            }
-        }
-        protected string location;
-        public string Location
-        {
-            get { return location; }
-        }
-
-        private TimeSpan duration;
-        public TimeSpan Duration
-        {
-            get { return duration; }
-            set { throw new NotImplementedException();  }
-        }
-
-
-        private string artWork;
-        public string ArtWork
-        {
-            get
-            {
-                return artWork;
-            }
-            set
-            {
-                if (value != artWork)
-                {
-                    log.log("change ArtWork from {0}  {1}  {2}", artWork, value, this);
-                    IITArtworkCollection artworks = Track.Artwork;
-                    string path = Track.Location + Path.DirectorySeparatorChar + artWork;
-                    if (artworks == null || artworks.Count == 0)
-                    {
-                        Track.AddArtworkFromFile(path);
-                    }
-                    else
-                    {
-                        artworks[0].SetArtworkFromFile(path);
-                    }
-                    artWork = value;
-
-                }
-
-            }
-        }
-
-        private string grouping = "";
-        public string Grouping
-        {
-            get
-            {
-                return grouping;
-            }
-
-
-        }
-
-        public void setGrouping(string value, bool prior)
-        {
-            if (grouping != value)
-            {
-                bool _delta = false;
-                // bool _deltaRank = false; 
-                string rankAlbum = "";
-                string equivAlbum = "";
-                if (value != null)
-                {
-                    string[] org = grouping.Split(' ');
-                    string[] _new = value.Split(' ');
-
-                    int count = org.GetLength(0);
-                    if (_new.GetLength(0) != count || count < 3)
-                        _delta = true;
-                    else
-                    {
-                        rankAlbum = _new[1];
-                        equivAlbum = _new[2];
-                        if (!org[1].Equals(_new[1]))
-                        {
-                            _delta = true;
-                        }
-                    }
-                }
-
-                var sb = new StringBuilder();
-                sb.Append(rankAlbum);
-                sb.Append(" ");
-                sb.Append(equivAlbum);
-                sb.Append(" ");
-                sb.Append(album);
-                //sb.Append(ClassName);
-                //sb.Append(".");
-                //sb.Append((Rating / 20).ToString());
-
-                var task = new BgTaskGrouping(this, string.Format("{0} change grouping from '{1}' to'{2}' {3}", sb.ToString(), grouping, value, this), value);
-
-                if (firstClass)
-                {
-                    bgSeconClass.add(task);
-                    return;
-                }
-
-                //if (prior)
-                //{
-                //    bgGroupPrior.add(task);
-                //    return;
-                //}
-
-
-
-                if (_delta)
-                {
-                    if (prior)
-                        bgGroupPrior.add(task);
-                    else
-                        bgGroup2nd.add(task);
-                    return;
-                }
-
-                bgg.add(task);
-
-                //if (_delta)
-                //    bgGroupDelta.add(task);
-                //else
-                //{
-                //    bgg.add(task);
-                //}
-                //  grouping = value;
-            }
-        }
-
-
-
-        private int volume;
-        public int Volume
-        {
-            get { return volume; }
-            set
-            {
-                if (volume != value)
-                {
-                    int _value = loader.VolumeMin;
-                    if (value > _value)
-                        _value = value;
-                    bgClass.add(new Bgtask(() =>
-                    {
-                        // log.log("change year from '{0}' to'{1}' {2}", year, value, this);
-                        Track.VolumeAdjustment = _value;
-                        volume = _value;
-                    }, this,
-                    "change volume from '{0}' to '{1}' {2}", volume, _value, this));
-
-                }
-            }
-
-        }
-
-        #endregion
-
-        private bool strange = false;
-        public bool Strange { get { return strange; } }
-        public override string ToString()
-        {
-            return location;
-        }
-
-
-
-        public List<CPlayList> PLayLists
-        {
-            get { return listManager.PLayLists; }
-        }
-
-        public List<CPlayList> ClassPlayLists
-        {
-            get { return listManager.ClassPlayLists; }
-        }
-
-        public void AddPlayList(CPlayList a_playList)
-        {
-            listManager.AddPlayList(a_playList);
-            // className = listManager.ClassName;
-        }
-
-        public void removePlayList(CPlayList list)
-        {
-            listManager.removePlayList(list);
-            // className = listManager.ClassName;
-        }
-
-
-        public string ClassName
-        {
-            get
-            {
-                className = listManager.ClassName;
-                return className;
-            }
-            set
-            {
-                className = listManager.ClassName;
-                if (className != value)
-                {
-                    bgClass.add(new Bgtask(() =>
-                    {
-                        loader.setClassPlayList(this, className, value);
-                        className = value;
-                    }, this,
-                   "change className from '{0}' to'{1}' {2}", className, value, this));
-
-
-                    //log.log("change Class Name from '{0}' to'{1}' {2}", className, value, this);
-                    //className = value;
-                    //OnClassNameChange(value);
-                }
-            }
-        }
-        public override bool Equals(object obj)
-        {
-            if (string.IsNullOrEmpty( Location))
-                return false;
-            if (obj is IFile)
-            {
-                IFile other = obj as IFile;
-                return Location.Equals(other.Location);
-            }
-            return false;
-        }
-        public override int GetHashCode()
-        {
-            if (Location.isNullorEmpty()) return -1;
-            return Location.GetHashCode();
-        }
-
-        public void Delete()
-        {
-            if (tracktrack != null)
-                tracktrack.Delete();
-            else
-                bgClass.add(new BgTaskDeleteTrackTrack(this, "delete Track " + this));
-        }
-
-        private class Bgtask : pdb.ordo.BgTask
-        {
-            TrackInfoItunes info;
-            public Bgtask(execDel impl, TrackInfoItunes info, string format, params object[] args)
-                : base(impl, format, args)
-            { this.info = info; }
-
-            public override void exec()
-            {
-                base.exec();
-                if (!success && info.track != null)
-                {
-                    info.invalidationTrack();
-                }
-            }
-
-
-
-        }
-        private class BgTaskDeleteTrackTrack : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-            public BgTaskDeleteTrackTrack(TrackInfoItunes info, string desc)
-                : base(desc)
-            {
-                this.info = info;
-                foreach (PlayList pl in info.PLayLists)
-                {
-                    var tInList = pl.getPieceInList(info) as TrackInList;
-                    //loader.removeTrackInList(pl.getPath(), tInList,pl._pl); 
-                }
-
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.TrackTrack;
-                    if (_track == null)
-                    {
-                        success = false;
-                        return;
-                    }
-
-                    _track.Delete();
-                    loader.removeTrack(info);
-                    success = true;
-                }
-                catch (Exception e)
-                { log.log("NIET " + e.Message); }
-
-                if (!success && info.tracktrack != null)
-                {
-                    info.invalidationTrack();
-                    //Thread.Sleep(1000 * Try); 
-                }
-
-            }
-        }
-
-        private class BgTaskComment : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-            string value;
-            public BgTaskComment(TrackInfoItunes info, string desc, string value)
-                : base(desc)
-            {
-                this.info = info;
-                this.value = value;
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.Track;
-                    if (_track == null)
-                    {
-                        success = false;
-                        // Thread.Sleep(1000 * Try); 
-                        return;
-                    }
-
-                    _track.Comment = value;
-                    info.comment = value;
-                    success = true;
-                }
-                catch (Exception e)
-                { log.log("NIET " + e.Message); }
-
-                if (!success && info.track != null)
-                {
-                    info.invalidationTrack();
-                    //Thread.Sleep(1000 * Try); 
-                }
-
-            }
-        }
-
-
-        private class BgTaskName : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-            string value;
-            public BgTaskName(TrackInfoItunes info, string desc, string value)
-                : base(desc)
-            {
-                this.info = info;
-                this.value = value;
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.Track;
-                    if (_track == null)
-                    {
-                        success = false;
-                        // Thread.Sleep(1000 * Try); 
-                        return;
-                    }
-
-                    _track.Name = value;
-                    info.name = value;
-                    success = true;
-                }
-                catch (Exception e)
-                { log.log("NIET " + e.Message); }
-
-                if (!success && info.track != null)
-                {
-                    info.invalidationTrack();
-                    //Thread.Sleep(1000 * Try); 
-                }
-
-            }
-        }
-
-        public void invalidationTrack()
-        {
-
-            loader.invalidationTrack(this);
-            track = null;
-            //  persistentId = null; 
-        }
-
-
-        private class BgTaskGrouping : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-            string value;
-            public BgTaskGrouping(TrackInfoItunes info, string desc, string value)
-                : base(desc)
-            {
-                this.info = info;
-                this.value = value;
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.Track;
-                    if (_track == null)
-                    {
-                        success = false;
-                        //  Thread.Sleep(1000 * Try); 
-                        return;
-                    }
-
-                    _track.Grouping = value;
-                    info.grouping = value;
-                    success = true;
-                }
-                catch (Exception e)
-                { log.log("NIET " + e.Message); }
-
-                if (!success && info.track != null)
-                {
-                    info.invalidationTrack();
-                    //   Thread.Sleep(1000 * Try); 
-                }
-
-            }
-        }
-
-
-
-        private class BgTaskCheck : pdb.ordo.BgTaskBase
-        {
-            TrackInfoItunes info;
-
-            public BgTaskCheck(TrackInfoItunes info, string desc)
-                : base(desc)
-            {
-                this.info = info;
-            }
-
-            public override void exec()
-            {
-                try
-                {
-                    var _track = info.Track;
-                    if (_track == null)
-                    {
-                        success = false;
-                        return;
-                    }
-
-                    _track.Enabled = false;
-                    success = true;
-                }
-                catch (Exception e)
-                { log.log("NIET " + e.Message); }
-
-                if (!success && info.track != null)
-                {
-                    info.invalidationTrack();
-                }
-
-            }
-        }
-
-
-
-
-        private TrackInfoItunes parent;
-
-        public virtual ITrackInfoItunes LinkedTo
-        {
-            get
-            {
-                return parent;
-            }
-            set
-            {
-                parent = value as TrackInfoItunes;
-            }
-        }
-
-
-        public int PieceId
-        {
-            get { return -1; }
-        }
-
-
-        public int PieceParentId
-        {
-            get { return -1; }
-            set { }
-        }
-
-
-        #region key
-        private TrackIdentity key;
-        public TrackIdentity Key
-        {
-            get
-            {
-                if (key == null)
-                    keyGener();
-                return key;
-            }
-        }
-        private void keyGener()
-        {
-            key = new TrackIdentity(this);
-        }
-
-        #endregion
-
-    }
-}
-
-
-
 ]]></content>
   </file>
 </db>
