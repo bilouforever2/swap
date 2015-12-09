@@ -1,0 +1,4501 @@
+<db path="C:\dvlp\tfs\Main\Commun\Commun.Mapping.Sp">
+  <file path="\CAMLQueryLoader.cs">
+    <content><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using System.Xml;
+
+
+namespace Commun.Mapping.Sp
+{
+    public class CAMLQueryLoader
+    {
+        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger("Error");
+
+        private const String CAML_QUERIES_FILE_ARG = "caml_queries_file";
+        private const String QUERIES_XPATH = "//dc_queries/dc_query";
+        private const String QUERY_NAME_ATTR = "name";
+
+        public static Dictionary<String, String> camlQueries = new Dictionary<String, String>();
+
+        private static string camlQueriesFilePath; 
+
+        public static void init(String camlQueriesFilePath)
+        {
+            CAMLQueryLoader.camlQueriesFilePath = camlQueriesFilePath; 
+        }
+
+        public static void loadQueries()
+        {
+            
+            logger.Info("Début du chargement des requêtes CAML");
+
+            //Chargement du fichier XML de paramétrage
+            XmlDocument xmlDoc = new XmlDocument();
+            try
+            {
+                xmlDoc.Load(camlQueriesFilePath);
+            }
+            catch (Exception ex)
+            {
+                logger.Error("impossible de récupérer les requêtes CAML", ex);
+                throw;
+            }
+
+            //Parcours de la liste des requêtes
+            XmlNodeList queriesNodeList = xmlDoc.SelectNodes("//dc_queries/dc_query");
+            foreach (XmlNode queryNode in queriesNodeList)
+            {
+                if (queryNode.Attributes[QUERY_NAME_ATTR] == null)
+                {
+                    //logHelper.Error("Nom de la requête CAML non défini");
+                    continue;
+                }
+
+                String camlQueryName = queryNode.Attributes[QUERY_NAME_ATTR].Value;
+                if (camlQueryName == null)
+                {
+                    //logHelper.Error("Nom de la requête CAML non défini");
+                    continue;
+                }
+
+
+                StringBuilder builder = new StringBuilder();
+                foreach (XmlNode subQueryNode in queryNode.ChildNodes)
+                    builder.Append(subQueryNode.OuterXml);
+
+                String camlQuery = builder.ToString();
+                if (camlQuery == null || camlQuery.Length == 0)
+                {
+                    //logHelper.Error("Requête CAML vide");
+                    continue;
+                }
+
+                camlQueries.Add(camlQueryName, camlQuery);
+            }
+            logger.Info("Fin du chargement des requêtes CAML");
+        }
+
+        public static void reloadQueries()
+        {
+            if (camlQueries.Count != 0)
+                camlQueries.Clear();
+            loadQueries();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="queryName"></param>
+        /// <returns></returns>
+        public static String getQuery(String queryName)
+        {
+            if (string.IsNullOrEmpty(queryName))
+                return "<View><Query></Query></View>"; 
+            return camlQueries[queryName];
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="QueryName"></param>
+        /// <param name="queryParams"></param>
+        /// <returns></returns>
+        public static string getQuery(String QueryName, Hashtable queryParams)
+        {
+            String query = camlQueries[QueryName];
+            foreach (string key in queryParams.Keys)
+            {
+                if (queryParams[key] != null)
+                    query = query.Replace(key, queryParams[key].ToString());
+                else query = query.Replace(key, "");
+            }
+            return query;
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\Commun.Mapping.Sp.csproj">
+    <content><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{93C3CB24-5467-4504-B561-AF1EBC4A9F30}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Commun.Mapping.Sp</RootNamespace>
+    <AssemblyName>Commun.Mapping.Sp</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net">
+      <HintPath>..\..\Lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SharePoint.Client">
+      <HintPath>..\..\Lib\Microsoft.SharePoint.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SharePoint.Client.Runtime">
+      <HintPath>..\..\Lib\Microsoft.SharePoint.Client.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ContextContainer.cs" />
+    <Compile Include="Generic\FileItem.cs" />
+    <Compile Include="Generic\SpGeneric.cs" />
+    <Compile Include="Generic\SpItemReader.cs" />
+    <Compile Include="Generic\SpItemWriter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sharepoint.cs" />
+    <Compile Include="CAMLQueryLoader.cs" />
+    <Compile Include="SpAdminMaping.cs" />
+    <Compile Include="SpClientMapping.cs" />
+    <Compile Include="SpMapping.cs" />
+    <Compile Include="Utils\SpObject.cs" />
+    <Compile Include="Utils\Users.cs" />
+    <Compile Include="Utils\UtilCredential.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Socle\SocleCS_2010.csproj">
+      <Project>{99BA0EE6-983A-47E7-8BBB-DE651FAC9FEE}</Project>
+      <Name>SocleCS_2010</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Commun.Application\Commun.Application_2010.csproj">
+      <Project>{75C14D81-BF6E-4FBA-992B-B89E7C83E70F}</Project>
+      <Name>Commun.Application_2010</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Commun.Mapping\Commun.Mapping_2010.csproj">
+      <Project>{40D4632B-435E-4794-96E1-D0C6AADA4964}</Project>
+      <Name>Commun.Mapping_2010</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Commun.Value\Commun.Value_2010.csproj">
+      <Project>{85C2B11E-CEB1-4025-98AD-8D6506BB9BB9}</Project>
+      <Name>Commun.Value_2010</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>]]></content>
+  </file>
+  <file path="\ContextContainer.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.SharePoint.Client;
+using Commun.Mapping.Sp.Utils;
+using log4net;
+
+namespace Commun.Mapping.Sp
+{
+    
+
+    /// <summary>
+    /// Gère un ou deux contextes Sharepoint Client
+    /// </summary>
+    public class ContextContainer : IDisposable
+    {
+        private static readonly ILog logError = LogManager.GetLogger("Error");
+
+        private ClientContext _standard;
+        private ClientContext _admin;
+
+        public ContextContainer(string url, bool admin)
+        {          
+            setContext(url, admin);
+        }
+
+
+
+        /// <summary>
+        /// Crée un nouveau contexte si besoin
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="newAdmin"></param>
+        /// <returns>Flag non ==> contexte partagé (pas de création) / oui => contexte créé, par partagé</returns>
+        public bool createIfNecessary(string url, bool newAdmin)
+        {          
+            ClientContext newContext = getContext(newAdmin);
+
+            if (newContext == null)
+            {
+                // Création d'un nouveau contexte
+                setContext(url, newAdmin);
+                return true; 
+            }
+
+            return false; 
+
+        }
+
+        public void CopyAdminContextToStandartContext()
+        {
+            if (_admin == null)
+            {
+                throw new ApplicationException("il doit y avoir un contexte admin"); 
+            }
+
+            _standard = _admin; 
+        }
+
+        //public ClientContext Standart { get { return _standard; } }
+        //public ClientContext Admin { get { return _admin; } }
+        public ClientContext getContext(bool admin)
+        {
+            if (admin)
+                return _admin;
+            return _standard;
+        }
+
+        private void setContext(string url, bool admin)
+        {
+            ClientContext clientContext = new ClientContext(url);
+            clientContext.setCredential(admin);
+            if (admin)
+                _admin = clientContext;
+            else
+                _standard = clientContext;
+
+        }
+
+
+        private bool _disposed; 
+        /// <summary>
+        /// Libération des ressources
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+
+            // Use SupressFinalize in case a subclass 
+            // of this type implements a finalizer.
+            GC.SuppressFinalize(this);
+        }
+
+      
+
+        protected virtual void Dispose(bool disposing)
+        {
+            // If you need thread safety, use a lock around these  
+            // operations, as well as in your methods that use the resource.            
+            if (!_disposed)
+            {
+                lock (this)
+                {
+                    if (!_disposed)
+                    {
+                        if (disposing)
+                        {
+                            if (_standard != null)
+                            {
+                                try
+                                {
+                                    _standard.Dispose();
+                                }
+                                catch (Exception ex1)
+                                {
+                                    logError.Error("Libération du contexte standard", ex1); 
+                                }
+                            }
+
+                            if (_admin != null)
+                            {
+                                try
+                                {
+                                    _admin.Dispose();
+                                }
+                                catch (Exception ex2)
+                                {
+                                    logError.Error("Libération du contexte standard", ex2);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Indicate that the instance has been disposed.
+                _standard = null;
+                _admin = null; 
+                _disposed = true;
+
+            }
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\Sharepoint.cs">
+    <content><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
+using Commun.Mapping.Sp.Utils;
+using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client.Utilities;
+using Group = Microsoft.SharePoint.Client.Group;
+
+namespace Commun.Mapping.Sp
+{
+    public class Sharepoint
+    {
+        /// <summary>
+        /// récuperer une liste sharepoint 
+        /// </summary>
+        /// <param name="clientContext"></param>
+        /// <param name="listeName"></param>
+        /// <returns></returns>
+        public static List getList(ClientContext clientContext, string listeName)
+        {
+            Web web = clientContext.Site.RootWeb;
+            List list = web.Lists.GetByTitle(listeName);
+            return list;
+        }
+
+        /// <summary>
+        /// insertion d'une liste dans une liste Sharepoint
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="listName"></param>
+        /// <param name="SPUrl"></param>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static Boolean insertMetaData<T>(String listName, ClientContext clientContext, T obj, ListItem listItem)
+        {
+
+            clientContext.setCredential();
+            List list = clientContext.Web.Lists.GetByTitle(listName);
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            if (listItem == null) //insertion
+                listItem = list.AddItem(itemCreateInfo);
+            updateItem(clientContext, listItem, obj);
+            clientContext.ExecuteQuery();
+            return true;
+        }
+        private static void updateItem(ClientContext clientContext, ListItem listItem, object obj)
+        {
+            foreach (PropertyInfo propertyinfo in obj.GetType().GetProperties())
+            {
+                if (propertyinfo.PropertyType.Name.Contains("Stream")) continue;
+                object value = propertyinfo.GetValue(obj, null);
+                listItem[propertyinfo.Name] = value.toObject();
+            }
+            listItem.Update();
+        }
+
+        /// <summary>
+        /// mise à jour si l'item existe sinon on le rajoute
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="obj"></param>
+        /// <param name="listItem"></param>
+        public static void insertOrUpdate(List list, ClientContext clientContext, object obj, ListItem listItem)
+        {
+
+            clientContext.setCredential();
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            if (listItem == null) //insertion
+                listItem = list.AddItem(itemCreateInfo);
+            updateItem(clientContext, listItem, obj);
+            clientContext.ExecuteQuery();
+
+        }
+        [Obsolete("utiliser SpItemWriter")]
+        public static void insertItem(List list, ClientContext clientContext, object obj)
+        {
+            var list_ = new ArrayList { obj };
+            insertItems(list, clientContext, list_);
+        }
+
+        [Obsolete("utiliser SpItemWriter")]
+        /// <summary>
+        /// Ajout générique d'une liste d'items par lot de 50. 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="listObj"></param>
+        /// <remarks>Ne prend pas en charge les attributs</remarks>
+        public static void insertItems(List list, ClientContext clientContext, IEnumerable listObj)
+        {
+
+            clientContext.setCredential();
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            const int NB = 50;
+            int nb = 0;
+            foreach (object obj in listObj)
+            {
+                var listItem = list.AddItem(itemCreateInfo);
+                updateItem(clientContext, listItem, obj);
+                nb++;
+                if (nb >= NB)
+                {
+                    clientContext.ExecuteQuery();
+                    nb = 0;
+                }
+            }
+            clientContext.ExecuteQuery();
+
+        }
+
+        /// <summary>
+        /// Charge le fichier attaché au dossier
+        /// </summary>
+        /// <param name="clientContext">Contexte du client</param>
+        /// <param name="dossierItem">Item SharePoint du dossier</param>
+        public static void loadItemFile(ClientContext clientContext, ListItem dossierItem)
+        {
+            clientContext.Load(dossierItem.File);
+
+            try
+            {
+                clientContext.ExecuteQuery();
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+
+        public static ListItemCollection getFolderItem(ClientContext clientContext, List lib, string folderName)
+        {
+            Web web = clientContext.Web;
+            clientContext.Load(web);
+
+            clientContext.Load(lib, x => x.RootFolder.Folders.Include(f => f, f => f.Name));
+
+            var query = new CamlQuery();
+            query.ViewXml = "<View Scope=\"RecursiveAll\"> " +
+                                                "<Query>" +
+                                                    "<Where>" +
+                                                        "<And>" +
+                                                            "<Eq>" +
+                                                                "<FieldRef Name=\"FSObjType\" />" +
+                                                                "<Value Type=\"Integer\">1</Value>" +
+                                                            "</Eq>" +
+                                                            "<Eq>" +
+                                                                "<FieldRef Name=\"FileLeafRef\"/>" +
+                                                                "<Value Type=\"Text\">" + folderName + "</Value>" +
+                                                            "</Eq>" +
+                                                        "</And>" +
+                                                    "</Where>" +
+                                            "</Query>" +
+                                            "</View>";
+            ListItemCollection folderItems = lib.GetItems(query);
+            clientContext.Load(folderItems, x => x, x => x.Include(item => item.RoleAssignments.Include(r => r)));
+            clientContext.ExecuteQuery();
+            return folderItems;
+
+        }
+
+        #region download
+        public static Stream DownloadFileFromLibrary(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential();
+                return DownloadFileFromLibrary(item, clientContext);
+            }
+        }
+
+        public static Stream DownloadFileFromLibraryWithAdminAccount(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential(true);
+                return DownloadFileFromLibrary(item, clientContext);
+            }
+        }
+
+        public static Stream DownloadFileFromLibrary(ListItem item, ClientContext clientContext)
+        {
+            var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, item["FileRef"].ToString());
+            var stream = fileInformation.Stream;
+            return stream;
+        }
+        //<summary>
+        // Complément de la méthode précédente
+        //Passage par un Memory stream
+        //Stream direct ne permet pas le seek donc non gérable par la méthode Workbooks.Open de Syncfusion 
+        //</summary>
+        public static Stream DownloadMemStreamFileFromLibrary(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential();
+                return DownloadMemStreamFileFromLibrary(item, clientContext);
+            }
+        }
+
+        public static Stream DownloadMemStreamFileFromLibrary(ListItem item, ClientContext clientContext)
+        {
+
+            var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, item["FileRef"].ToString());
+
+            Stream stream = fileInformation.Stream;
+            MemoryStream memStr = new MemoryStream();
+            const int BUF = 4096;
+            byte[] buffer = new byte[BUF];
+            int nb = 0;
+            while ((nb = stream.Read(buffer, 0, BUF)) > 0)
+            {
+                memStr.Write(buffer, 0, nb);
+            }
+            memStr.Flush();
+            memStr.Position = 0;
+            return memStr;
+
+        }
+
+        # endregion
+
+        /// <summary>
+        /// Execution d'une requête unique, quand on n'a pas besoin de conserver le contexte
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="listName"></param>
+        /// <param name="queryName"></param>
+        /// <returns></returns>
+        public static ListItemCollection executeSingleQuery(String url, String listName, String queryName)
+        {
+            return executeSingleQuery(url, listName, queryName, null);
+        }
+
+        /// <summary>
+        /// Execution d'une requête unique, quand on n'a pas besoin de conserver le contexte
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="listName"></param>
+        /// <param name="queryName"></param>
+        /// <param name="queryParams"></param>
+        /// <returns></returns>
+        public static ListItemCollection executeSingleQuery(String url, String listName, String queryName, Hashtable queryParams)
+        {
+            using (ClientContext clientContext = new ClientContext(url))
+            {
+                clientContext.setCredential(true);
+                Microsoft.SharePoint.Client.Web site = clientContext.Web;
+                List list = clientContext.Web.Lists.GetByTitle(listName);
+                return getListItemCollection(list, clientContext, queryName, queryParams);
+            }
+
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext)
+        {
+            return getListItemCollection(list, clientContext, null, null);
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, String queryName)
+        {
+            return getListItemCollection(list, clientContext, queryName, null);
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, String queryName, Hashtable Params)
+        {
+            return getListItemCollection(list, clientContext, queryName, Params, true);
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, String queryName, Hashtable Params, bool executeQuery)
+        {
+            CamlQuery camlQuery = new CamlQuery();
+
+            if (Params == null)
+            {
+                camlQuery.ViewXml = CAMLQueryLoader.getQuery(queryName);
+            }
+            else
+            {
+                camlQuery.ViewXml = CAMLQueryLoader.getQuery(queryName, Params);
+            }
+
+            ListItemCollection listItems = list.GetItems(camlQuery);
+
+            clientContext.Load(listItems);
+            if (executeQuery)
+                clientContext.ExecuteQuery();
+            return listItems;
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, CamlQuery query)
+        {
+            ListItemCollection listItems = list.GetItems(query);
+            clientContext.Load(listItems);
+            clientContext.ExecuteQuery();
+            return listItems;
+        }
+
+        public static ListItem getListItem(List list, ClientContext clientContext, String queryName, Hashtable Params)
+        {
+            var collection = getListItemCollection(list, clientContext, queryName, Params, true);
+            if (collection.Count >= 1)
+                return collection[0];
+            return null;
+        }
+
+        public static void MoveFile(ClientContext clientContext, string siteURL, string libraryName, string documentName, ListItem listitem)
+        {
+            try
+            {
+
+                String URL;
+                //Get Document List
+                List documentsList;
+                if (!string.IsNullOrEmpty(libraryName))
+                {
+                    if (libraryName.Contains('/'))
+                        documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+                    else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+
+                    URL = siteURL + "Lists/" + libraryName + "/" + documentName;
+                }
+                else
+                {
+                    documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+                    URL = siteURL + documentName;
+                }
+
+
+                Microsoft.SharePoint.Client.File uploadFile = listitem.File;
+                clientContext.ExecuteQuery();
+                uploadFile.MoveTo(URL, MoveOperations.None);
+                clientContext.ExecuteQuery();
+            }
+
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        #region upload
+
+        #region util
+
+        /// <summary>
+        /// rajoute si nécessaire un / à la fin de la chaîne d'entrée
+        /// </summary>
+        /// <param name="siteURL"></param>
+        /// <returns></returns>
+        private static String EndUrl(String siteURL)
+        {
+            if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            return siteURL;
+        }
+
+        /// <summary>
+        /// récupère la liste contenant les PJ / fichiers Xml
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="clientContext"></param>
+        /// <returns></returns>
+        public static List getdocumentList(String libraryName, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList;
+            if (!string.IsNullOrEmpty(libraryName))
+            {
+                if (libraryName.Contains('/'))
+                    documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+                else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            }
+            else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            return documentsList;
+        }
+
+        /// <summary>
+        /// récupère la liste des fichiers d'une liste SP
+        /// </summary>
+        /// <param name="libraryName">Nom librairie</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static FolderCollection getListFolders(String libraryName, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            FolderCollection folders = documentsList.RootFolder.Folders;
+
+            clientContext.Load(documentsList);
+            //clientContext.Load(documentsList.RootFolder);
+            clientContext.Load(folders);
+            clientContext.ExecuteQuery();
+
+            return folders;
+        }
+
+        /// <summary>
+        /// ajoute ou récupère un dossier dans la librairie Sharepoint
+        /// </summary>
+        /// <param name="folderName">Nom du dossier</param>
+        /// <param name="libraryName">Nom librairie SP</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static Folder addFolder(String folderName, String libraryName, ClientContext clientContext)
+        {
+            FolderCollection folders = getListFolders(libraryName, clientContext);
+
+            //On retourne le dossier existant si celui-ci existe
+            foreach (Folder f in folders)
+            {
+                if (f.Name.Equals(folderName))
+                    return f;
+            }
+
+            Folder folder = folders.Add(folderName);
+
+            clientContext.Load(folder);
+            clientContext.ExecuteQuery();
+
+            return folder;
+        }
+
+        /// <summary>
+        /// récupère un dossier dans la librairie Sharepoint
+        /// </summary>
+        /// <param name="folderName">Nom du dossier</param>
+        /// <param name="libraryName">Nom librairie SP</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static Folder getFolder(String folderName, String libraryName, ClientContext clientContext)
+        {
+            FolderCollection folders = getListFolders(libraryName, clientContext);
+
+            //On retourne le dossier existant si celui-ci existe
+            foreach (Folder f in folders)
+            {
+                if (f.Name.Equals(folderName))
+                    return f;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// ajoute un dossier dans la librairie Sharepoint
+        /// </summary>
+        /// <param name="folderName">Nom du dossier</param>
+        /// <param name="libraryName">Nom librairie SP</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static Folder createFolder(String folderName, String libraryName, ClientContext clientContext)
+        {
+            FolderCollection folders = getListFolders(libraryName, clientContext);
+
+            //On retourne le dossier existant si celui-ci existe
+            foreach (Folder f in folders)
+            {
+                if (f.Name.Equals(folderName))
+                    throw new ApplicationException("folder " + folderName + " existe");
+            }
+
+            Folder folder = folders.Add(folderName);
+
+            clientContext.Load(folder);
+            clientContext.ExecuteQuery();
+
+            return folder;
+        }
+
+        /// <summary>
+        /// Récupération d'un groupe Sharepoint
+        /// </summary>
+        /// <param name="groupName"></param>
+        /// <returns></returns>
+        public static Group getGroup(string groupName, ClientContext clientContext)
+        {
+            DateTime now = DateTime.Now;
+            // logMandat.InfoFormat("Début accès au groupe {0}", num_mandat);
+            Group groupeSharepoint = null;
+            Web web = clientContext.Site.RootWeb;
+
+            clientContext.Load(web.SiteGroups, x => x, x => x.Include(grp => grp, grp => grp.Users.Include(user => user, user => user.LoginName)));
+            clientContext.ExecuteQuery();
+
+            foreach (Group groupe in web.SiteGroups)
+            {
+                if (groupe.LoginName.Equals(groupName))
+                {
+                    groupeSharepoint = groupe;
+                    break;
+                }
+            }
+            return groupeSharepoint;
+        }
+
+        public static Group createGroup(string groupName, string description, RoleType roleType, ClientContext clientContext)
+        {
+            GroupCreationInformation groupCreationInformation = new GroupCreationInformation();
+            groupCreationInformation.Title = groupName;
+            groupCreationInformation.Description = description;
+            // //add it to the list of site groups
+            Group newgrp = clientContext.Web.SiteGroups.Add(groupCreationInformation);
+            // //Get a role.
+            RoleDefinition rd = clientContext.Web.RoleDefinitions.GetByType(roleType); // 
+            // //create the role definition binding collection
+            RoleDefinitionBindingCollection rdb = new RoleDefinitionBindingCollection(clientContext);
+            // //add the role definition to the collection
+            rdb.Add(rd);
+            Principal principal0 = newgrp;
+            // //create a RoleAssigment with the group and role definition
+            clientContext.Web.RoleAssignments.Add(principal0, rdb);
+
+            return newgrp;
+        }
+
+        /// <summary>
+        /// Affectation de groupes à un Folder
+        /// </summary>
+        /// <param name="bib">Bibliothèque</param>
+        /// <param name="groupName"></param>
+        /// <param name="roleType"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="groups"></param>
+        public static void assignGroupsToFolder(List bib, string folderName, RoleType roleType, ClientContext clientContext, params Group[] groups)
+        {
+            int count = groups.GetLength(0);
+            if (count == 0)
+                return;
+
+            ListItemCollection items = getFolderItem(clientContext, bib, folderName);
+            foreach (ListItem _folderItem in items)
+            {
+                _folderItem.BreakRoleInheritance(false, true);
+                clientContext.ExecuteQuery();
+
+                var role = clientContext.Site.RootWeb.RoleDefinitions.GetByType(roleType);
+                var collRdb = new RoleDefinitionBindingCollection(clientContext) { role };
+
+                Principal[] principals = new Principal[count];
+
+                for (int i = 0; i < count; i++)
+                {
+                    principals[i] = groups[i];
+                    _folderItem.RoleAssignments.Add(principals[i], collRdb);
+                }
+                _folderItem.Update();
+
+                clientContext.ExecuteQuery();
+                break;
+            }
+
+        }
+
+
+        /// <summary>
+        /// Affectation de groupes à un ListItem
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="roleType"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="groups"></param>
+        public static void assignGroupsToItem(ListItem item, RoleType roleType, ClientContext clientContext, params Group[] groups)
+        {
+            int count = groups.GetLength(0);
+            if (count == 0)
+                return;
+
+            item.BreakRoleInheritance(false, false);
+            clientContext.ExecuteQuery();
+
+            var role = clientContext.Site.RootWeb.RoleDefinitions.GetByType(roleType);
+            var collRdb = new RoleDefinitionBindingCollection(clientContext) { role };
+
+            Principal[] principals = new Principal[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                principals[i] = groups[i];
+                item.RoleAssignments.Add(principals[i], collRdb);
+            }
+            item.Update();
+            clientContext.ExecuteQuery();
+
+        }
+
+        /// <summary>
+        /// Ajoute des users à un ListItem
+        /// </summary>
+        /// <param name="_item"></param>
+        /// <param name="usersList"></param>
+        public static void initItemPermissions(ListItem _item, List<string> usersList, ClientContext clientContext, Web web)
+        {
+            _item.BreakRoleInheritance(false, false);
+            clientContext.ExecuteQuery();
+
+            var role = clientContext.Site.RootWeb.RoleDefinitions.GetByType(RoleType.Contributor);
+            var collRdb = new RoleDefinitionBindingCollection(clientContext) { role };
+
+            Principal[] principals = new Principal[usersList.Count];
+            int i = 0;
+            foreach (String user in usersList)
+            {
+                if (!String.IsNullOrEmpty(user))
+                {
+                    principals[i] = web.EnsureUser(user);
+                    _item.RoleAssignments.Add(principals[i], collRdb);
+                    i++;
+                }
+            }
+
+
+            _item.Update();
+
+            clientContext.ExecuteQuery();
+
+        }
+
+
+
+        #endregion
+
+        #region XML
+        public static void UploadContentInLibrary(string siteURL, string libraryName, string documentName, String content, Hashtable properties, bool capsOperation)
+        {
+            siteURL = EndUrl(siteURL);
+            //if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                if (capsOperation)
+                {
+                    clientContext.setCredential(true);
+                }
+                else
+                {
+                    clientContext.setCredential();
+                }
+                UploadContentInLibrary(libraryName, documentName, content, properties, clientContext);
+            }
+        }
+
+
+        /// <summary>
+        /// Mise à jour d'un petit document texte (ex : dossier XML ) via une requete CAML
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="content"></param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        /// <remarks>la taille doit impérativement être inférieure à 3 Mo</remarks>
+        public static void UploadContentInLibrary(string libraryName, string documentName, String content, Hashtable properties, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            var fileCreationInformation = new FileCreationInformation();
+            fileCreationInformation.Content = Encoding.Default.GetBytes(content);
+            //fileCreationInformation.Content = Encoding.Default.GetBytes(content.Replace("€", "&#8364;").Replace("œ", "&#339;"));
+            fileCreationInformation.Overwrite = true;
+            if (!string.IsNullOrEmpty(libraryName))
+            {
+                fileCreationInformation.Url = clientContext.Url + "Lists/" + libraryName + "/" + HttpUtility.UrlPathEncode(documentName, false); //TODO VERIF false
+            }
+            else
+            {
+                fileCreationInformation.Url = clientContext.Url + documentName;
+            }
+
+            Microsoft.SharePoint.Client.File uploadFile = null;
+            uploadFile = documentsList.RootFolder.Files.Add(fileCreationInformation);
+
+            clientContext.ExecuteQuery();
+
+            foreach (String key in properties.Keys)
+            {
+                object value = properties[key];
+                // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+                uploadFile.ListItemAllFields[key] = properties[key].toObject();
+            }
+
+            uploadFile.ListItemAllFields.Update();
+            clientContext.ExecuteQuery();
+        }
+
+
+
+
+        #endregion
+
+        #region XML+ METADATAS WAtchList Workflow
+
+        public static void UpdateItemInLibrary(ListItem itemDossier, XDocument dossierXml, Hashtable dossierMetadata, ClientContext clientContext)
+        {
+            XmlDocument fluxXml = new XmlDocument();
+            string encoding = "<?xml version=\"1.0\" encoding=\"" + Encoding.Default.HeaderName + "\"?>";
+            string itemUrl = itemDossier.File.ServerRelativeUrl;
+            fluxXml.LoadXml(encoding + dossierXml.ToString());
+            using (MemoryStream ms = new MemoryStream())
+            {
+                fluxXml.Save(ms);
+                ms.Position = 0;
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, itemUrl, ms, true);
+
+            }
+
+
+            foreach (String key in dossierMetadata.Keys)
+            {
+
+                itemDossier.File.ListItemAllFields[key] = dossierMetadata[key].toObject();
+            }
+            itemDossier.File.ListItemAllFields.Update();
+            itemDossier.File.CheckIn("", CheckinType.OverwriteCheckIn);
+            clientContext.ExecuteQuery();
+
+        }
+        #endregion
+
+        #region PJ
+
+
+
+        public static void UploadFileInLibrary(string siteURL, string libraryName, string documentName, string filePath, Hashtable properties)
+        {
+            UploadFileInLibrary(siteURL, libraryName, documentName, new FileStream(filePath, FileMode.Open), properties, true);
+        }
+
+        public static void UploadFileInLibrary(string libraryName, string documentName, string filePath, Hashtable properties, ClientContext clientContext)
+        {
+            UploadFileInLibrary(libraryName, documentName, new FileStream(filePath, FileMode.Open), properties, clientContext);
+        }
+
+        public static void UploadFileInFolder(string siteURL, string libraryName, string folder, string documentName, string filePath, Hashtable properties)
+        {
+            UploadFileInFolder(siteURL, libraryName, folder, documentName, new FileStream(filePath, FileMode.Open), properties, true);
+        }
+
+
+
+        public static void UploadFileInLibrary(string siteURL, string libraryName, string documentName, Stream stream, Hashtable properties, bool admin)
+        {
+            siteURL = EndUrl(siteURL);
+            //if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.setCredential(admin);
+                UploadFileInLibrary(libraryName, documentName, stream, properties, clientContext);
+            }
+        }
+
+        public static string UploadFileInFolder(string siteURL, string libraryName, string folder, string documentName, Stream stream, Hashtable properties, bool admin)
+        {
+            siteURL = EndUrl(siteURL);
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.setCredential(admin);
+                return UploadFileInFolder(libraryName, folder, documentName, stream, properties, clientContext);
+            }
+        }
+
+        //        /// <summary>
+        //        /// Remplissazge générique d'un objet en fonction des metadonnées SP de l'item associé au fichier
+        //        /// </summary>
+        //        /// <param name="web"></param>
+        //        /// <param name="fileUrl"></param>
+        //        /// <param name="value"></param>
+        //        public static void readMetadataFromfile(ClientContext clientContext, ListItemCollection listItems , string fileUrl, Object value)
+        //        {
+        //            var web = clientContext.Web; 
+        //            var f = web.GetFileByServerRelativeUrl(fileUrl);
+        //            var itemF = f.ListItemAllFields;
+
+        //            clientContext.Load(itemF, i =>i.Id);
+
+        //            Type type = value.GetType();
+        //            foreach (PropertyInfo prop in type.GetProperties())
+        //            {
+        //                try
+        //                {
+
+
+
+
+        ////clientContext.Load(listItems, items => items.Include(
+        //                                                //item => item[prop.Name]
+
+        //                                                //));
+
+        //clientContext.Load(itemF, i => i[prop.Name]); 
+
+        //                }
+        //                catch
+        //                { }
+        //            }
+
+
+        //            clientContext.ExecuteQuery();
+
+
+
+        //            foreach (PropertyInfo prop in type.GetProperties())
+        //            {
+        //                try
+        //                {
+        //                    object propValue = itemF[prop.Name];
+        //                    if (propValue == null)
+        //                        continue;
+        //                    prop.SetValue(value, propValue, null); 
+        //                }
+        //                catch
+        //                { }
+        //            }
+        //        }
+
+        /// <summary>
+        /// chargement d'un fichier et mise à jour des métadonnées
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="stream">flux : contenu</param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        private static void UploadFileInLibrary(string libraryName, string documentName, Stream stream, Hashtable properties, ClientContext clientContext)
+        {
+
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            //if (!string.IsNullOrEmpty(libraryName))
+            //{
+            //    if (libraryName.Contains('/'))
+            //        documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+            //    else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            //}
+            //else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+
+            // Get ServerRelativeUrl pour inserer la pièce jointe
+            clientContext.Load(documentsList.RootFolder);
+            clientContext.ExecuteQuery();
+
+            string url = documentsList.RootFolder.ServerRelativeUrl + "/";
+            documentName = transformString(documentName);
+            String FileSrvRelUrl = url + documentName;
+
+            // Insértion de la pièce jointe dans la liste
+            using (stream)
+            {
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, FileSrvRelUrl, stream, true);
+            }
+
+            //Peupler la pièce jointe avec les metadonnées
+
+
+            var web = clientContext.Web;
+            var f = web.GetFileByServerRelativeUrl(FileSrvRelUrl);
+            var item = f.ListItemAllFields;
+
+            foreach (String key in properties.Keys)
+            {
+
+                object value = properties[key];
+                // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+                // uploadFile.ListItemAllFields[key] = properties[key].toObject();
+                item[key] = value;
+
+            }
+
+            item.Update();
+            clientContext.Load(item, i => i.Id);
+            clientContext.ExecuteQuery();
+
+            #region old code
+            //Hashtable params1 = new Hashtable();
+            //params1.Add("{PJ_NOM}", documentName);
+
+            //ListItemCollection listCollection = getListItemCollection(documentsList, clientContext, Queries.GET_PJ_BY_FILELEAFREF, params1);
+
+            //ListItem item = listCollection[0];
+
+            //foreach (String key in properties.Keys)
+            //{
+            //    object value = properties[key];
+            //    // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+            //    // uploadFile.ListItemAllFields[key] = properties[key].toObject();
+            //    item[key] = value;
+
+            //}
+
+            //item.Update();
+            //clientContext.ExecuteQuery();
+            #endregion
+
+        }
+
+
+
+
+        /// <summary>
+        /// Upload d'un fichier et de ses des métadonnées dans un dossier SP
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="stream">flux : contenu</param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="userLogin"></param>
+        private static string UploadFileInFolder(string libraryName, string folder, string documentName, Stream stream, Hashtable properties, ClientContext clientContext)
+        {
+
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+
+            // Get ServerRelativeUrl pour inserer la pièce jointe
+            clientContext.Load(documentsList.RootFolder);
+
+
+            clientContext.ExecuteQuery();
+
+            string url = documentsList.RootFolder.ServerRelativeUrl + Path.DirectorySeparatorChar + folder + Path.DirectorySeparatorChar;
+            documentName = transformString(documentName);
+            String FileSrvRelUrl = url + documentName;
+
+            // Insértion de la pièce jointe dans la liste
+            using (stream)
+            {
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, FileSrvRelUrl, stream, true);
+            }
+
+            //Peupler la pièce jointe avec les metadonnées
+            var web = clientContext.Web;
+            Microsoft.SharePoint.Client.File f = web.GetFileByServerRelativeUrl(FileSrvRelUrl);
+            var item = f.ListItemAllFields;
+
+            foreach (String key in properties.Keys)
+            {
+                object value = properties[key];
+                item[key] = value;
+            }
+
+
+            item.Update();
+            clientContext.Load(item, i => i.Id, i => i.File.ServerRelativeUrl);
+            item.File.CheckIn("", CheckinType.OverwriteCheckIn);
+            clientContext.ExecuteQuery();
+            return item.File.ServerRelativeUrl;
+
+
+            #region old code
+            //Hashtable params1 = new Hashtable();
+            //params1.Add("{ZIP_NOM}", documentName);
+
+            //ListItemCollection listCollection = getListItemCollection(documentsList, clientContext, Queries.GET_ZIP_BY_FILELEAFREF, params1);
+
+            //ListItem item = listCollection[0];
+
+            //if (userLogin != "")
+            //{
+            //    //Récupération de l'utilisateur courant
+            //    //FieldUserValue userValue = new FieldUserValue();
+            //    Microsoft.SharePoint.Client.User user = clientContext.Web.EnsureUser(userLogin);
+            //    clientContext.Load(user);
+            //    clientContext.ExecuteQuery();
+
+            //    if (user != null)
+            //    {
+            //        //userValue.LookupId = user.Id;
+            //        ////item["userfield"] = user;
+            //        //item[ModeleMetadata.ZIP_CCREA] = userValue;
+            //        item[ModeleMetadata.ZIP_CCREA] = user;
+            //        item[ModeleMetadata.ZIP_CCMODI] = user;
+            //    }
+            //}
+
+            //foreach (String key in properties.Keys)
+            //{
+            //    object value = properties[key];
+            //    item[key] = value;
+            //}
+
+            //item.Update();
+            //clientContext.ExecuteQuery();
+            #endregion
+
+
+        }
+
+        ////////
+        public static byte[] ReadToEnd(System.IO.Stream stream)
+        {
+            long originalPosition = 0;
+
+            if (stream.CanSeek)
+            {
+                originalPosition = stream.Position;
+                stream.Position = 0;
+            }
+
+            try
+            {
+                byte[] readBuffer = new byte[4096];
+
+                int totalBytesRead = 0;
+                int bytesRead;
+
+                while ((bytesRead = stream.Read(readBuffer, totalBytesRead, readBuffer.Length - totalBytesRead)) > 0)
+                {
+                    totalBytesRead += bytesRead;
+
+                    if (totalBytesRead == readBuffer.Length)
+                    {
+                        int nextByte = stream.ReadByte();
+                        if (nextByte != -1)
+                        {
+                            byte[] temp = new byte[readBuffer.Length * 2];
+                            Buffer.BlockCopy(readBuffer, 0, temp, 0, readBuffer.Length);
+                            Buffer.SetByte(temp, totalBytesRead, (byte)nextByte);
+                            readBuffer = temp;
+                            totalBytesRead++;
+                        }
+                    }
+                }
+
+                byte[] buffer = readBuffer;
+                if (readBuffer.Length != totalBytesRead)
+                {
+                    buffer = new byte[totalBytesRead];
+                    Buffer.BlockCopy(readBuffer, 0, buffer, 0, totalBytesRead);
+                }
+                return buffer;
+            }
+            finally
+            {
+                if (stream.CanSeek)
+                {
+                    stream.Position = originalPosition;
+                }
+            }
+        }
+        ////////
+
+
+        #endregion
+
+        #endregion
+
+
+        public static void deleteItems(ListItemCollection list, ClientContext context)
+        {
+            var aux = new List<ListItem>(list);
+            foreach (ListItem item in aux)
+            {
+                item.DeleteObject();
+            }
+            context.ExecuteQuery();
+        }
+
+        /// <summary>
+        /// Suppression d'un item dans Sharepoint
+        /// </summary>
+        /// <param name="item">Item Sharepoint</param>
+        /// <param name="context">Contexte utilisateur</param>
+        public static void deleteItem(ListItem item, ClientContext context)
+        {
+
+            item.DeleteObject();
+
+            context.ExecuteQuery();
+        }
+
+        /// <summary>
+        /// Permet de supprimer/remplacer les caractères interdits pour le nom d'une PJ dans SP
+        /// </summary>
+        /// <param name="input">Nom PJ</param>
+        /// <returns></returns>
+        public static string transformString(string input)
+        {
+            if (input == null)
+                throw new ApplicationException(string.Format("Une chaine de caractère vide "));
+            string extension = input.Substring(input.Length - 4);
+            input = input.Remove(input.Length - 4);
+
+            if (input.Length > 100) input = input.Remove(100);
+
+            input = input + extension;
+
+
+            while (input.Contains(".."))
+            {
+                input = input.Replace("..", ".");
+            }
+
+            string regExp = "[\\#\\%\\&\\*\\:\\<\\>\\?\\/\\{\\|\\}\\~]";
+
+            return Regex.Replace(input, regExp, "_");
+
+        }
+
+
+        /// <summary>
+        /// /wassim modif 04/05/2014
+        /// </summary>
+        /// <param name="url"></param>
+
+        public static Stream getStreamFileFromLibrary(string url, ClientContext clientContext)
+        {
+            try
+            {
+                clientContext.ExecuteQuery();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+            try
+            {
+                FileInformation ffl = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, url);
+                byte[] bytesarr = ReadFully(ffl.Stream);
+                MemoryStream mnm = new MemoryStream(bytesarr);
+                return mnm;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private static byte[] ReadFully(Stream input)
+        {
+            byte[] buffer = new byte[16 * 1024];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                int read;
+                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                return ms.ToArray();
+            }
+        }
+
+        //<summary>
+        //Fournit le stream du dossier xml
+        //</summary>
+        //public static Stream SpReturnStreamDossier(int NumDossier)
+        //{
+
+        //    ClientContext clientContext = new ClientContext(Settings.URLSPDossiers);
+        //    clientContext.setCredential();
+
+        //    Microsoft.SharePoint.Client.ListItem ListItem = Dossier.getDossierItem(clientContext, NumDossier);
+        //    Stream stream;
+        //    try
+        //    {
+        //        stream = Sharepoint.DownloadFileFromLibrary(SPSettings.URLSPDossiers, ListItem);
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //    return stream;
+        //}
+
+
+
+        #region NotUsed but don't delete
+        /*
+        public static void UploadFileInLibrary(string siteUrl, string webName, string libraryName, string subfolderPath, string fileName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+
+                string uploadLocation = Path.GetFileName(fileName);
+                if (!string.IsNullOrEmpty(subfolderPath))
+                {
+                    uploadLocation = string.Format("{0}/{1}", subfolderPath, uploadLocation);
+                }
+                uploadLocation = string.Format("/{0}/{1}/{2}", webName, libraryName, uploadLocation);
+                var list = clientContext.Web.Lists.GetByTitle(libraryName);
+                var fileCreationInformation = new FileCreationInformation();
+                fileCreationInformation.Content = System.IO.File.ReadAllBytes(fileName);
+                fileCreationInformation.Overwrite = true;
+                fileCreationInformation.Url = uploadLocation;
+                list.RootFolder.Files.Add(fileCreationInformation);
+                clientContext.ExecuteQuery();
+            }
+        }
+
+        public static void DeleteFileFormLibrary(string siteUrl, string webName, string listName, string subfolder, string attachmentFileName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                string attachmentPath = string.Empty;
+                if (string.IsNullOrEmpty(subfolder))
+                {
+                    attachmentPath = string.Format("/{0}/{1}/{2}", webName, listName, Path.GetFileName(attachmentFileName));
+                }
+                else
+                {
+                    attachmentPath = string.Format("/{0}/{1}/{2}/{3}", webName, listName, subfolder, Path.GetFileName(attachmentFileName));
+                }
+                var file = clientContext.Web.GetFileByServerRelativeUrl(attachmentPath);
+                file.DeleteObject();
+                clientContext.ExecuteQuery();
+            }
+        }
+
+        public static void AttachFileToListItem(string siteUrl, string webName, string listName, int itemId, string fileName, bool overwrite)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                FileStream fileStream = new FileStream(fileName, FileMode.Open);
+                string attachmentPath = string.Format("/{0}/Lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(fileName));
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, attachmentPath, fileStream, overwrite);
+            }
+        }
+
+        public static void DownloadAttachedFileFromListItem(string siteUrl, string webName, int itemId, string attachmentName, string listName, string downloadLocation)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                string attachmentPath = string.Format("/{0}/lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(attachmentName));
+                var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, attachmentPath);
+                IList<byte> content = new List<byte>();
+                int b;
+                while ((b = fileInformation.Stream.ReadByte()) != -1)
+                {
+                    content.Add((byte)b);
+                }
+                var downloadFileName = Path.Combine(downloadLocation, attachmentName);
+                System.IO.File.WriteAllBytes(downloadFileName, content.ToArray());
+                fileInformation.Stream.Close();
+            }
+        }
+
+        public static void DeleteAttachedFileFromListItem(string siteUrl, string webName, int itemId, string attachmentFileName, string listName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                //http://siteurl/lists/[listname]/attachments/[itemid]/[filename]
+                string attachmentPath = string.Format("/{0}/lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(attachmentFileName));
+                var file = clientContext.Web.GetFileByServerRelativeUrl(attachmentPath);
+                file.DeleteObject();
+                clientContext.ExecuteQuery();
+            }
+        }
+        
+        
+        public static Stream DownloadDocument(string siteURL, string documentName)
+        {
+
+            ListItem item = GetDocumentFromSP(siteURL, documentName);
+            if (item != null)
+            {
+                using (ClientContext clientContext = new ClientContext(siteURL))
+                {
+                    clientContext.Credentials = new NetworkCredential("app-dev-dcredit", "Azerty01", "CIB");
+                    FileInformation fInfo = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext,
+                        item["FileRef"].ToString());
+
+                    return fInfo.Stream;
+                }
+
+            }
+            return null;
+
+        }
+       
+        private static ListItem GetDocumentFromSP(string siteURL, string documentName)
+        {
+
+            //This method is discussed above i.e. Get List Item Collection from SharePoint
+            //Document List
+            ListItemCollection listItems = GetListItemCollectionFromSP("FileLeafRef",documentName, "Text", 1, siteURL, documentName);
+            return (listItems != null && listItems.Count == 1) ? listItems[0] : null;
+
+        }
+        private static ListItemCollection GetListItemCollectionFromSP(string name, string value, string type, int rowLimit, string siteURL, string documentListName)
+        {
+            //Update siteURL and DocumentListName with as per your site
+            ListItemCollection listItems = null;
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.Credentials = new NetworkCredential("app-dev-dcredit", "Azerty01", "CIB");
+                List documentsList = clientContext.Web.Lists.GetByTitle("mesdossiers");
+                CamlQuery camlQuery = new CamlQuery(); 
+                camlQuery.ViewXml =
+                @"<View>
+                            <Query>
+                            <Where>
+
+                            <Eq>
+                            <FieldRef Name='" + name + @"'/>
+
+                            <Value Type='" + type + "'>" + value + @"</Value>
+                            </Eq>
+
+                            </Where>                    
+                            <RowLimit>" + rowLimit.ToString() + @"</RowLimit>
+
+                            </Query>
+                            </View>";
+
+
+                listItems = documentsList.GetItems(camlQuery);
+                clientContext.Load(documentsList);
+                clientContext.Load(listItems);
+                clientContext.ExecuteQuery();
+            }
+            return listItems;
+        }*/
+        #endregion
+    }
+}
+]]></content>
+  </file>
+  <file path="\SpAdminMaping.cs">
+    <content><![CDATA[using log4net;
+using Microsoft.SharePoint.Client;
+
+namespace Commun.Mapping.Sp
+{
+    public abstract class SpAdminMapping : SpMapping
+    {
+        public SpAdminMapping(string url) : base(url, true) { }
+        public SpAdminMapping(string url, ILog logger, string user) : base(url, true, logger, user) { }
+        public SpAdminMapping(SpMapping source) : base(source, true) { }
+        public SpAdminMapping(ClientContext clientContext) : base(clientContext, true) { }
+      
+    }
+}
+]]></content>
+  </file>
+  <file path="\SpClientMapping.cs">
+    <content><![CDATA[using log4net;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Commun.Mapping.Sp
+{
+    public abstract class SpClientMapping : SpMapping
+    {
+        public SpClientMapping(string url)
+            : base(url, false)
+        {
+        }
+
+        public SpClientMapping(string url, bool isAdmin)
+            : base(url, isAdmin)
+        {
+        }
+
+        public SpClientMapping(string url, ILog logger, string user)
+            : base(url, false, logger, user)
+        {
+        }
+
+        public SpClientMapping(SpMapping source)
+            : base(source, false)
+        {
+        }
+
+        public SpClientMapping(SpMapping source, bool isAdmin)
+            : base(source, isAdmin)
+        {
+        }
+    }
+}]]></content>
+  </file>
+  <file path="\SpMapping.cs">
+    <content><![CDATA[using System;
+using System.Collections;
+using Commun.Mapping.Sp.Generic;
+using Fr.Icdc.Citi.Commun.Mapping.Utils;
+using log4net;
+using Microsoft.SharePoint.Client;
+using System.Collections.Generic;
+
+namespace Commun.Mapping.Sp
+{
+    public abstract class SpMapping : IDisposable
+    {
+        /// <summary>
+        /// Contexte SharePoint
+        /// </summary>
+        protected ClientContext clientContext;
+        /// <summary>
+        /// url du contexte
+        /// </summary>
+        protected string url;
+        /// <summary>
+        /// Web du contexte
+        /// </summary>
+        protected Web web;
+        /// <summary>
+        /// Déjà disposé
+        /// </summary>
+        protected bool _disposed;
+
+        /// <summary>
+        /// Container partagé avec une autre classe
+        /// </summary>
+        private bool shared;
+
+        /// <summary>
+        /// Conteneur d'un ou deux contextes
+        /// </summary>
+        private ContextContainer container;
+
+        /// <summary>
+        /// Lecteur d'item Sp
+        /// </summary>
+        protected SpItemReader reader;
+
+        /// <summary>
+        /// créateur ou écrivain d'un item sp
+        /// </summary>
+        protected SpItemWriter writer;
+
+        protected SpItemReader Reader { get { if (reader == null) reader = new SpItemReader(); return reader; } set { reader = value; } }
+        protected SpItemWriter Writer { get { if (writer == null) writer = new SpItemWriter(); return writer; } set { writer = value; } }
+
+        /// <summary>
+        /// Logger
+        /// </summary>
+        protected ILog logger;
+
+        /// <summary>
+        /// Utilitaire permettant d'enregistrer et de rapporter les durées d'un tâche comportant une ou plusieurs étapes
+        /// </summary>
+        protected Chrono chrono;
+
+        private void initLogger(ILog logger, string user)
+        {
+            this.logger = logger;
+            if (logger == null)
+                return;
+            chrono = new Chrono(logger, user);
+        }
+
+        public SpMapping(string url, bool admin, ILog logger, string user)
+        {
+            this.url = url;
+            this.container = new ContextContainer(url, admin);
+            this.clientContext = container.getContext(admin);
+            getWeb();
+            initLogger(logger, user);
+
+        }
+
+        public SpMapping(string url, bool admin)
+            : this(url, admin, null, null)
+        {
+
+        }
+
+
+        public SpMapping(SpMapping source, bool newAdmin)
+        {
+            shared = true;
+            url = source.url;
+            _disposed = source._disposed;
+            this.container = source.container;
+            container.createIfNecessary(url, newAdmin);
+            this.clientContext = container.getContext(newAdmin);
+
+            getWeb();
+            this.chrono = source.chrono;
+
+
+        }
+
+
+        public SpMapping(ClientContext clientContext, bool admin, ILog logger, string user)
+        {
+            shared = true;
+            url = clientContext.Url;
+            this.container = new ContextContainer(url, admin);
+            this.clientContext = clientContext;
+
+            getWeb();
+            initLogger(logger, user);
+        }
+
+        public SpMapping(ClientContext clientContext, bool admin)
+            : this(clientContext, admin, null, null)
+        {
+
+        }
+
+        /// <summary>
+        /// Copie du contexte admin vers le contexte standart
+        /// Attention, la suite des requetes est donc faite en contexte admin. A utiliser avec modération (tâches d'arrière plan)
+        /// </summary>
+        protected void CopyAdminContextToStandartContext()
+        {
+            container.CopyAdminContextToStandartContext();
+        }
+
+        private void getWeb()
+        {
+            web = clientContext.Site.RootWeb;
+        }
+
+        /// <summary>
+        /// Récupération de la liste SharePoint par son nom
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        protected List getList(string list)
+        {
+            
+            List ret = null;
+            Exception ex = null; 
+         
+            try
+            {
+                ret = web.Lists.GetByTitle(list);
+            }
+            catch(Exception e)
+            {
+                ex = e; 
+            }
+
+            if (ret != null)
+                return ret;
+
+            if (list.EndsWith("s"))
+            {
+                list = list.Substring(0, list.Length - 1);
+                return web.Lists.GetByTitle(list);
+            }
+            else
+                throw ex; 
+          
+
+           
+        }
+
+
+        /// <summary>
+        /// Libération des ressources
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+
+            // Use SupressFinalize in case a subclass 
+            // of this type implements a finalizer.
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            // If you need thread safety, use a lock around these  
+            // operations, as well as in your methods that use the resource.            
+            if (!_disposed)
+            {
+                lock (this)
+                {
+                    if (!_disposed)
+                    {
+                        if (disposing)
+                        {
+                            if (!shared)
+                                container.Dispose();
+
+                            // Indicate that the instance has been disposed.
+                            clientContext = null;
+                            container = null;
+                            _disposed = true;
+                            if (chrono != null)
+                                chrono.recordFinal();
+                        }
+                    }
+                }
+            }
+        }
+
+        protected ListItemCollection getListItemCollection(List list)
+        {
+            return Sharepoint.getListItemCollection(list, clientContext);
+        }
+
+        public ListItemCollection getListItemCollection(List list, CamlQuery query)
+        {
+            return Sharepoint.getListItemCollection(list, clientContext, query);
+        }
+
+        protected ListItemCollection getListItemCollection(List list, String queryName, Hashtable Params)
+        {
+            return Sharepoint.getListItemCollection(list, clientContext, queryName, Params);
+        }
+
+        protected ListItemCollection getListItemCollection(string list, String queryName, Hashtable Params)
+        {
+            return Sharepoint.getListItemCollection(getList(list), clientContext, queryName, Params);
+        }
+
+        protected ListItemCollection getListItemCollection(List list, String queryName, Hashtable Params, bool executeQuery)
+        {
+            return Sharepoint.getListItemCollection(list, clientContext, queryName, Params, executeQuery);
+        }
+
+        protected ListItemCollection getListItemCollection(string list, String queryName, Hashtable Params, bool executeQuery)
+        {
+            return Sharepoint.getListItemCollection(getList(list), clientContext, queryName, Params, executeQuery);
+        }
+
+        protected ListItem createItem(List list, object o)
+        {
+            return Writer.insertItem(list, clientContext, o);
+        }
+
+        protected ListItem createItem(string list, object o)
+        {
+            return createItem(getList(list), o);
+        }
+
+        protected void createItems(List list, IEnumerable objs)
+        {
+            Writer.insertItems(list, clientContext, objs);
+        }
+        protected void createItems(string list, IEnumerable objs)
+        {
+            createItems(getList(list), objs);
+        }
+
+        protected void deleteItems(List spList)
+        {
+            var items = getListItemCollection(spList);
+            Writer.deleteItems(items, clientContext);
+        }
+
+        protected int deleteItems(List spList, string queryName, Hashtable Params)
+        {
+            var items = getListItemCollection(spList, queryName, Params);
+            return Writer.deleteItems(items, clientContext);
+        }
+
+
+
+        protected void fillObj(object obj, List list, String queryName, Hashtable Params)
+        {
+            ListItem item = Sharepoint.getListItem(list, clientContext, queryName, Params);
+            Reader.readItem(item, obj);
+        }
+
+        protected ListItem getListItem(List list, String queryName, Hashtable Params)
+        {
+            return Sharepoint.getListItem(list, clientContext, queryName, Params);
+        }
+
+        protected void updateItem(object obj, List list, String queryName, Hashtable Params)
+        {
+            ListItem item = getListItem(list, queryName, Params);
+            Writer.updateItem(item, obj, true);
+            clientContext.ExecuteQuery();
+        }
+
+        protected void readItem(ListItem item, object obj, IId idProvider)
+        {
+            Reader.readItem(item, obj, idProvider);
+        }
+
+        protected int fillList(List spList, IList list, Type type, IId idProvider, string queryName, Hashtable Params)
+        {
+            ListItemCollection items = getListItemCollection(spList, queryName, Params);
+            return fillList(spList, list, type, idProvider, items);
+        }
+
+        protected int fillList(List spList, IList list, Type type, string queryName, Hashtable Params)
+        {
+            ListItemCollection items = getListItemCollection(spList, queryName, Params);
+            return fillList(spList, list, type, null, items);
+        }
+
+        protected int fillList(List spList, IList list, Type type, IId idProvider, CamlQuery query)
+        {
+            ListItemCollection items = getListItemCollection(spList, query);
+            return fillList(spList, list, type, null, items);
+        }
+
+        protected int fillList(List spList, IList list, Type type, IId idProvider, ListItemCollection items)
+        {
+            int nbUpdate = 0;
+            int nbUpdateTotal = 0;
+            foreach (ListItem item in items)
+            {
+                object o = Activator.CreateInstance(type);
+                if (Reader.readItem(item, o, idProvider))
+                {
+                    nbUpdate++; nbUpdateTotal++;
+                    if (nbUpdate == SpGeneric.NB_MAX_UPDATE)
+                    {
+                        nbUpdate = 0;
+                        clientContext.ExecuteQuery();
+                    }
+                }
+                list.Add(o);
+            }
+            if (nbUpdate > 0)
+                clientContext.ExecuteQuery();
+            return nbUpdateTotal;
+        }
+        protected IList getListObj(ListItemCollection items, Type type)
+        {
+            return getListObj(items, type, null);
+        }
+
+        protected static Type listType = typeof(System.Collections.Generic.List<>);
+        protected IList getListObj(ListItemCollection items, Type type, IId idProvider)
+        {
+            var constructed = listType.MakeGenericType(type);
+            var list = (IList)Activator.CreateInstance(constructed);
+            int nbUpdate = 0;
+            foreach (ListItem item in items)
+            {
+                object o = Activator.CreateInstance(type);
+                if (Reader.readItem(item, o, idProvider))
+                {
+                    nbUpdate++;
+                    if (nbUpdate == SpGeneric.NB_MAX_UPDATE)
+                    {
+                        nbUpdate = 0;
+                        clientContext.ExecuteQuery();
+                    }
+                }
+                constructed.GetMethod("Add").Invoke(list, new object[] { o });
+            }
+            if (nbUpdate > 0)
+                clientContext.ExecuteQuery();
+            return list;
+        }
+
+        protected IList getListObj(List spList, Type type)
+        {
+            return getListObj(spList, type, null);
+        }
+
+        protected IList getListObj(List spList, Type type, IId idProvider)
+        {
+            var items = getListItemCollection(spList);
+            return getListObj(items, type, idProvider);
+        }
+
+        protected IList getListObj(List spList, Type type, String queryName, Hashtable Params)
+        {
+            return getListObj(spList, type, queryName, Params, null);
+        }
+
+        protected IList getListObj(List spList, Type type, String queryName, Hashtable Params, IId idProvider)
+        {
+            var items = getListItemCollection(spList, queryName, Params);
+            return getListObj(items, type, idProvider);
+        }
+
+
+        public void updateItems(List list, IEnumerable listObj, IId provider)
+        {
+            Writer.updateItems(list, clientContext, listObj, provider);
+        }
+
+
+
+        /// <summary>
+        /// Modification d'un champ pour une collection d'items 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="listObj"></param>
+        public int updateField(List list, string queryName, Hashtable Params, string fieldName, object value)
+        {
+            var items = getListItemCollection(list, queryName, Params); 
+
+            int nb = 0;
+            int nbUpdate = 0; 
+            foreach (ListItem item in items)
+            {
+                item[fieldName] = value;
+                item.Update();
+                nb++; nbUpdate++; 
+                if (nb >= SpGeneric.NB_MAX_UPDATE)
+                {
+                    clientContext.ExecuteQuery();
+                    nb = 0;
+                }
+            }
+            clientContext.ExecuteQuery();
+            return nbUpdate; 
+
+        }
+
+
+
+
+
+
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\Generic\FileItem.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.SharePoint.Client;
+
+
+namespace Commun.Mapping.Sp.Generic
+{
+    public class FileItem
+    {
+        public readonly string RelativeUrl;
+        public readonly ListItem Item;
+
+        public FileItem(ListItem item)
+        {
+          
+            this.Item = item;
+            this.RelativeUrl = item.File.ServerRelativeUrl;
+        }
+
+        public string getAbsoluteUrl(string baseUrl)
+        {
+            return baseUrl + RelativeUrl.Replace(baseUrl, ""); 
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\Generic\SpGeneric.cs">
+    <content><![CDATA[using Fr.Icdc.Citi.Commun.Mapping.Generic.Parse;
+using Fr.Icdc.Citi.Commun.Value.Attributs.Sp;
+using log4net;
+using System.Globalization;
+
+namespace Commun.Mapping.Sp.Generic
+{
+    /// <summary>
+    ///  Gestion des attributs Sp
+    /// </summary>
+    public class SpGeneric : ParserBase
+    {
+        public const int NB_MAX_UPDATE = 100;
+        public CultureInfo Cu { set { cu = value; } }
+        protected CultureInfo cu = new CultureInfo("fr-FR"); 
+        public override void setDefaultAttributes()
+        {
+            base.setDefaultAttributes(); 
+            addExclusion(typeof(SpIgnore));
+            addAttributeName(typeof(SpName));
+        }
+
+        public SpGeneric() : base() { }
+        public SpGeneric(ILog logger) : base(logger) { }
+
+       
+    }
+}
+]]></content>
+  </file>
+  <file path="\Generic\SpItemReader.cs">
+    <content><![CDATA[using System.Reflection;
+using Fr.Icdc.Citi.Commun.Value;
+using Fr.Icdc.Citi.Commun.Value.Attributs.Sp;
+using log4net;
+using Microsoft.SharePoint.Client;
+using Commun.Mapping.Sp.Utils;
+using System;
+using System.Globalization;
+using System.Collections;
+
+namespace Commun.Mapping.Sp.Generic
+{
+
+    /// <summary>
+    /// Lecture d'un item
+    /// </summary>
+    public class SpItemReader : SpGeneric
+    {
+        public SpItemReader() : base() { }
+        public SpItemReader(ILog logger) : base(logger) { }
+
+        public override void setDefaultAttributes()
+        {
+            base.setDefaultAttributes();
+            addExclusion(typeof(SpInputIgnore));
+            addAttributeName(typeof(SpInputName));
+        }
+
+        public void readItem(ListItem listItem, object obj)
+        {
+            readItem(listItem, obj, null);
+        }
+
+        public bool readItem(ListItem listItem, object obj, IId IdProvider)
+        {
+            bool mustUpdate = false;
+            foreach (PropertyInfo propertyinfo in obj.GetType().GetProperties())
+            {
+                if (propertyinfo.PropertyType.Name.Contains("Stream")) continue;
+                if (!Consider(propertyinfo))
+                    continue;
+
+                PropInfo propInfo = new PropInfo(propertyinfo);
+
+
+
+                // Si la propiété est une liste (de sous-objets) on instancie une liste vide
+                if (propInfo.IsList)
+                {
+                    var value = propertyinfo.GetValue(obj, null);
+                    if (value == null)
+                        propertyinfo.SetValue(obj, propInfo.getListInstance(), null);
+                }
+                else
+                {
+                    if (!propInfo.IsPrimary)
+                        continue;
+                    string name = getName(propertyinfo);
+
+                    System.Type _type = propInfo.Type;
+
+                    object value = listItem[name];
+
+                    if (propInfo.isInt && IdProvider != null && IdProvider.FieldId.Equals(name))
+                    {
+                        int id = 0;
+                        if (value != null)
+                            id = Convert.ToInt32(value);
+                        if (id <= 0)
+                        {
+                            mustUpdate = true;
+                            id = listItem.Id;
+                            value = id;
+                            listItem[IdProvider.FieldId] = id;
+                            listItem.Update();
+                        }
+
+                    }
+
+                    if (_type.Equals(typeof(int)) || _type.Equals(typeof(int)))
+                    {
+                        if (value != null)
+                            value = value.FromInt();
+                    }
+
+                    else if (_type.Equals(typeof(System.DateTime)))
+                        value = value.FromDate();
+                    else if (_type.Equals(typeof(System.DateTime?)))
+                    {
+                        if (ConsiderAsString(propertyinfo))
+                            value = value.FromDateNullable(cu);
+                        else
+                            value = value.FromDateNullable();
+                    }
+                    else if (_type.BaseType == typeof(Enum))
+                    {
+                        if (value == null)
+                            value = 0;
+                        else
+                        {
+                            value = Enum.Parse(_type, value.ToString(), true);
+                        }
+                    }
+
+                    propertyinfo.SetValue(obj, value, null);
+                }
+            }
+            return mustUpdate;
+        }
+
+
+
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\Generic\SpItemWriter.cs">
+    <content><![CDATA[using System.Reflection;
+using Commun.Mapping.Sp.Utils;
+using Fr.Icdc.Citi.Commun.Value.Attributs.Sp;
+using log4net;
+using Microsoft.SharePoint.Client;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using Sharepoint = Commun.Mapping.Sp.Sharepoint;
+using Fr.Icdc.Citi.Commun.Value;
+using System;
+using System.Text;
+using Fr.Icdc.Citi.Commun.Value.Attributs;
+
+namespace Commun.Mapping.Sp.Generic
+{
+    /// <summary>
+    /// fournit l'emplacement de l'ID de l'objet
+    /// </summary>
+    public interface IId
+    {
+        /// <summary>
+        /// donne l'ID de l'objet
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        int getId(object o);
+        /// <summary>
+        /// Donne le champs Sp associé à l'id
+        /// </summary>
+        string FieldId { get; }
+    }
+
+    /// <summary>
+    /// Enregistrement d'un item
+    /// </summary>
+    public class SpItemWriter : SpGeneric
+    {
+
+        public override void setDefaultAttributes()
+        {
+            base.setDefaultAttributes();
+            addExclusion(typeof(SpOutputIgnore));
+            addAttributeName(typeof(SpOutputName));
+            addUpdateExclusion(typeof(UpdateIgnore));
+            addUpdateExclusion(typeof(SpUpdateIgnore));
+        }
+
+
+
+        public SpItemWriter() : base() { }
+        public SpItemWriter(ILog logger) : base(logger) { }
+
+        /// <summary>
+        /// Mise à jour générique d'un item de liste
+        /// </summary>
+        /// <param name="clientContext"></param>
+        /// <param name="listItem"></param>
+        /// <param name="obj"></param>
+        public void updateItem(ListItem listItem, object obj, IId provider, bool update)
+        {
+            foreach (PropertyInfo propertyinfo in obj.GetType().GetProperties())
+            {
+                if (propertyinfo.PropertyType.Name.Contains("Stream")) continue;
+                if (!Consider(propertyinfo, update))
+                    continue;
+
+
+                PropInfo propInfo = new PropInfo(propertyinfo);
+                if (!propInfo.IsPrimary)
+                    continue;
+
+                // Si la propiété est une liste (de sous-objets) on instancie une liste vide
+                if (propInfo.IsList)
+                {
+                    continue;
+                }
+
+                object value = propertyinfo.GetValue(obj, null);
+                string name = getName(propertyinfo);
+                Type _type = propertyinfo.PropertyType;
+                if (_type.BaseType == typeof(Enum))
+                {
+                    if (ConsiderAsInt(propertyinfo))
+                        value = (int)value;
+                    else
+                        value = value.ToString();
+                }
+                if (ConsiderAsString(propertyinfo))
+                {
+                    if (value == null)
+                        listItem[name] = null;
+                    else
+                    {
+                        DateTime dt = (DateTime)value;
+                        listItem[name] = dt.ToString(cu);
+                    }
+
+                }
+                else
+                    listItem[name] = value.toObject();
+            }
+
+            if (provider != null)
+            {
+                var objId = provider.getId(obj);
+                if (objId <= 0)
+                {
+                    // lecture de l'item
+                    objId = listItem[provider.FieldId].FromInt();
+                    if (objId <= 0)
+                    {
+                        objId = listItem.Id;
+                        listItem[provider.FieldId] = objId;
+                    }
+                }
+            }
+            listItem.Update();
+        }
+
+        public void updateItem(ListItem listItem, object obj, bool update)
+        {
+            updateItem(listItem, obj, null, update);
+        }
+
+
+
+
+        /// <summary>
+        /// Ajout générique d'une liste d'items par lot de 100. 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="listObj"></param>
+        public void insertItems(List list, ClientContext clientContext, IEnumerable listObj)
+        {
+            clientContext.setCredential();
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+
+            int nb = 0;
+            foreach (object obj in listObj)
+            {
+                var listItem = list.AddItem(itemCreateInfo);
+                updateItem(listItem, obj, false);
+                nb++;
+                if (nb >= NB_MAX_UPDATE)
+                {
+                    clientContext.ExecuteQuery();
+                    nb = 0;
+                }
+            }
+            clientContext.ExecuteQuery();
+
+        }
+
+
+      
+
+
+        private void initCamlForUpdateItems(StringBuilder sb, IId provider)
+        {
+            sb.Append("<View><Query><Where><In><FieldRef Name=\"");
+            sb.Append(provider.FieldId);
+            sb.Append("\" /><Values>");
+        }
+
+
+        /// <summary>
+        /// Mise à jour par lot de 50 d'items
+        /// </summary>
+        /// <param name="list">liste SP</param>
+        /// <param name="clientContext"></param>
+        /// <param name="listObj">Liste d'objets à mettre à jour</param>
+        /// <param name="provider">Connait l'emplacement de l'ID</param>
+        public void updateItems(List list, ClientContext clientContext, IEnumerable listObj, IId provider)
+        {
+
+            string viewXml = "";
+            clientContext.setCredential();
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+
+            var auxList = new List<object>();
+            var _listObj = new List<object>();
+            foreach (object o in listObj)
+                _listObj.Add(o);
+
+            StringBuilder sb = new StringBuilder();
+            initCamlForUpdateItems(sb, provider);
+
+
+            int indexObj = 0;
+            while (true)
+            {
+                try
+                {
+                    if (indexObj >= _listObj.Count)
+                        break;
+
+                    var value = _listObj[indexObj];
+
+                    auxList.Add(value);
+
+                    ;
+
+                    sb.Append("<Value Type=\"Number\">");
+                    sb.Append(provider.getId(value));
+                    sb.Append("</Value>");
+
+                    if ((indexObj > 0 && indexObj % NB_MAX_UPDATE == 0) || indexObj >= _listObj.Count - 1)
+                    {
+                        sb.Append("</Values></In></Where></Query></View>");
+                        var camlQuery = new CamlQuery();
+                        viewXml = sb.ToString();
+                        camlQuery.ViewXml = viewXml;
+                        ListItemCollection listItems = list.GetItems(camlQuery);
+                        clientContext.Load(listItems);
+                        clientContext.ExecuteQuery();
+
+                        foreach (ListItem item in listItems)
+                        {
+                            int id = item[provider.FieldId].FromInt();
+                            if (id <= 0)
+                                id = item.Id;
+
+                            var obj = auxList.Find(o => provider.getId(o) == id);
+                            if (obj == null)
+                            {
+                            }
+                            else
+                                updateItem(item, obj, true);
+                        }
+                        clientContext.ExecuteQuery();
+                        auxList.Clear();
+                        sb = new StringBuilder();
+                        initCamlForUpdateItems(sb, provider);
+                    }
+                    indexObj++;
+                }
+                catch (Exception ex)
+                {
+                    if (logger != null)
+                        logger.Error("impossible de mettre à jour la liste d'items ", ex);
+                    throw;
+                }
+
+            }
+        }
+
+        public ListItem insertItem(List list, ClientContext clientContext, object obj)
+        {
+            clientContext.setCredential();
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+
+            var listItem = list.AddItem(itemCreateInfo);
+            updateItem(listItem, obj, false);
+            clientContext.ExecuteQuery();
+            return listItem; 
+        }
+
+        public int deleteItems(ListItemCollection items, ClientContext clientContext)
+        {
+            int nb = 0;
+            int nbDelete = 0; 
+            var _items = new List<ListItem>(items);
+            foreach (ListItem item in _items)
+            {
+                item.DeleteObject();
+                nb++; nbDelete++; 
+                if (nb == NB_MAX_UPDATE)
+                {
+                    nb = 0;
+                    clientContext.ExecuteQuery();
+                }
+            }
+            clientContext.ExecuteQuery();
+
+            return nbDelete; 
+        }
+
+
+
+        /// <summary>
+        /// Upload d'un fichier et de ses des métadonnées dans un dossier SP
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="stream">flux : contenu</param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="userLogin"></param>
+        public FileItem UploadFileInFolder(string libraryName, string folder, string documentName, Stream stream, object obj, ClientContext clientContext)
+        {
+            //ILog logOneOff = LogManager.GetLogger("OneOff");
+            //logOneOff.Error("nom doc spitmewtiter" + documentName);
+
+            //Get Document List
+            List documentsList = Sharepoint.getdocumentList(libraryName, clientContext);
+
+            // Get ServerRelativeUrl pour inserer la pièce jointe
+            clientContext.Load(documentsList.RootFolder);
+            clientContext.ExecuteQuery();
+
+            string url = documentsList.RootFolder.ServerRelativeUrl + Path.DirectorySeparatorChar + folder + Path.DirectorySeparatorChar;
+            documentName = Sharepoint.transformString(documentName);
+            string FileSrvRelUrl = url + documentName;
+
+            // Insértion de la pièce jointe dans la liste
+            using (stream)
+            {
+                if (stream != null)
+                    Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, FileSrvRelUrl, stream, true);
+                else
+                    throw new ApplicationException(String.Format("problème d'insertion de pièce jointe {0} !", documentName));
+            }
+
+            //Peupler la pièce jointe avec les metadonnées
+            var web = clientContext.Web;
+            Microsoft.SharePoint.Client.File f = web.GetFileByServerRelativeUrl(FileSrvRelUrl);
+            var item = f.ListItemAllFields;
+
+            updateItem(item, obj, false);
+
+            clientContext.Load(item, i => i.Id, i => i.File.ServerRelativeUrl, i => i.File.CheckOutType);
+            clientContext.ExecuteQuery();
+            if (!(item.File.CheckOutType == CheckOutType.None))
+            {
+                item.File.CheckIn("", CheckinType.OverwriteCheckIn);
+            }
+            clientContext.ExecuteQuery();
+            return new FileItem(item); //.File.ServerRelativeUrl;
+        }
+
+        /// <summary>
+        /// suprimer tous les fichiers dans un folder 
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="folder"></param>
+        /// <param name="clientContext"></param>
+        /// <returns></returns>
+        public bool deleteAllFilesInFolder(string libraryName, string folder, ClientContext clientContext)
+        {
+            //Get Document List
+            Folder fo = Sharepoint.getFolder(folder, libraryName, clientContext);
+            clientContext.Load(fo.Files);
+            clientContext.ExecuteQuery();
+            if (fo != null)
+            {
+                if (fo.Files.Count == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    List<Microsoft.SharePoint.Client.File> files = new List<Microsoft.SharePoint.Client.File>(fo.Files);
+                    foreach (Microsoft.SharePoint.Client.File file in files)
+                    {
+                        file.DeleteObject();
+                    }
+                    clientContext.ExecuteQuery();
+                }
+            }
+            return true;
+
+        }
+    }
+
+}
+]]></content>
+  </file>
+  <file path="\Properties\AssemblyInfo.cs">
+    <content><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+[assembly: AssemblyTitle("Commun.Mapping.Sp")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("NATIXIS")]
+[assembly: AssemblyProduct("Commun.Mapping.Sp")]
+[assembly: AssemblyCopyright("Copyright © NATIXIS 2013")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+
+// Setting ComVisible to false makes the types in this assembly not visible 
+// to COM components.  If you need to access a type in this assembly from 
+// COM, set the ComVisible attribute to true on that type.
+[assembly: ComVisible(false)]
+
+// The following GUID is for the ID of the typelib if this project is exposed to COM
+[assembly: Guid("fa634d7e-b423-4e23-a2da-eef74dd21a84")]
+
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Build and Revision Numbers 
+// by using the '*' as shown below:
+// [assembly: AssemblyVersion("1.0.*")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+]]></content>
+  </file>
+  <file path="\Utils\DateUtil.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Globalization;
+using System.Web;
+//using Commun.Mapping.Sp.Utils;
+
+namespace Dm.Mapping
+{    
+        /// <summary>
+        /// Summary description for DateUtil.
+        /// </summary>
+        public class DateUtil
+        {
+            private static readonly string[] monthsFR = new string[] { "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre" };
+            private static readonly string[] monthsEN = new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+
+            public static String FormatDateField(DateTime dateTime)
+            {
+                return (dateTime != DateTime.MaxValue) && (dateTime != DateTime.MinValue) && (!dateTime.isEmpty()) ? dateTime.ToString("dd/MM/yyyy") : "";
+            }
+
+            /// <summary>
+            /// Methode permettant de récupérer une date de la base de données
+            /// Elle renvoie en Anglais pour l'affichage Fermat-Anglais et
+            /// en Français pour l'affichage Fermat-Anglais.
+            /// </summary>
+            /// <returns></returns>
+            public static String FormatDateAnglaisFrancais(string date)
+            {
+                string annee,
+                        mois,
+                        jour,
+                        dateSortie = "";
+                try
+                {
+                    if (date != null && date.Length > 0)
+                    {
+                        /*
+                         Ceci est possible car les dates sont stockées en Français dans la base de données
+                         */
+                        annee = date.Substring(6, 4);
+                        mois = date.Substring(3, 2);
+                        jour = date.Substring(0, 2);
+
+                        if (CultureInfo.CurrentCulture.ToString() == "en-US")
+                            dateSortie = mois + "/" + jour + "/" + annee;
+                        else
+                            dateSortie = jour + "/" + mois + "/" + annee;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Erreur Utils\DateUtil FormatDateAnglaisFrancais() " + ex.Message);
+                }
+
+                return dateSortie;
+            }
+
+            /// <summary>
+            /// Methode permettant de récupérer une date DateTime
+            /// Elle renvoie en Anglais pour l'affichage Fermat-Anglais (MM/dd/yyyy) et
+            /// en Français pour l'affichage Fermat-Français (dd/MM/yyyy).
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static string FormatDateAnglaisFrancais(DateTime date)
+            {
+                if (CultureInfo.CurrentCulture.ToString() == "en-US")
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("MM/dd/yyyy") : "";
+                }
+                else
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("dd/MM/yyyy") : "";
+                }
+            }
+
+            /// <summary>
+            /// Methode permettant de récupérer une date DateTime
+            /// Elle renvoie en Anglais pour l'affichage Fermat-Anglais (MM/dd/yyyy h:mm tt) et
+            /// en Français pour l'affichage Fermat-Français (dd/MM/yyyy HH:mm).
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static string FormatDateHeureAnglaisFrancais(DateTime date)
+            {
+                if (CultureInfo.CurrentCulture.ToString() == "en-US")
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("MM/dd/yyyy h:mm tt") : "";
+                }
+                else
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("dd/MM/yyyy HH:mm") : "";
+                }
+            }
+
+
+            /// <summary>
+            /// Methode permettant de récupérer une date de la base de données
+            /// Elle renvoie en Anglais pour l'affichage Fermat-Anglais et
+            /// en Français pour l'affichage Fermat-Anglais.
+            /// </summary>
+            /// <returns></returns>
+            public static String FormatDateAnglaisFrancais(DateTime date, string codeLangue)
+            {
+                if (codeLangue == null || codeLangue.ToUpper().Equals("FR"))
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("dd/MM/yyyy") : "";
+                }
+                else
+                {
+                    return (date != DateTime.MaxValue) && (date != DateTime.MinValue) ? date.ToString("MM/dd/yyyy") : "";
+                }
+            }
+
+            /// <summary>
+            /// Prend en paramètre une date au Format Français dd/MM/yyyy et la formatte 
+            /// en anglais si le codelangue vaut "EN".
+            /// </summary>
+            /// <returns></returns>
+            public static String FormatDateAnglaisFrancais(string dateFrancais, string codeLangue)
+            {
+                if (dateFrancais == null)
+                    return null;
+                try
+                {
+                    if (codeLangue == null || codeLangue.ToUpper().Equals("FR") || dateFrancais == null)
+                        return dateFrancais;
+                    else
+                    {
+                        return DateTime.Parse(dateFrancais, new CultureInfo("fr-FR")).ToString("MM/dd/yyyy");
+                    }
+                }
+                catch (System.FormatException)
+                {
+                    return dateFrancais;
+                }
+            }
+
+            /// <summary>
+            /// Methode permettant de récupérer une date de la base de données
+            /// Elle renvoie en Anglais pour l'affichage Fermat-Anglais et
+            /// en Français pour l'affichage Fermat-Anglais.
+            /// </summary>
+            /// <returns></returns>
+            public static String FormatDateAnglaisFrancaisHeure(string date)
+            {
+                string annee,
+                    mois,
+                    jour,
+                    dateSortie = "";
+                try
+                {
+                    if (date != null && date.Length > 0)
+                    {
+                        /*
+                         Ceci est possible car les dates sont stockées en Français dans la base de données
+                         */
+                        annee = date.Substring(6, date.Length - 6);
+                        mois = date.Substring(3, 2);
+                        jour = date.Substring(0, 2);
+
+                        if (CultureInfo.CurrentCulture.ToString() == "en-US")
+                            dateSortie = mois + "/" + jour + "/" + annee;
+                        else
+                            dateSortie = jour + "/" + mois + "/" + annee;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Erreur Utils\DateUtil FormatDateAnglaisFrancaisHeure() " + ex.Message);
+                }
+
+                return dateSortie;
+            }
+
+            public static string FormatDateTimeNow()
+            {
+                return DateTime.Now.ToString("dd/MM/yyyy");
+            }
+
+            public static string FormatDateLongTimeNow()
+            {
+                if (CultureInfo.CurrentCulture.ToString() == "en-US")
+                    return DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+                else
+                    return DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            }
+
+            public static string FormatDateField(Object objectDateTime)
+            {
+
+                return FormatDateField((DateTime)objectDateTime);
+            }
+
+            public static DateTime ConvertStringDate(string chaine)
+            {
+                if (chaine == null || chaine.Trim().Length == 0)
+                {
+                    return DateTime.MinValue;
+                }
+                CultureInfo FrCultureInfo = new CultureInfo("fr-FR", false);
+
+                return Convert.ToDateTime(chaine, FrCultureInfo.DateTimeFormat);
+
+            }
+
+            /// <summary>
+            /// Fonction permettant de reconstruire une date ou une partionKey
+            /// - Pour la date
+            ///		le jour, le mois, l'année sont renvoyé respectivement
+            ///		sur 2, 2 et 4 chiffres.
+            ///		La date est également renvoyée en français car les dates
+            ///		sont stockées en français dans la base de données
+            /// </summary>
+            /// <param name="dateParam"></param>
+            /// <returns></returns>
+            public static string DateFormat(string dateParam, bool partionKey)
+            {
+                string resultat,
+                    premierblock,
+                    secondblock,
+                    troisiemeblock;
+
+                int position;
+
+                resultat = dateParam;
+                if (resultat != null)
+                {
+                    if (dateParam.Length > 0)
+                    {
+                        try
+                        {
+                            position = resultat.IndexOf("/");
+
+                            if (position == 1)
+                                premierblock = "0" + resultat.Substring(0, position);
+                            else
+                                premierblock = resultat.Substring(0, position);
+
+                            resultat = resultat.Substring((position + 1), resultat.Length - (position + 1));
+                            position = resultat.IndexOf("/");
+
+                            if (position == 1)
+                                secondblock = "0" + resultat.Substring(0, position);
+                            else
+                                secondblock = resultat.Substring(0, position);
+
+                            resultat = resultat.Substring((position + 1), resultat.Length - (position + 1));
+                            position = resultat.Length;
+
+                            if (position == 2)
+                                troisiemeblock = "20" + resultat;
+                            else
+                                troisiemeblock = resultat;
+
+                            if (partionKey)
+                            {
+                                resultat = troisiemeblock + secondblock + premierblock;
+                            }
+                            else
+                                resultat = premierblock + "/" + secondblock + "/" + troisiemeblock;
+                        }
+                        catch (Exception)
+                        {
+                            resultat = "Date non valide";
+                        }
+                    }
+                }
+                return resultat;
+            }
+
+            /// <summary>
+            /// Cette méthode n'est utilisé que pour la construction d'une date 
+            /// à partir de la partion key
+            /// </summary>
+            /// <param name="datePartition"></param>
+            /// <returns></returns>
+            public static string DateAffichage(string datePartition)
+            {
+                string dateRetour = "";
+
+                if (CultureInfo.CurrentCulture.ToString() == "fr-FR")
+                {
+                    dateRetour = datePartition.Substring(6, 2) + "/" + datePartition.Substring(4, 2) + "/" + datePartition.Substring(0, 4);
+                }
+                else
+                {
+                    dateRetour = datePartition.Substring(4, 2) + "/" + datePartition.Substring(6, 2) + "/" + datePartition.Substring(0, 4);
+                }
+
+                return dateRetour;
+            }
+
+            /// <summary>
+            /// Methode permettant de récupérer une date saisie
+            /// Si elle est en français on la met en base tel quel
+            /// Sinon elle est en anglais et on l'a met en Françaispuis on l'insère.
+            /// </summary>
+            /// <returns></returns>
+            public static String FormatDateMiseEnFrancais(string date)
+            {
+                string annee,
+                    mois,
+                    jour,
+                    dateSortie = date;
+
+                try
+                {
+                    if (date != null && date.Length > 0)
+                    {
+                        date = DateFormat(date, false);
+                        annee = date.Substring(6, 4);
+                        mois = date.Substring(3, 2);
+                        jour = date.Substring(0, 2);
+
+                        //if(CultureInfo.CurrentCulture.ToString() == "en-US")
+                        if (HttpContext.Current.Session["langue"] != null && String.Compare(HttpContext.Current.Session["langue"] as string, "en", true) == 0)
+                            dateSortie = mois + "/" + jour + "/" + annee;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Erreur Utils\DateUtil FormatDateMiseEnFrancais() " + ex.Message);
+                }
+
+                return dateSortie;
+            }
+
+            /// <summary>
+            /// Transforme une string date au format "JJ/MM/AAAA" au format "AAAAMMJJ"
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static String FormatDateAAAAMMJJ(string date)
+            {
+                string annee,
+                mois,
+                jour,
+                dateSortie = "";
+                try
+                {
+                    if (date != null && date.Length > 0)
+                    {
+                        annee = date.Substring(6, 4);
+                        mois = date.Substring(3, 2);
+                        jour = date.Substring(0, 2);
+
+                        dateSortie = annee + mois + jour;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Erreur Utils\DateUtil FormatDate() " + ex.Message);
+                }
+
+                return dateSortie;
+            }
+
+            /// <summary>
+            /// Produit la date du dernier jour du mois précédent la date envoyée
+            /// (Au format JJ/MM/AAAA)
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static String DerJourMoisPrec(string date)
+            {
+
+                string annee,
+                    mois,
+                    jour,
+                    dateEnvStr,
+                    dateSortie = "";
+
+                int anneeInt,
+                    moisInt,
+                    jourInt;
+
+                try
+                {
+                    DateTime dateEnv = Convert.ToDateTime(date);
+                    dateEnvStr = dateEnv.AddMonths(-1).ToString("dd/MM/yyyy");
+                    annee = dateEnvStr.Substring(6, 4);
+                    mois = dateEnvStr.Substring(3, 2);
+                    anneeInt = Convert.ToInt32(annee);
+                    moisInt = Convert.ToInt32(mois);
+                    jourInt = DateTime.DaysInMonth(anneeInt, moisInt);
+                    jour = Convert.ToString(jourInt);
+                    dateSortie = jour + "/" + mois + "/" + annee;
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(@"Erreur Utils\DateUtil DerJourMoisPrec() " + ex.Message);
+                }
+                return dateSortie;
+            }
+
+            /// <summary>
+            /// Retourne le mois en toute lettre en fonction de la langue
+            /// </summary>
+            /// <param name="month"></param>
+            /// <param name="lang"></param>
+            /// <returns></returns>
+            public static string GetMonthFromInt(int month, string lang)
+            {
+                if (lang.ToUpper().Equals("EN"))
+                    return monthsEN[month - 1];
+                return monthsFR[month - 1];
+            }
+        }
+    }
+
+
+
+]]></content>
+  </file>
+  <file path="\Utils\Listes.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Commun.Mapping.Sp.Utils
+{
+    public struct Listes
+    {
+        #region racine
+
+        public const String TIERS = "Liste_tiers";
+        public const String UTILISATEURS_PREFERES = "UtilisateursPreferes";
+        public const String UTILISATEURS_PREFERENCES = "UtilisateursPreferences";
+        public const String SEQUENCE = "Sequence";
+        public const String NOTE = "Liste_note_interne";
+        public const String INSTRUMENTS = "Liste_instrum";
+        public const String PRODUITS = "Liste_prod";
+        public const String ACTIONS_LIENS = "Liste_EtapActionDoc";
+        public const String SUR_INFOS = "Liste_surete";
+        public const String USER_INFORMATION_LIST = "User Information List";
+        public const String TYPES_DOSSIER = "Liste_TypDos";
+        public const String TYPES_METIER = "Liste_metiers";
+        public const String LISTES_DIFFUSION = "Liste_list_diff";
+        public const String LISTE_POLE = "Liste_pole";
+        public const String LISTE_UFO = "Liste_ufo";
+        public const String GROUPES_CLAUSES = "GroupesClauses";
+        public const String GROUPES_USERS = "GroupesUtilisateurs";
+        #endregion
+
+        #region dossiers
+
+        public const String LISTE_PJDOS = "Liste_PjDos";
+        public const String DOSSIERS = "Dossiers";
+        public const String DOSSIER_TERMINE = "DOSSIER TERMINE";
+        public const String DOSSIER_TERMINE_CONF = "DOSSIER TERMINE CONF";
+        public const String FS_TERMINE = "FS TERMINE";
+        public const String FS_TERMINE_CONF = "FS TERMINE CONF";
+        public const String TIERS_DOSSIERS = "TiersDossiers";
+        public const String INTERVENANTS_PRECEDENTS = "IntervenantsPrecedents";
+        public const String PIECES_JOINTES_COMITES = "PiecesJointesComites";
+        public const String LISTE_DOSSIER_FS_CTP = "Liste_DossierFsCtp";
+
+        #endregion
+
+        #region Tiers
+        public const String LISTE_TIERS_REVUE = "Liste_tiers_revue";
+
+        #endregion
+
+        #region COMITEDOS
+        public const String COMITE_DOS = "ComiteDos";
+
+        #endregion
+
+        #region piecesjointes
+
+        public const String PIECES_JOINTES = "PiecesJointes";
+
+        #endregion
+
+        #region comites
+
+
+        public const String COMITES = "Comites";
+        //  public const String PIECESJOINTES_COMITES = "PiecesJointesComites";
+
+        public const String TYPES_COMITES = "Liste_typComite";
+
+        #endregion
+
+        #region Modeles
+        public const String MODELES = "Modeles";
+        #endregion
+    }
+}
+]]></content>
+  </file>
+  <file path="\Utils\Sharepoint.cs">
+    <content><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
+using Microsoft.SharePoint.Client;
+
+namespace Commun.Mapping.Sp.Utils
+{
+    public class Sharepoint
+    {
+        // private const String FO_ROLE_DEFINITION_NAME = "Dm.Fo.roleDefinition";
+
+        /// <summary>
+        /// insertion d'une liste dans une liste Sharepoint
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="WebName"></param>
+        /// <param name="SPUrl"></param>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static Boolean insertMetaData<T>(String WebName, ClientContext clientContext, T obj, ListItem listItem)
+        {
+
+            clientContext.setCredential();
+            List list = clientContext.Web.Lists.GetByTitle(WebName);
+            clientContext.Load(list);
+            clientContext.ExecuteQuery();
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            if (listItem == null) //insertion
+                listItem = list.AddItem(itemCreateInfo);
+            foreach (PropertyInfo propertyinfo in obj.GetType().GetProperties())
+            {
+                if (propertyinfo.PropertyType.Name.Contains("Stream")) continue;
+                object value = propertyinfo.GetValue(obj, null);
+                listItem[propertyinfo.Name] = value.toObject();
+            }
+            listItem.Update();
+            clientContext.ExecuteQuery();
+            return true;
+        }
+
+        public static Stream DownloadFileFromLibrary(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential();
+                return DownloadFileFromLibrary(item, clientContext);
+            }
+        }
+
+        public static Stream DownloadFileFromLibraryWithAdminAccount(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential(true);
+                return DownloadFileFromLibrary(item, clientContext);
+            }
+        }
+
+        public static Stream DownloadFileFromLibrary(ListItem item, ClientContext clientContext)
+        {
+            var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, item["FileRef"].ToString());
+            var stream = fileInformation.Stream;
+            return stream;
+        }
+
+        //<summary>
+        // Complément de la méthode précédente
+        //Passage par un Memory stream
+        //Stream direct ne permet pas le seek donc non gérable par la méthode Workbooks.Open de Syncfusion 
+        //</summary>
+        public static Stream DownloadMemStreamFileFromLibrary(string siteUrl, ListItem item)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                clientContext.setCredential();
+                return DownloadMemStreamFileFromLibrary(item, clientContext);
+            }
+        }
+
+
+        public static Stream DownloadMemStreamFileFromLibrary(ListItem item, ClientContext clientContext)
+        {
+
+            var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, item["FileRef"].ToString());
+
+            Stream stream = fileInformation.Stream;
+            MemoryStream memStr = new MemoryStream();
+            const int BUF = 4096;
+            byte[] buffer = new byte[BUF];
+            int nb = 0;
+            while ((nb = stream.Read(buffer, 0, BUF)) > 0)
+            {
+                memStr.Write(buffer, 0, nb);
+            }
+            memStr.Flush();
+            memStr.Position = 0;
+            return memStr;
+
+        }
+
+
+
+        /// <summary>
+        /// Execution d'une requête unique, quand on n'a pas besoin de conserver le contexte
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="listName"></param>
+        /// <param name="queryName"></param>
+        /// <returns></returns>
+        public static ListItemCollection executeSingleQuery(String url, String listName, String queryName)
+        {
+            return executeSingleQuery(url, listName, queryName, null);
+        }
+
+        /// <summary>
+        /// Execution d'une requête unique, quand on n'a pas besoin de conserver le contexte
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="listName"></param>
+        /// <param name="queryName"></param>
+        /// <param name="queryParams"></param>
+        /// <returns></returns>
+        public static ListItemCollection executeSingleQuery(String url, String listName, String queryName, Hashtable queryParams)
+        {
+            using (ClientContext clientContext = new ClientContext(url))
+            {
+                clientContext.setCredential(true);
+                Microsoft.SharePoint.Client.Web site = clientContext.Web;
+                List list = clientContext.Web.Lists.GetByTitle(listName);
+                return getListItemCollection(list, clientContext, queryName, queryParams);
+            }
+
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, String queryName)
+        {
+            return getListItemCollection(list, clientContext, queryName, null);
+        }
+
+        public static ListItemCollection getListItemCollection(List list, ClientContext clientContext, String queryName, Hashtable Params)
+        {
+            CamlQuery camlQuery = new CamlQuery();
+            if (Params == null)
+            {
+                camlQuery.ViewXml = CAMLQueryLoader.getQuery(queryName);
+            }
+            else
+            {
+                camlQuery.ViewXml = CAMLQueryLoader.getQuery(queryName, Params);
+            }
+            ListItemCollection listItems = list.GetItems(camlQuery);
+            clientContext.Load(listItems);
+            clientContext.ExecuteQuery();
+            return listItems;
+        }
+
+        public static void MoveFile(ClientContext clientContext, string siteURL, string libraryName, string documentName, ListItem listitem)
+        {
+            try
+            {
+
+                String URL;
+                //Get Document List
+                List documentsList;
+                if (!string.IsNullOrEmpty(libraryName))
+                {
+                    if (libraryName.Contains('/'))
+                        documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+                    else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+
+                    URL = siteURL + "Lists/" + libraryName + "/" + documentName;
+                }
+                else
+                {
+                    documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+                    URL = siteURL + documentName;
+                }
+
+
+                Microsoft.SharePoint.Client.File uploadFile = listitem.File;
+                clientContext.ExecuteQuery();
+                uploadFile.MoveTo(URL, MoveOperations.None);
+                clientContext.ExecuteQuery();
+            }
+
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        #region upload
+
+        #region util
+
+        /// <summary>
+        /// rajoute si nécessaire un / à la fin de la chaîne d'entrée
+        /// </summary>
+        /// <param name="siteURL"></param>
+        /// <returns></returns>
+        private static String EndUrl(String siteURL)
+        {
+            if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            return siteURL;
+        }
+
+        /// <summary>
+        /// récupère la liste contenant les PJ / fichiers Xml
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="clientContext"></param>
+        /// <returns></returns>
+        private static List getdocumentList(String libraryName, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList;
+            if (!string.IsNullOrEmpty(libraryName))
+            {
+                if (libraryName.Contains('/'))
+                    documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+                else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            }
+            else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            return documentsList;
+        }
+
+        /// <summary>
+        /// récupère la liste des fichiers d'une liste SP
+        /// </summary>
+        /// <param name="libraryName">Nom librairie</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static FolderCollection getListFolders(String libraryName, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            FolderCollection folders = documentsList.RootFolder.Folders;
+
+            clientContext.Load(documentsList);
+            //clientContext.Load(documentsList.RootFolder);
+            clientContext.Load(folders);
+            clientContext.ExecuteQuery();
+
+            return folders;
+        }
+
+        /// <summary>
+        /// ajoute un dossier dans la librairie Sharepoint
+        /// </summary>
+        /// <param name="folderName">Nom du dossier</param>
+        /// <param name="libraryName">Nom librairie SP</param>
+        /// <param name="clientContext">Contexte</param>
+        /// <returns></returns>
+        public static Folder addFolder(String folderName, String libraryName, ClientContext clientContext)
+        {
+            FolderCollection folders = getListFolders(libraryName, clientContext);
+
+            //On retourne le dossier existant si celui-ci existe
+            foreach (Folder f in folders)
+            {
+                if (f.Name.Equals(folderName))
+                    return f;
+            }
+
+            Folder folder = folders.Add(folderName);
+
+            clientContext.Load(folder);
+            clientContext.ExecuteQuery();
+
+            return folder;
+
+
+
+        }
+
+        /// <summary>
+        /// créer un groupe sharepoint et lui associer des permission
+        /// </summary>
+        /// <param name="groupeName"></param>
+        public static void createSpGroupe(String groupeName )
+        {
+            using (ClientContext clientContext = new ClientContext(SPSettings.URLSPRacine))
+            {
+                Web web = clientContext.Site.RootWeb;
+                RoleDefinition roleDef =null;
+                bool groupeExist = false;
+                try
+                {
+                    roleDef = web.RoleDefinitions.GetByName("Accès Trader");                   
+                    clientContext.setCredential(true);
+                    clientContext.ExecuteQuery();
+                }
+                catch (Exception )
+                {
+                    // continue
+                }
+                clientContext.Load(web.SiteGroups, x => x, x => x.Include(grp => grp.LoginName));
+                clientContext.setCredential(true);
+                clientContext.ExecuteQuery();
+                foreach (Microsoft.SharePoint.Client.Group groupe in web.SiteGroups)
+                {
+                    if (groupe.LoginName == groupeName)
+                    {
+                        groupeExist = true;
+                        break;
+                    }
+                }            
+                //si le role n'a pas été créé 
+                if (roleDef.ServerObjectIsNull == null)
+                {
+                    BasePermissions permissions = new BasePermissions();
+                    // TODO: rvoir les permissions sharepoint associés au FO
+                    permissions.Set(PermissionKind.AddListItems);
+                    permissions.Set(PermissionKind.ViewListItems);
+                    RoleDefinitionCreationInformation roleCreationInfo = new RoleDefinitionCreationInformation();
+                    roleCreationInfo.BasePermissions = permissions;
+                    roleCreationInfo.Description = "new cutom role definition";
+                    roleCreationInfo.Name = "FoPermissions2";
+                    roleCreationInfo.Order = 5;
+                    roleDef = web.RoleDefinitions.Add(roleCreationInfo);                    
+                }
+                // si le groupe n'existe pas 
+                if (!groupeExist)
+                {
+                    GroupCreationInformation groupCreatInfo = new GroupCreationInformation();
+                    groupCreatInfo.Title = groupeName;
+                    groupCreatInfo.Description = "groupe sharepoint associé à un groupe de Trader";
+                    Microsoft.SharePoint.Client.Group newgrp = web.SiteGroups.Add(groupCreatInfo);
+                    RoleDefinitionBindingCollection rdb = new RoleDefinitionBindingCollection(clientContext);
+                    rdb.Add(roleDef);
+                    web.RoleAssignments.Add(newgrp, rdb);
+                    clientContext.setCredential(true);
+                    clientContext.ExecuteQuery();
+                }             
+                
+            }
+        }
+
+        
+        #endregion
+
+        #region XML
+        public static void UploadContentInLibrary(string siteURL, string libraryName, string documentName, String content, Hashtable properties, bool capsOperation)
+        {
+            siteURL = EndUrl(siteURL);
+            //if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                if (capsOperation)
+                {
+                    clientContext.setCredential(true);
+                }
+                else
+                {
+                    clientContext.setCredential();
+                }
+                UploadContentInLibrary(libraryName, documentName, content, properties, clientContext);
+            }
+        }
+
+
+        /// <summary>
+        /// Mise à jour d'un petit document texte (ex : dossier XML ) via une requete CAML
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="content"></param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        /// <remarks>la taille doit impérativement être inférieure à 3 Mo</remarks>
+        public static void UploadContentInLibrary(string libraryName, string documentName, String content, Hashtable properties, ClientContext clientContext)
+        {
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            var fileCreationInformation = new FileCreationInformation();
+            fileCreationInformation.Content = Encoding.Default.GetBytes(content);
+            //fileCreationInformation.Content = Encoding.Default.GetBytes(content.Replace("€", "&#8364;").Replace("œ", "&#339;"));
+            fileCreationInformation.Overwrite = true;
+            if (!string.IsNullOrEmpty(libraryName))
+            {
+                fileCreationInformation.Url = clientContext.Url + "Lists/" + libraryName + "/" + HttpUtility.UrlPathEncode(documentName);
+            }
+            else
+            {
+                fileCreationInformation.Url = clientContext.Url + documentName;
+            }
+
+            Microsoft.SharePoint.Client.File uploadFile = null;
+            uploadFile = documentsList.RootFolder.Files.Add(fileCreationInformation);
+
+            clientContext.ExecuteQuery();
+
+            foreach (String key in properties.Keys)
+            {
+                object value = properties[key];
+                // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+                uploadFile.ListItemAllFields[key] = properties[key].toObject();
+            }
+
+            uploadFile.ListItemAllFields.Update();
+            clientContext.ExecuteQuery();
+        }
+
+
+
+
+        #endregion
+
+        #region XML+ METADATAS WAtchList Workflow
+
+        public static void UpdateItemInLibrary(ListItem itemDossier, XDocument dossierXml, Hashtable dossierMetadata, ClientContext clientContext)
+        {
+            XmlDocument fluxXml = new XmlDocument();
+            string encoding = "<?xml version=\"1.0\" encoding=\"" + Encoding.Default.HeaderName + "\"?>";
+            string itemUrl = itemDossier.File.ServerRelativeUrl;
+            fluxXml.LoadXml(encoding + dossierXml.ToString());
+            using (MemoryStream ms = new MemoryStream())
+            {
+                fluxXml.Save(ms);
+                ms.Position = 0;
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, itemUrl, ms, true);
+
+            }
+
+
+            foreach (String key in dossierMetadata.Keys)
+            {
+
+                itemDossier.File.ListItemAllFields[key] = dossierMetadata[key].toObject();
+            }
+            itemDossier.File.ListItemAllFields.Update();
+            itemDossier.File.CheckIn("", CheckinType.OverwriteCheckIn);
+            clientContext.ExecuteQuery();
+
+        }
+        #endregion
+        #region PJ
+
+
+
+        public static void UploadFileInLibrary(string siteURL, string libraryName, string documentName, string filePath, Hashtable properties)
+        {
+            UploadFileInLibrary(siteURL, libraryName, documentName, new FileStream(filePath, FileMode.Open), properties, true);
+        }
+
+        public static void UploadFileInLibrary(string libraryName, string documentName, string filePath, Hashtable properties, ClientContext clientContext)
+        {
+            UploadFileInLibrary(libraryName, documentName, new FileStream(filePath, FileMode.Open), properties, clientContext);
+        }
+
+        public static void UploadFileInFolder(string siteURL, string libraryName, string folder, string documentName, string filePath, Hashtable properties, string userLogin)
+        {
+            UploadFileInFolder(siteURL, libraryName, folder, documentName, new FileStream(filePath, FileMode.Open), properties, true, userLogin);
+        }
+
+
+
+        public static void UploadFileInLibrary(string siteURL, string libraryName, string documentName, Stream stream, Hashtable properties, bool admin)
+        {
+            siteURL = EndUrl(siteURL);
+            //if (!siteURL.EndsWith("/")) siteURL = siteURL + "/";
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.setCredential(admin);
+                UploadFileInLibrary(libraryName, documentName, stream, properties, clientContext);
+            }
+        }
+
+        public static void UploadFileInFolder(string siteURL, string libraryName, string folder, string documentName, Stream stream, Hashtable properties, bool admin, string userLogin)
+        {
+            siteURL = EndUrl(siteURL);
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.setCredential(admin);
+                UploadFileInFolder(libraryName, folder, documentName, stream, properties, clientContext, userLogin);
+            }
+        }
+
+        /// <summary>
+        /// chargement d'un fichier et mise à jour des métadonnées
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="stream">flux : contenu</param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        private static void UploadFileInLibrary(string libraryName, string documentName, Stream stream, Hashtable properties, ClientContext clientContext)
+        {
+
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+            //if (!string.IsNullOrEmpty(libraryName))
+            //{
+            //    if (libraryName.Contains('/'))
+            //        documentsList = clientContext.Web.Lists.GetByTitle(libraryName.Split('/')[0]);
+            //    else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+            //}
+            //else documentsList = clientContext.Web.Lists.GetByTitle(libraryName);
+
+            // Get ServerRelativeUrl pour inserer la pièce jointe
+            clientContext.Load(documentsList.RootFolder);
+            clientContext.ExecuteQuery();
+
+            string url = documentsList.RootFolder.ServerRelativeUrl + "/";
+            documentName = transformString(documentName);
+            String FileSrvRelUrl = url + documentName;
+
+            // Insértion de la pièce jointe dans la liste
+            using (stream)
+            {
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, FileSrvRelUrl, stream, true);
+            }
+
+            //Peupler la pièce jointe avec les metadonnées
+
+
+            var web = clientContext.Web;
+            var f = web.GetFileByServerRelativeUrl(FileSrvRelUrl);
+            var item = f.ListItemAllFields;
+            
+            foreach (String key in properties.Keys)
+            {
+                object value = properties[key];
+                // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+                // uploadFile.ListItemAllFields[key] = properties[key].toObject();
+                item[key] = value;
+
+            }
+
+            item.Update();
+            clientContext.Load(item, i => i.Id);
+            clientContext.ExecuteQuery();
+         
+            #region old code
+            //Hashtable params1 = new Hashtable();
+            //params1.Add("{PJ_NOM}", documentName);
+
+            //ListItemCollection listCollection = getListItemCollection(documentsList, clientContext, Queries.GET_PJ_BY_FILELEAFREF, params1);
+
+            //ListItem item = listCollection[0];
+
+            //foreach (String key in properties.Keys)
+            //{
+            //    object value = properties[key];
+            //    // if (!value.isEmpty()) BD Suppression : pourquoi ne met-on aps à jour une propriété parce quelle est nulle?
+            //    // uploadFile.ListItemAllFields[key] = properties[key].toObject();
+            //    item[key] = value;
+
+            //}
+
+            //item.Update();
+            //clientContext.ExecuteQuery();
+#endregion 
+
+        }
+
+
+        /// <summary>
+        /// Upload d'un fichier et de ses des métadonnées dans un dossier SP
+        /// </summary>
+        /// <param name="libraryName"></param>
+        /// <param name="documentName"></param>
+        /// <param name="stream">flux : contenu</param>
+        /// <param name="properties"></param>
+        /// <param name="clientContext"></param>
+        /// <param name="userLogin"></param>
+        private static void UploadFileInFolder(string libraryName, string folder, string documentName, Stream stream, Hashtable properties, ClientContext clientContext, String userLogin)
+        {
+
+            //Get Document List
+            List documentsList = getdocumentList(libraryName, clientContext);
+
+            // Get ServerRelativeUrl pour inserer la pièce jointe
+            clientContext.Load(documentsList.RootFolder);
+            clientContext.ExecuteQuery();
+
+            string url = documentsList.RootFolder.ServerRelativeUrl + Path.DirectorySeparatorChar + folder + Path.DirectorySeparatorChar;
+            documentName = transformString(documentName);
+            String FileSrvRelUrl = url + documentName;
+
+            // Insértion de la pièce jointe dans la liste
+            using (stream)
+            {
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, FileSrvRelUrl, stream, true);
+            }
+
+            //Peupler la pièce jointe avec les metadonnées
+            var web = clientContext.Web;
+            var f = web.GetFileByServerRelativeUrl(FileSrvRelUrl);
+            var item = f.ListItemAllFields;
+
+            foreach (String key in properties.Keys)
+            {
+                object value = properties[key];
+                item[key] = value;
+            }
+
+            item.Update();
+            clientContext.Load(item, i => i.Id);
+            clientContext.ExecuteQuery();
+
+
+            #region old code
+            //Hashtable params1 = new Hashtable();
+            //params1.Add("{ZIP_NOM}", documentName);
+
+            //ListItemCollection listCollection = getListItemCollection(documentsList, clientContext, Queries.GET_ZIP_BY_FILELEAFREF, params1);
+
+            //ListItem item = listCollection[0];
+
+            //if (userLogin != "")
+            //{
+            //    //Récupération de l'utilisateur courant
+            //    //FieldUserValue userValue = new FieldUserValue();
+            //    Microsoft.SharePoint.Client.User user = clientContext.Web.EnsureUser(userLogin);
+            //    clientContext.Load(user);
+            //    clientContext.ExecuteQuery();
+
+            //    if (user != null)
+            //    {
+            //        //userValue.LookupId = user.Id;
+            //        ////item["userfield"] = user;
+            //        //item[ModeleMetadata.ZIP_CCREA] = userValue;
+            //        item[ModeleMetadata.ZIP_CCREA] = user;
+            //        item[ModeleMetadata.ZIP_CCMODI] = user;
+            //    }
+            //}
+
+            //foreach (String key in properties.Keys)
+            //{
+            //    object value = properties[key];
+            //    item[key] = value;
+            //}
+
+            //item.Update();
+            //clientContext.ExecuteQuery();
+            #endregion
+
+
+        }
+
+
+
+        #endregion
+
+        #endregion
+
+
+        public static void deleteItems(ListItemCollection list, ClientContext context)
+        {
+            var aux = new List<ListItem>(list);
+            foreach (ListItem item in aux)
+            {
+                item.DeleteObject();
+            }
+            context.ExecuteQuery();
+        }
+
+        /// <summary>
+        /// Suppression d'un item dans Sharepoint
+        /// </summary>
+        /// <param name="item">Item Sharepoint</param>
+        /// <param name="context">Contexte utilisateur</param>
+        public static void deleteItem(ListItem item, ClientContext context)
+        {
+
+            item.DeleteObject();
+
+            context.ExecuteQuery();
+        }
+
+        /// <summary>
+        /// Permet de supprimer/remplacer les caractères interdits pour le nom d'une PJ dans SP
+        /// </summary>
+        /// <param name="input">Nom PJ</param>
+        /// <returns></returns>
+        public static string transformString(string input)
+        {
+            string extension = input.Substring(input.Length - 4);
+            input = input.Remove(input.Length - 4);
+
+            if (input.Length > 100) input = input.Remove(100);
+
+            input = input + extension;
+
+
+            while (input.Contains(".."))
+            {
+                input = input.Replace("..", ".");
+            }
+
+            string regExp = "[\\#\\%\\&\\*\\:\\<\\>\\?\\/\\{\\|\\}\\~]";
+
+            return Regex.Replace(input, regExp, "_");
+
+        }
+
+        //<summary>
+        //Fournit le stream du dossier xml
+        //</summary>
+        //public static Stream SpReturnStreamDossier(int NumDossier)
+        //{
+
+        //    ClientContext clientContext = new ClientContext(Settings.URLSPDossiers);
+        //    clientContext.setCredential();
+
+        //    Microsoft.SharePoint.Client.ListItem ListItem = Dossier.getDossierItem(clientContext, NumDossier);
+        //    Stream stream;
+        //    try
+        //    {
+        //        stream = Sharepoint.DownloadFileFromLibrary(SPSettings.URLSPDossiers, ListItem);
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //    return stream;
+        //}
+
+
+
+        #region NotUsed but don't delete
+        /*
+        public static void UploadFileInLibrary(string siteUrl, string webName, string libraryName, string subfolderPath, string fileName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+
+                string uploadLocation = Path.GetFileName(fileName);
+                if (!string.IsNullOrEmpty(subfolderPath))
+                {
+                    uploadLocation = string.Format("{0}/{1}", subfolderPath, uploadLocation);
+                }
+                uploadLocation = string.Format("/{0}/{1}/{2}", webName, libraryName, uploadLocation);
+                var list = clientContext.Web.Lists.GetByTitle(libraryName);
+                var fileCreationInformation = new FileCreationInformation();
+                fileCreationInformation.Content = System.IO.File.ReadAllBytes(fileName);
+                fileCreationInformation.Overwrite = true;
+                fileCreationInformation.Url = uploadLocation;
+                list.RootFolder.Files.Add(fileCreationInformation);
+                clientContext.ExecuteQuery();
+            }
+        }
+
+        public static void DeleteFileFormLibrary(string siteUrl, string webName, string listName, string subfolder, string attachmentFileName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                string attachmentPath = string.Empty;
+                if (string.IsNullOrEmpty(subfolder))
+                {
+                    attachmentPath = string.Format("/{0}/{1}/{2}", webName, listName, Path.GetFileName(attachmentFileName));
+                }
+                else
+                {
+                    attachmentPath = string.Format("/{0}/{1}/{2}/{3}", webName, listName, subfolder, Path.GetFileName(attachmentFileName));
+                }
+                var file = clientContext.Web.GetFileByServerRelativeUrl(attachmentPath);
+                file.DeleteObject();
+                clientContext.ExecuteQuery();
+            }
+        }
+
+        public static void AttachFileToListItem(string siteUrl, string webName, string listName, int itemId, string fileName, bool overwrite)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                FileStream fileStream = new FileStream(fileName, FileMode.Open);
+                string attachmentPath = string.Format("/{0}/Lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(fileName));
+                Microsoft.SharePoint.Client.File.SaveBinaryDirect(clientContext, attachmentPath, fileStream, overwrite);
+            }
+        }
+
+        public static void DownloadAttachedFileFromListItem(string siteUrl, string webName, int itemId, string attachmentName, string listName, string downloadLocation)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                string attachmentPath = string.Format("/{0}/lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(attachmentName));
+                var fileInformation = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, attachmentPath);
+                IList<byte> content = new List<byte>();
+                int b;
+                while ((b = fileInformation.Stream.ReadByte()) != -1)
+                {
+                    content.Add((byte)b);
+                }
+                var downloadFileName = Path.Combine(downloadLocation, attachmentName);
+                System.IO.File.WriteAllBytes(downloadFileName, content.ToArray());
+                fileInformation.Stream.Close();
+            }
+        }
+
+        public static void DeleteAttachedFileFromListItem(string siteUrl, string webName, int itemId, string attachmentFileName, string listName)
+        {
+            using (ClientContext clientContext = new ClientContext(siteUrl))
+            {
+                //http://siteurl/lists/[listname]/attachments/[itemid]/[filename]
+                string attachmentPath = string.Format("/{0}/lists/{1}/Attachments/{2}/{3}", webName, listName, itemId, Path.GetFileName(attachmentFileName));
+                var file = clientContext.Web.GetFileByServerRelativeUrl(attachmentPath);
+                file.DeleteObject();
+                clientContext.ExecuteQuery();
+            }
+        }
+        
+        
+        public static Stream DownloadDocument(string siteURL, string documentName)
+        {
+
+            ListItem item = GetDocumentFromSP(siteURL, documentName);
+            if (item != null)
+            {
+                using (ClientContext clientContext = new ClientContext(siteURL))
+                {
+                    clientContext.Credentials = new NetworkCredential("app-dev-dcredit", "Azerty01", "CIB");
+                    FileInformation fInfo = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext,
+                        item["FileRef"].ToString());
+
+                    return fInfo.Stream;
+                }
+
+            }
+            return null;
+
+        }
+       
+        private static ListItem GetDocumentFromSP(string siteURL, string documentName)
+        {
+
+            //This method is discussed above i.e. Get List Item Collection from SharePoint
+            //Document List
+            ListItemCollection listItems = GetListItemCollectionFromSP("FileLeafRef",documentName, "Text", 1, siteURL, documentName);
+            return (listItems != null && listItems.Count == 1) ? listItems[0] : null;
+
+        }
+        private static ListItemCollection GetListItemCollectionFromSP(string name, string value, string type, int rowLimit, string siteURL, string documentListName)
+        {
+            //Update siteURL and DocumentListName with as per your site
+            ListItemCollection listItems = null;
+            using (ClientContext clientContext = new ClientContext(siteURL))
+            {
+                clientContext.Credentials = new NetworkCredential("app-dev-dcredit", "Azerty01", "CIB");
+                List documentsList = clientContext.Web.Lists.GetByTitle("mesdossiers");
+                CamlQuery camlQuery = new CamlQuery(); 
+                camlQuery.ViewXml =
+                @"<View>
+                            <Query>
+                            <Where>
+
+                            <Eq>
+                            <FieldRef Name='" + name + @"'/>
+
+                            <Value Type='" + type + "'>" + value + @"</Value>
+                            </Eq>
+
+                            </Where>                    
+                            <RowLimit>" + rowLimit.ToString() + @"</RowLimit>
+
+                            </Query>
+                            </View>";
+
+
+                listItems = documentsList.GetItems(camlQuery);
+                clientContext.Load(documentsList);
+                clientContext.Load(listItems);
+                clientContext.ExecuteQuery();
+            }
+            return listItems;
+        }*/
+        #endregion
+    }
+}
+]]></content>
+  </file>
+  <file path="\Utils\SpObject.cs">
+    <content><![CDATA[using System;
+using Microsoft.SharePoint.Client;
+
+namespace Commun.Mapping.Sp.Utils
+{
+    /// <summary>
+    /// Extension des objects pour récupérer facilement les valeurs des SPItems et 
+    /// affecter une valeur par défaut au résultats
+    /// </summary>
+    public static class SpObject
+    {
+        public const String DEFAULT_STRING = "";
+        public const int DEFAULT_INT = -1;
+        public const double DEFAULT_DOUBLE = -1;
+        public const long DEFAULT_LONG = -1;
+        public static readonly DateTime DEFAULT_DATE = new DateTime(1900, 1, 1);
+        public const Boolean DEFAULT_BOOL = false;
+
+
+        #region récupération d'items non typés
+        /// <summary>
+        /// Récupère l'info d'un item typé Text
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static String FromString(this object o)
+        {
+            if (o == null) return DEFAULT_STRING;
+            if (o is DBNull) return DEFAULT_STRING;
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString();
+            return o.ToString();
+        }
+
+        /// <summary>
+        /// Récupère l'info d'un item typé Entier
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static int FromInt(this object o)
+        {
+            if (o == null) return DEFAULT_INT;
+            if (o is DBNull) return DEFAULT_INT;
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToInt();
+            // un peu de tolérance
+            return Convert.ToInt32(o);
+            
+        }
+
+
+        /// <summary>
+        /// Récupère l'info d'un item typé double
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static double FromDouble(this object o)
+        {
+            if (o == null) return DEFAULT_DOUBLE;
+            if (o is DBNull) return DEFAULT_DOUBLE;
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToDouble();
+            // un peu de tolérance
+            if (o is decimal) return Convert.ToDouble(o);
+            return (double)o;
+        }
+
+
+        /// <summary>
+        /// Récupère l'info d'un item typé long
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static long FromLong(this object o)
+        {
+            if (o == null) return DEFAULT_LONG;
+            if (o is DBNull) return DEFAULT_LONG;
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToLong();
+            // un peu de tolérance
+            if (o is decimal) return Convert.ToInt64(o);
+            return (long)o;
+        }
+
+
+        /// <summary>
+        /// Récupère l'info d'un item typé Date
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static DateTime FromDate(this object o)
+        {
+            if (o == null) return DEFAULT_DATE;
+            if (o is DBNull) return DEFAULT_DATE;
+            //if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToDateTime();
+            return getDate(o);
+        }
+
+        public static DateTime? FromDateNullable(this object o)
+        {
+            return FromDateNullable(o, null); 
+        }
+
+        public static DateTime? FromDateNullable(this object o, IFormatProvider provider)
+        {
+            if (o == null) return null;
+            if (o.Equals(String.Empty)) return null;
+            if (o is DBNull) return null;
+            return getDate(o, provider);
+        }
+
+        /// <summary>
+        ///  Récupère l'info d'un item typé Booléen 
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static Boolean FromBool(this object o)
+        {
+            if (o == null) return DEFAULT_BOOL;
+            if (o is DBNull) return DEFAULT_BOOL;
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToBool();
+            return (Boolean)o;
+        }
+
+
+        #endregion
+
+        private static DateTime getDate(Object o, IFormatProvider provider)
+        {
+            if (o is FieldLookupValue) return (o as FieldLookupValue).LookupValue.FromString().ToDateTime().ToLocalTime();
+            DateTime dt;
+            if (provider == null)
+                dt = Convert.ToDateTime(o);
+            else
+                dt = Convert.ToDateTime(o, provider);
+
+            return dt.ToLocalTime();
+        }
+
+        private static DateTime getDate(Object o)
+        {
+            return getDate(o, null); 
+        }
+
+        /// <summary>
+        /// Avant mise à jour d'un Champ vers SharePoint, permet de déterminer si le champ contient une valeur pertinente
+        /// </summary>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public static Boolean isEmpty(this object o)
+        {
+            if (o == null) return true;
+            if (o is DBNull) return true;
+            if (o is String) return o.ToString().Equals(DEFAULT_STRING);
+            if (o is DateTime) return (DateTime)o <= DEFAULT_DATE;
+            return false;
+        }
+
+        #region ecriture vers sharepoint
+        public static Object toObject(this object o)
+        {
+            if (o.isEmpty()) return null;
+            return o;
+        }
+        #endregion
+
+        public static DateTime? toDateNullable(this DateTime o)
+        {
+            if (o == DEFAULT_DATE) return null;
+            return o.ToLocalTime();
+        }
+
+        #region parse string
+        /// <summary>
+        /// Convertit une chaine de caractère en entier
+        /// La chaine vide est convertie en valeur nulle (-1)
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static int ToInt(this String input)
+        {
+            if (input.isEmpty()) return DEFAULT_INT;
+            return Convert.ToInt32(input);
+        }
+
+        public static double ToDouble(this String input)
+        {
+            if (input.isEmpty()) return DEFAULT_DOUBLE;
+            return Convert.ToDouble(input);
+        }
+
+        public static long ToLong(this String input)
+        {
+            if (input.isEmpty()) return DEFAULT_LONG;
+            return Convert.ToInt64(input);
+        }
+
+        public static DateTime ToDateTime(this String input)
+        {
+            if (input.isEmpty()) return DEFAULT_DATE;
+            try
+            {
+                return Convert.ToDateTime(input);
+            }
+            catch
+            {
+                return (DateTime.ParseExact(input, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.AssumeLocal));
+            }
+        }
+
+        public static DateTime? ToDateTimeNullable(this String input)
+        {
+            if (input.isEmpty()) return null;
+            return Convert.ToDateTime(input);
+        }
+        public static double? ToDoubleNullable(this String input)
+        {
+            if (input.isEmpty()) return null;
+            return Convert.ToDouble(input);
+        }
+
+        public static int? ToIntNullable(this String input)
+        {
+            if (input.isEmpty()) return null;
+            return Convert.ToInt32(input);
+        }
+
+        public static Boolean ToBool(this String input)
+        {
+            if (input.isEmpty()) return DEFAULT_BOOL;
+            return Convert.ToBoolean(input);
+        }
+
+        #endregion
+
+        # region init
+        //public static String toNull(this String o)
+        //{
+        //    return DEFAULT_STRING; 
+        //}
+        //public static int toNull(this int o)
+        //{
+        //    return DEFAULT_INT ;
+        //}
+        //public static double toNull(this double o)
+        //{
+        //    return DEFAULT_DOUBLE; 
+        //}
+        //public static DateTime toNull(this DateTime o)
+        //{
+        //    return DEFAULT_DATE;
+        //}
+        //public static DateTime? toNull(this DateTime o)
+        //{
+        //    return null;
+        //}
+
+
+        #endregion
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\Utils\Users.cs">
+    <content><![CDATA[using System;
+using Fr.Icdc.Citi.Commun.Application.Exceptions;
+using Microsoft.SharePoint.Client;
+
+
+namespace Commun.Mapping.Sp.Utils
+{
+    /// <summary>
+    /// récupération des utilisateurs SharePoint 
+    /// </summary>
+    public class Users
+    {
+        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger("Users");
+
+        //TODO: si nécessaire définir des dictionary pour les autres collections de sites (les propriétés d'un user sont différentes en fonction de la collection de sites)
+        //TODO: vérifier que stocker ce type d'information peut être gardé en mémoire
+        //TODO: instance proprement ce static - dans un lock ?
+        //private static Dictionary<String, User> spDossiersUsers = new Dictionary<String, User>();
+
+        /// <summary>
+        /// récupération des utilisateurs SharePoint 
+        /// </summary>
+        public static User getUser(ClientContext clientContext, String userLogin)
+        {
+            //if (spDossiersUsers.ContainsKey(userLogin))
+            //    return spDossiersUsers[userLogin];
+
+            try
+            {
+                Web web = clientContext.Site.RootWeb;
+                User spUser = web.EnsureUser(userLogin);
+                clientContext.Load(spUser);
+                clientContext.ExecuteQuery();
+
+                //spDossiersUsers.Add(userLogin, spUser);
+                return spUser;
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Impossible de retrouver l'utilisateur : " + ex.Message);
+                throw; 
+              //  throw new CommunApplicationException("utilisateur introuvable");
+                //throw new DcServiceException(Service.Error.GenericError.NotFound, "utilisateur introuvable", "user not found");
+            }
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\Utils\UtilCredential.cs">
+    <content><![CDATA[using System.Net;
+using Fr.Icdc.Citi.Commun.Value;
+using Microsoft.SharePoint.Client;
+
+
+
+namespace Commun.Mapping.Sp.Utils
+{
+    public static class UtilCredential
+    {
+        public static void setCredential(this ClientContext clientContext, bool forced)
+        {
+            if (forced || CommunConst.DEVELOPPEMENT_MODE)
+            {
+                Admin admin = CommunConst.AUTHENTICATION_ADMIN;
+                clientContext.Credentials = new NetworkCredential(admin.user, admin.password, admin.domain);
+            }
+        }
+
+        public static void setCredential(this ClientContext clientContext)
+        {
+            setCredential(clientContext, false);
+        }
+    }
+}
+]]></content>
+  </file>
+</db>
