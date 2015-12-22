@@ -1,67 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <db version="3" seq_piece="25347">
   <pieces>
-    <piece id="4812">
+    <piece id="308">
       <classement>
         <version>
-          <date>11/12/2015 11:43:06</date>
-          <class>01302</class>
+          <date>22/12/2015 16:25:19</date>
+          <class>004303</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 16:22:45</date>
+      </dates>
+      <disabled />
+      <duration>134845</duration>
+    </piece>
+    <piece id="309">
+      <duration>210208</duration>
+    </piece>
+    <piece id="4632">
+      <classement>
+        <version>
+          <date>22/12/2015 16:07:32</date>
+          <class>005341</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>269000</duration>
+    </piece>
+    <piece id="5966">
+      <classement>
+        <version>
+          <date>22/12/2015 16:11:59</date>
+          <class>05420</class>
           <rating>20</rating>
         </version>
       </classement>
       <dates>
-        <date>11/12/2015 11:42:16</date>
+        <date>22/12/2015 16:12:21</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="4876">
+    <piece id="7806">
       <classement>
         <version>
-          <date>11/12/2015 11:17:12</date>
-          <class>05130</class>
-          <rating>60</rating>
+          <date>22/12/2015 11:50:11</date>
+          <class>1312</class>
+          <rating>20</rating>
         </version>
       </classement>
       <dates>
-        <date>11/12/2015 11:16:22</date>
+        <date>22/12/2015 11:53:23</date>
       </dates>
       <disabled />
-    </piece>
-    <piece id="4877">
-      <duration>152021</duration>
-    </piece>
-    <piece id="5806">
-      <classement>
-        <version>
-          <date>11/12/2015 11:19:48</date>
-          <class>05020</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>11/12/2015 11:19:21</date>
-      </dates>
-      <disabled />
-      <duration>118623</duration>
-    </piece>
-    <piece id="6527">
-      <classement>
-        <version>
-          <date>11/12/2015 11:28:50</date>
-          <class>03050</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>11/12/2015 11:27:39</date>
-      </dates>
-      <disabled />
+      <duration>270212</duration>
     </piece>
     <piece id="8637">
       <album />
     </piece>
-    <piece id="9432">
-      <duration>284761</duration>
+    <piece id="9311">
+      <classement>
+        <version>
+          <date>22/12/2015 15:39:15</date>
+          <class>05005</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 15:39:51</date>
+        <date>22/12/2015 15:34:09</date>
+      </dates>
+      <disabled />
+      <duration>255115</duration>
+    </piece>
+    <piece id="9312">
+      <duration>270450</duration>
+    </piece>
+    <piece id="9444">
+      <classement>
+        <version>
+          <date>22/12/2015 11:22:42</date>
+          <class>0002132</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>195841</duration>
+    </piece>
+    <piece id="9526">
+      <classement>
+        <version>
+          <date>22/12/2015 16:05:52</date>
+          <class>1054</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 16:05:29</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="9527">
+      <dates>
+        <date>22/12/2015 16:06:00</date>
+      </dates>
+      <duration>30433</duration>
     </piece>
     <piece id="9770">
       <track />
@@ -75,87 +119,164 @@
     <piece id="9773">
       <track />
     </piece>
-    <piece id="11274">
-      <dates>
-        <date>11/12/2015 11:45:15</date>
-      </dates>
-    </piece>
-    <piece id="12190">
+    <piece id="10549">
       <classement>
         <version>
-          <date>11/12/2015 11:40:34</date>
-          <class>04320</class>
+          <date>22/12/2015 11:31:25</date>
+          <class>01434</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10934">
+      <classement>
+        <version>
+          <date>22/12/2015 11:19:21</date>
+          <class>05150</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 11:20:33</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="11675">
+      <classement>
+        <version>
+          <date>22/12/2015 16:03:57</date>
+          <class>1104</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 16:04:56</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="15853">
+      <classement>
+        <version>
+          <date>22/12/2015 15:54:06</date>
+          <class>03013</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="15990">
+      <classement>
+        <version>
+          <date>22/12/2015 15:51:01</date>
+          <class>03533</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17266">
+      <classement>
+        <version>
+          <date>22/12/2015 16:16:10</date>
+          <class>01225</class>
           <rating>20</rating>
         </version>
       </classement>
+      <disabled />
+    </piece>
+    <piece id="17321">
+      <classement>
+        <version>
+          <date>22/12/2015 16:20:23</date>
+          <class>05103</class>
+          <rating>60</rating>
+        </version>
+      </classement>
       <dates>
-        <date>11/12/2015 11:40:39</date>
+        <date>22/12/2015 16:20:30</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="12316">
+    <piece id="17576">
       <classement>
         <version>
-          <date>11/12/2015 11:21:15</date>
-          <class>03440</class>
+          <date>22/12/2015 16:59:25</date>
+          <class>03313</class>
           <rating>60</rating>
         </version>
       </classement>
-      <disabled />
-    </piece>
-    <piece id="15190">
-      <classement>
-        <version>
-          <date>11/12/2015 11:37:05</date>
-          <class>1001</class>
-          <rating>100</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="16160">
-      <classement>
-        <version>
-          <date>11/12/2015 11:13:43</date>
-          <class>02350</class>
-          <rating>20</rating>
-        </version>
-      </classement>
       <dates>
-        <date>11/12/2015 11:13:00</date>
+        <date>22/12/2015 16:57:40</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="21296">
+    <piece id="18680">
       <classement>
         <version>
-          <date>11/12/2015 11:24:06</date>
-          <class>03220</class>
+          <date>22/12/2015 11:48:46</date>
+          <class>001103</class>
           <rating>60</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="22103">
+    <piece id="20111">
       <classement>
         <version>
-          <date>11/12/2015 11:09:39</date>
-          <class>04020</class>
+          <date>22/12/2015 11:24:47</date>
+          <class>005223</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="20747">
+      <classement>
+        <version>
+          <date>22/12/2015 11:26:49</date>
+          <class>1214</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 11:29:13</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="21912">
+      <classement>
+        <version>
+          <date>22/12/2015 15:46:21</date>
+          <class>04433</class>
           <rating>60</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="23215">
+    <piece id="22669">
       <classement>
         <version>
-          <date>11/12/2015 11:30:50</date>
-          <class>1130</class>
+          <date>22/12/2015 16:00:42</date>
+          <class>1021</class>
           <rating>100</rating>
         </version>
       </classement>
       <dates>
-        <date>11/12/2015 11:34:12</date>
+        <date>22/12/2015 15:57:19</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="24152">
+      <classement>
+        <version>
+          <date>22/12/2015 15:43:58</date>
+          <class>03433</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>22/12/2015 15:43:18</date>
       </dates>
       <disabled />
     </piece>
