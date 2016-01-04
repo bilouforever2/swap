@@ -159,7 +159,8 @@
 	<borderVirtual>true</borderVirtual>
 	<borderIdem>false</borderIdem>
 	<borderGranSlam>true</borderGranSlam>
-	<export>I:\Podcasts\</export>
+	<export enabled="true" dir="C:\Bernard\zique\Podcasts\" fIn="..\listIn.txt" fOut="..\tracksTaf.txt" />
+	
 	
 	<!-- pod nano 16 rose -->
 	
@@ -205,7 +206,7 @@
 			</items>
 		</auto>
 	
-		<dir name="Histo" all="true" d="10828,13333333" auto="pod" nb="10" maxdate="55,12916667" fd="379,63333333" cascading="true" transmit="true">	 
+		<dir name="Histo" all="true" d="10828,13333333" auto="pod" nb="10" maxdate="55,12916667" fd="386,31666667" cascading="true" transmit="true">	 
 		
 			<list l="0" date="0">
 					<td nb="10" /> 
