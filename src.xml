@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
- <file path="\pdb.podcast\Auto\AutoBuilder.cs">
+   <file path="\pdb.podcast\Auto\AutoBuilder.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1651,6 +1651,7 @@ namespace pdb.podcast.Auto
                 }
 
                 double tot = 0;
+                bool _checked = false; 
                 foreach (CauseDataValue cd in cause.datas)
                 {
                     if (cd.Virtuel)
@@ -1664,6 +1665,7 @@ namespace pdb.podcast.Auto
                     if (cd.val <= item.torg)
                         continue;
 
+                    _checked = true; 
 
                     var tension = item.getTension(cd.val);
                     if (!conf.selectFix)
@@ -1678,7 +1680,7 @@ namespace pdb.podcast.Auto
                     cd.Update = true;
 
                 }
-                if (tot > 0 //COMMENT on peut avoir ZERO ???? et pourtant
+                if (tot >0 && _checked // (tot > 0 //COMMENT on peut avoir ZERO ???? et pourtant
                     && (_cause == null || tot < _cause.tension))
                     _cause = new CauseDatasTension(cause, tot);
 
@@ -1820,6 +1822,9 @@ namespace pdb.podcast.Load
         timeSpan currentDuration = new timeSpan();
         timeSpan currentDurationVirtuel = new timeSpan();
         timeSpan durationStop = new timeSpan();
+      
+
+
 
         /// <summary>
         /// Nombre total
@@ -1838,6 +1843,8 @@ namespace pdb.podcast.Load
         public void phase2()
         {
             currentDuration = new timeSpan();
+            //list = new List<TrackInfoItunes>();
+            //selected = new BgDictString0<TrackInfoItunes>(); 
             currentDurationVirtuel = new timeSpan();
             durationStop = new timeSpan();
             nb = 0;
@@ -1845,6 +1852,24 @@ namespace pdb.podcast.Load
             nbStop = 0;
             state = loadState.selection;
             endByFd = null;
+            _indexForTotal = -1;
+        }
+
+        private int nbTest;
+        private  timeSpan dureeTest;
+
+        public void phaseTest()
+        {
+            nbTest = 0;
+            dureeTest = new timeSpan(); 
+        }
+        public bool test( int _nbMax, timeSpan tsMax, TrackInfoItunes track)
+        {
+          
+            nbTest++;
+            dureeTest += track.Duree;
+        
+            return (nbTest <= _nbMax && dureeTest <= tsMax); 
         }
 
 
@@ -1919,6 +1944,60 @@ namespace pdb.podcast.Load
                 return currentDuration;
             return currentDurationVirtuel;
         }
+        //  public void addTrackSuppl(TrackInfoItunes candidat) { durationForTotal += candidat.Duree; }
+        //  public timeSpan DureeSupl { get { return durationForTotal; } }
+
+        /// <summary>
+        /// Quelle duree pour obtenir un nb d'éléménts et une durée min
+        /// </summary>
+        /// <param name="nb">nb d'éléments</param>
+        /// <param name="fd">durée min</param>
+        /// <returns></returns>
+        //public timeSpan getTotalDurationFor(int nb, timeSpan fd)
+        //{
+        //    if (_indexForTotal > 0)
+        //    {
+        //    }
+        //    timeSpan ret = new timeSpan();
+        //    timeSpan aux = new timeSpan();
+
+        //    int _nb = 0;
+        //    int count = list.Count;
+        //    for (int i = 0; i < count; i++)
+        //    {
+        //        var t = list[i];
+        //        _nb++;
+        //        aux += t.Duree;
+        //        if (i >= _indexForTotal)
+        //        {
+        //            if (!selected.ContainsKey(t.Location))
+        //            {
+        //                if (_nb <= nb || aux <= fd)
+        //                    ret += t.Duree;
+        //                else
+        //                {
+        //                }
+
+        //            }
+        //            else
+        //            {
+        //            }
+        //        }
+
+
+        //        //if (_nb > nbMax && _nb > nb)
+        //        //    return ret;
+        //        //aux += t.Duree;
+        //        //if (aux > durationMax && aux > fd)
+        //        //    return ret;
+
+        //        //if (i >= _indexForTotal)
+        //        //{
+        //        //    ret += t.Duree;
+        //        //}
+        //    }
+        //    return ret;
+        //}
 
         public timeSpan getDurationStop(bool real)
         {
@@ -1942,8 +2021,9 @@ namespace pdb.podcast.Load
         }
 
         public int Nb { get { return nb; } }
-
-        public bool control(TrackInfoItunes track, bool select, bool real,bool increment)
+        private int _indexForTotal = -1;
+        public int IndexBase { get { return _indexForTotal; } set { _indexForTotal = value; } }
+        public bool control(TrackInfoItunes track, bool select, bool real, bool increment, bool forTotal)
         {
             //if (state == loadState.end)
             //    return false;
@@ -1965,7 +2045,7 @@ namespace pdb.podcast.Load
                 log("-->  {0} ok {1} ", phase, str);
             }
 
-            var ok = checkStatus(string.Format("-->  {0}", phase), select, track, limit, real,increment);
+            var ok = checkStatus(string.Format("-->  {0}", phase), select, track, limit, real, increment, forTotal);
 
             if (!ok)
                 return false;
@@ -2000,7 +2080,7 @@ namespace pdb.podcast.Load
 
 
 
-        private bool checkStatus(string phase, bool select, TrackInfoItunes track, LimitItem itemSource, bool real, bool increment)
+        private bool checkStatus(string phase, bool select, TrackInfoItunes track, LimitItem itemSource, bool real, bool increment, bool forTotal)
         {
             endByFd = null;
             _okFd = true;
@@ -2009,6 +2089,8 @@ namespace pdb.podcast.Load
             //        string str = string.Format("{0} {1} {2} {3} {4}", limit, itemSource, (nb), currentDuration.TotalMinutes.ToString("0"), track.ToString());
             //nbVirtuel = nb;
             //currentDurationVirtuel = currentDuration; 
+            if (forTotal && _indexForTotal < 0)
+                _indexForTotal = nb;
             var nbBase = real ? nb : nbVirtuel;
 
             var _nb = nbBase + 1;
@@ -2099,13 +2181,23 @@ namespace pdb.podcast.Load
 
 
 
+
             if (increment)
             {
-
                 if (real)
                 {
                     nb += 1;
                     currentDuration += track.Duree;
+
+                 //   list.Add(track);
+                    //if (ret)
+                    //{
+                    //    if (selected.ContainsKey(track.Location))
+                    //    {
+                    //    }
+                    //    else
+                    //    selected.Add(track.Location, track); 
+                    //}
                 }
 
                 currentDurationVirtuel += track.Duree;
@@ -2158,6 +2250,11 @@ namespace pdb.podcast.Load
         timeSpan trackDurationMax;
         timeSpan trackDurationMin;
 
+
+
+        List<TrackInfoItunes> list = new List<TrackInfoItunes>();
+        BgDictString0<TrackInfoItunes> selectedByFd = new BgDictString0<TrackInfoItunes>();
+        BgDictString0<TrackInfoItunes> manageByFd = new BgDictString0<TrackInfoItunes>();
         bool loadEqSel;
 
         public LimitItemLoader(LimitsLoader parent, LimitItem limit)
@@ -2444,6 +2541,8 @@ namespace pdb.podcast.Load
         {
             currentDuration = new timeSpan();
             currentDurationVirtual = new timeSpan();
+            selectedByFd = new BgDictString0<TrackInfoItunes>();
+            manageByFd = new BgDictString0<TrackInfoItunes>();
 
             if (_selection)
             {
@@ -2504,14 +2603,30 @@ namespace pdb.podcast.Load
             }
         }
 
+
+
+        //private timeSpan getDuration(int nb, timeSpan minfd)
+        //{
+        //    timeSpan tot = new timeSpan();
+        //    foreach (FeedLimitItemLoader feed in loaders.Values)
+        //    {
+        //        tot += feed.getTotalDurationFor(nb, minfd);
+        //    }
+        //    return tot;
+        //}
+
         public void Selection()
         {
+
             if (limit.Nb == 0 || limit.FeedDuration == 0 || limit.Duration == 0)
                 return;
 
             var histo = limit.Dir.Histo;
 
             var relax = legacyRelax.List;
+            if (relax.Count > 0)
+            {
+            }
 
             if (histo)
                 relax.Sort(new PodCastComparer());
@@ -2539,22 +2654,26 @@ namespace pdb.podcast.Load
 
         }
 
-        private void selection(ICollection<TrackInfoItunes> list, bool select, bool increment)
+        private void selection(List<TrackInfoItunes> list, bool select, bool increment)
         {
             var duration = limit.Duration;
             var durationMax = timeSpan.FromMinutes(duration);
             var contributionMax = timeSpan.FromMinutes(limit.Contribution);
 
-
-
-            foreach (TrackInfoItunes candidat in list)
+            int count = list.Count;
+            for (int index = 0; index < count; index++)
             {
+                TrackInfoItunes candidat = list[index];
+                //foreach (TrackInfoItunes candidat in list)
+                //{
+
                 if (candidat.Album == "Géopolitique")
                 {
                 }
                 var location = candidat.Location;
                 if (string.IsNullOrEmpty(location))
                     continue;
+
                 //if (_selection && selected.ContainsKey(location))
                 //    continue;
                 // vérification à postériori par rapports aux différents niveaux
@@ -2566,20 +2685,28 @@ namespace pdb.podcast.Load
                 bool okTotalDuration = false;
                 bool _control = false;
 
+                //tester uniquement fd et nb
+                // _control = loader.control(candidat, select, false, false);
 
-                var _newDuration = currentDuration; 
-                if (increment )
-                    _newDuration = currentDuration + candidat.Duree;
+                // var _newDuration = currentDuration;
+                //if (increment)
+                //    _newDuration = currentDuration + candidat.Duree;
 
                 // savoir si ça passe uniquement avec le critère d
-                okTotalDuration = _newDuration <= durationMax;
-                //tester uniquement fd et nb
-                _control = loader.control(candidat, select, false, false);
+                okTotalDuration = currentDuration <= durationMax;
 
+                bool okprovi = okDate && okTotalDuration;
                 bool ok = okDate && okTotalDuration && _control;
 
-                // rejouer le controle pour incrémenter nb et fd                   
-               _control =  loader.control(candidat, select, okDate && okTotalDuration, true);
+                // rejouer le controle pour incrémenter nb et fd      
+                if (!increment) // données venant de sous-dossier (histo, voisins....)
+                {
+                    _control = loader.control(candidat, select, okDate && okTotalDuration, true, false);
+                    if (_control && !selectedByFd.ContainsKey(location))
+                        selectedByFd.Add(location, candidat);
+                    if (!manageByFd.ContainsKey(location))
+                        manageByFd.Add(location, candidat);
+                }
 
 
 
@@ -2612,17 +2739,42 @@ namespace pdb.podcast.Load
 
                 if (increment)
                 {
-                   
+                    if (manageByFd.ContainsKey(location))
+                    {
+                        _control = false;
+                        if (selectedByFd.ContainsKey(location))
+                            _control = true;
+                    }
+                    else
+                    {
+                        _control = loader.control(candidat, select, true, true, true);
+                        loader.IndexBase = index;
+                    }
+
+
 
                     // si les deux autres sont bons, incrémenter la durée totale
-                    if (okDate && _control)
+                    var newDuration = currentDuration;
+                    if (!manageByFd.ContainsKey(location))
                     {
-                        currentDuration += candidat.Duree;
+                        if (_control)
+                        {
+                            currentDurationVirtual += candidat.Duree;
+                            if (okDate)
+                                currentDuration += candidat.Duree;
+                        }
                     }
-                    currentDurationVirtual += candidat.Duree;
-                    var newDuration = okDate && _control ? currentDuration : currentDurationVirtual;
+                    newDuration = currentDurationVirtual; 
+                    if (_control && !selectedByFd.ContainsKey(location))
+                        selectedByFd.Add(location, candidat);
+                    if (!manageByFd.ContainsKey(location))
+                        manageByFd.Add(location, candidat);
+                    okTotalDuration = newDuration <= durationMax;
 
+                
 
+                    //okTotalDuration = newDuration <= durationMax;
+                    //_control = loader.control(candidat, select, okDate && okTotalDuration, true,true);
 
                     //if (okDate && _control)
                     //    currentDuration += candidat.Duree;
@@ -2635,6 +2787,39 @@ namespace pdb.podcast.Load
                     if (!_selection)
                     {
 
+                        if (_control)
+                        {
+                        }
+                        else
+                        {
+                            var fd = loader.getCurrentDuration(true);
+                            var nb = loader.getNb(true);
+
+                            newDuration = new timeSpan();
+                            foreach (FeedLimitItemLoader l in loaders.Values)
+                                l.phaseTest();
+                            for (int j = 0; j <= index; j++)
+                            {
+                                TrackInfoItunes t = list[j];
+                                var subloader = getLoader(t.Album);
+                                var subok = subloader.test(nb, fd, t);
+                                if (j >= subloader.IndexBase)
+                                {
+                                    if (subok || selectedByFd.ContainsKey(location))
+                                        newDuration += t.Duree;
+                                }
+
+                            }
+                            // newDuration += getDuration(nb, fd);
+
+                            if (newDuration < currentDuration)
+                            {
+                            }
+                            else if (newDuration > currentDurationVirtual)
+                            {
+                            }
+                            okTotalDuration = newDuration <= durationMax;
+                        }
 
 
                         //question fd
@@ -2651,9 +2836,9 @@ namespace pdb.podcast.Load
                             //loader.OkFd, loader.getCurrentDuration(okDate && okTotalDuration)
                             //, loader.OkNb, loader.getNb(okDate && okTotalDuration)
                             //, okTotalDuration, newDuration, candidat, limit);
-                                loader.OkFd, loader.getDurationStop(okDate && okTotalDuration)
-                        , loader.OkNb, loader.getNbStop(okDate && okTotalDuration)
-                        , okTotalDuration, durationStop.Value == 0 ? newDuration : durationStop, candidat, limit);
+                                loader.OkFd, loader.getCurrentDuration(true)
+                        , loader.OkNb, loader.getNb(true)
+                        , okTotalDuration, newDuration, candidat, limit);
 
                         limit.signal(dataAuto);
                     }
@@ -2791,7 +2976,7 @@ namespace pdb.podcast.Load
                             limit.DurationLimitAtteinte = true;
                         if (durationStop.Value == 0)
                         {
-                           // currentDuration = newDuration;
+                            // currentDuration = newDuration;
                             durationStop = currentDuration;
                         }
 
@@ -2816,7 +3001,7 @@ namespace pdb.podcast.Load
                         use.Add(candidat);
                     }
 
-                 //   currentDuration = newDuration;
+                    //   currentDuration = newDuration;
 
 
 
@@ -2845,442 +3030,6 @@ namespace pdb.podcast.Load
 
         public LimitItem Item { get { return limit; } }
 
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.podcast\Tuning\LimitItem.cs">
-    <content><![CDATA[using System;
-using pdb.util;
-using pdb.podcast.Report;
-using pdb.podcast.Auto;
-using System.Collections.Generic;
-using pdb.podcast.Selection;
-
-namespace pdb.podcast.Tuning
-{
-    /// <summary>
-    /// Item de limite concernant la durée 
-    /// </summary>
-    public class LimitItem : LimitItemBase, IBuilderSource, IBorder
-    {
-
-
-        /// <summary>
-        /// Détailler le rapport - à bouger
-        /// </summary>
-        public static bool includeDetail;
-
-
-        public int Level { get { return limit.Level; } }
-        public int Rating { get { return limit.Level * 20; } }
-
-
-
-        private Limit limit;
-        private TripleStat stats = new TripleStat();
-
-
-        public override string ToString()
-        {
-            if (nb == 0 || feedDuration == 0)
-                return Dir.ToString() + string.Format("\\{0}", limit.Level);
-            return Dir.ToString() + string.Format("\\{0}:{1} {2} {3} {4} {5} {6} {7} {8}", limit.Level, getS("d", duration), getS("c", contribution), getS("fd", feedDuration), getS("nb", nb), getS("td", td), getS("tdMin", tdMin), getS("date", dateMin), getS("dateMax", dateMax));
-        }
-
-        private static string getS(string desc, int v)
-        {
-            if (v < int.MaxValue && v > 0)
-                return string.Format("{0}={1}", desc, v);
-            return "";
-        }
-
-        private static string getS(string desc, double v)
-        {
-            if (v < int.MaxValue && v > 0)
-                return string.Format("{0}={1}", desc, v);
-            return "";
-        }
-
-        private static string getS(string desc, DateTime v)
-        {
-            if (v > DateTime.MinValue && v < DateTime.MaxValue)
-                return string.Format("{0}={1}", desc, v);
-            return "";
-        }
-
-
-
-        public void recordTrackMoy(TrackInfoItunes track, int countItems)
-        {
-            stats.recordTrack(track, countItems);
-        }
-
-
-        private bool durationLimitAtteinte;
-        private bool contributionLimitAtteinte;
-        private bool durationFeedLimit;
-        private bool nbFeedLimit;
-        public bool DurationLimitAtteinte { get { return durationLimitAtteinte; } set { durationLimitAtteinte = value; } }
-        public bool ContributionLimitAtteinte { get { return contributionLimitAtteinte; } set { contributionLimitAtteinte = value; } }
-        //private bool loadDurationLimitAtteinte;
-        //public bool LoadDurationLimitAtteinte { get { return loadDurationLimitAtteinte; } set { loadDurationLimitAtteinte = value; } }
-
-        public bool DurationFeedLimit { set { durationFeedLimit = value; } get { return durationFeedLimit; } }
-        public bool NbFeedLimit { set { nbFeedLimit = value; } get { return nbFeedLimit; } }
-
-        #region border
-        public bool checkPub(TrackInfoItunes candidat)
-        {
-            var d = candidat.Pub;
-            if (d < dateMin)
-                return false;
-            if (d > dateMax)
-                return false;
-            return true;
-        }
-        #endregion
-        //#region border
-        ///// <summary>
-        ///// track In le plus près de la limite dateMin
-        ///// </summary>
-        //TrackInfoItunes borderDateMinIn;
-        ///// <summary>
-        ///// Track rejeté le plus près de la limite dateMin
-        ///// </summary>
-        //TrackInfoItunes borderDateMinOut;
-
-        ///// <summary>
-        ///// track In le plus près de la limite dateMax
-        ///// </summary>
-        //TrackInfoItunes borderDateMaxIn;
-        ///// <summary>
-        ///// Track rejeté le plus près de la limite dateMax
-        ///// </summary>
-        //TrackInfoItunes borderDateMaxOut;
-
-        ///// <summary>
-        ///// Dernier accepté par rapport à la durée totale
-        ///// </summary>
-        //TrackInfoItunes borderDurationIn;
-        ///// <summary>
-        ///// Premier rejeté par rapport à la durée totale
-        ///// </summary>
-        //TrackInfoItunes borderDurationOut;
-
-        //TimeSpan borderDurationValueIn;
-        //TimeSpan borderDurationValueOut;
-
-        ///// <summary>
-        ///// Dernier accepté par rapport à la durée de feed
-        ///// </summary>
-        //TrackInfoItunes borderFdIn;
-        ///// <summary>
-        ///// Premier rejeté par rapport à la durée Feed
-        ///// </summary>
-        //TrackInfoItunes borderFdOut;
-
-        //TimeSpan borderFdValueIn;
-        //TimeSpan borderFdValueOut; 
-
-        //public void clearBorder()
-        //{
-        //    borderDateMinIn = null;
-        //    borderDateMinOut = null;
-        //    borderDateMaxIn = null; 
-        //    borderDateMaxOut = null;
-        //    borderDurationIn = null;
-        //    borderDurationOut = null;
-        //    borderDurationValueIn = new TimeSpan();
-        //    borderDurationValueOut = new TimeSpan();
-
-        //    borderFdIn = null;
-        //    borderFdOut = null;
-        //    borderFdValueIn = new TimeSpan();
-        //    borderFdValueOut = new TimeSpan(); 
-        //}
-
-
-
-        //// --------vIn----limit ------vout
-        //public void checkBorderFd(TrackInfoItunes candidat, TimeSpan duration, bool selected)
-        //{
-        //    if (selected && duration.TotalMinutes <= this.feedDuration )
-        //    {
-        //        if (borderFdIn == null || duration > borderFdValueIn )
-        //        {
-        //            borderFdIn = candidat;
-        //            borderFdValueIn = duration;
-        //        }
-        //    }
-        //    else if (!selected && duration.TotalMinutes > this.feedDuration)
-        //    {
-        //        if (borderFdOut == null || duration < borderFdValueOut)
-        //        {
-        //            borderFdOut = candidat;
-        //            borderFdValueOut = duration;
-        //        }
-        //    }
-        //    else
-        //    {
-        //    }
-        //    }
-
-        //public void checkBorderDuration(TrackInfoItunes candidat, TimeSpan duration, bool selected)
-        //{
-        //    if (selected && duration.TotalMinutes <= this.duration)
-        //    {
-        //        borderDurationIn = candidat;
-        //        borderDurationValueIn = duration;
-        //    }
-        //    else if (!selected && duration.TotalMinutes > this.duration)
-        //    {
-        //        if (borderDurationOut == null)
-        //        {
-        //            borderDurationOut = candidat;
-        //            borderDurationValueOut = duration;
-        //        }
-        //    }
-        //    else
-        //    {
-        //    }
-        //}
-
-        //public void checkBorderDates(TrackInfoItunes candidat, bool selected)
-        //{
-        //    // ---minOut --limit ---minIn ----
-        //    var d = candidat.Pub;
-        //    if (d < dateMin)
-        //    {
-        //        if (borderDateMinOut == null ||d > borderDateMinOut.Pub )
-        //            borderDateMinOut = candidat;
-        //    }
-        //    else if (d>=dateMin && selected)
-        //    {
-        //        if (borderDateMinIn == null || d < borderDateMinIn.Pub)
-        //            borderDateMinIn = candidat;
-
-        //    }
-        //    // ---maxIn --limit ---maxOut ----
-        //    if (d > dateMax)
-        //    {
-        //        if (borderDateMaxOut == null || d < borderDateMaxOut.Pub)
-        //            borderDateMaxOut = candidat;
-        //    }
-        //    else if (d <= dateMax &&selected)
-        //    {
-        //        if (borderDateMaxIn == null || d >borderDateMaxIn.Pub )
-        //            borderDateMaxIn = candidat;
-        //    }
-        //}
-
-
-
-        //#endregion
-
-        public void writeStat(ITextWriter sbRapport)
-        {
-            writeStatHeader(sbRapport);
-            stats.buildValues(sbRapport);
-
-        }
-
-        private LimitItemStat stat;
-        internal LimitItemStat Stat
-        {
-            set
-            {
-                if (stat == null)
-                    stat = value;
-            }
-            get { return stat; }
-        }
-
-        public void writeStatHeader(ITextWriter sbRapport)
-        {
-            //    if (loadDurationLimitAtteinte)
-            //        sbRapport.Append("d");
-            //    else
-            //        sbRapport.Append(" ");
-
-            if (durationLimitAtteinte)
-                sbRapport.Append("d");
-            else
-                sbRapport.Append(" ");
-
-
-
-            if (durationFeedLimit)
-                sbRapport.Append("f");
-            else
-                sbRapport.Append(" ");
-
-            if (nbFeedLimit)
-                sbRapport.Append("n");
-            else
-                sbRapport.Append(" ");
-
-            if (contributionLimitAtteinte)
-                sbRapport.Append("c");
-            else
-                sbRapport.Append(" ");
-            sbRapport.Append(" ");
-
-        }
-
-        public void getToTaux(ITextWriter sb)
-        {
-
-        }
-
-        public void rapport(DescBuilder sb)
-        {
-            sb.Append("\t");
-            //sb.Append(Dir.getPath());
-            //sb.Append(" ");
-            sb.Append(ToString());
-            sb.Append(" ");
-        }
-
-        public DirConf Dir { get { return limit.Dir; } }
-        public string id = null;
-        public string ID
-        {
-            get
-            {
-                if (id == null)
-                {
-                    int index = limit.index(this);
-                    if (index >= 0)
-                        id = Dir.getPath() + "\\" + Level + "\\_" + (index + 1);
-                    else
-                        id = Dir.getPath() + "\\_" + Level;
-
-                }
-                return id;
-            }
-        }
-        private Logger logger;
-
-        public LimitItem(Limit limit)
-        {
-            this.limit = limit;
-        }
-        public Logger Logger
-        {
-            get
-            {
-                if (logger == null)
-                {
-                    logger = Logger.getLogger(ID, false);
-                }
-                return logger;
-            }
-        }
-
-        public object Clone()
-        {
-            var limitiItem = new LimitItem(limit) { nb = this.nb, Td = this.td, TdMin = this.tdMin, DateMin = this.dateMin, Contribution = this.contribution, Stat = this.stat };
-            limitiItem.duration = this.duration;
-            limitiItem.feedDuration = this.feedDuration;
-            limitiItem.dateMax = this.dateMax;
-            return limitiItem;
-
-        }
-
-        public Limit Limit { set { limit = value; } get { return limit; } }
-
-
-        public List<TrackInfoItunes> getSelectedTracks()
-        {
-            if (stat == null)
-                return new List<TrackInfoItunes>();
-            return new List<TrackInfoItunes>(stat.Total.Use.List);
-        }
-
-        public double getTotalSize()
-        {
-            if (stat == null)
-                return -1;
-            return stat.Total.Use.getTotalSize();
-        }
-
-        public string getEmpreinte()
-        {
-            if (stat == null)
-                return "NULL";
-            return stat.Total.Use.getEmpreinte();
-        }
-
-
-        public void addBorderObs(IBorderTransmit auto)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void signal(TrackBorderItem tb)
-        {
-            // en attendant d'implémenter les autos pour limitItem
-            if (tb == null)
-                return;
-            switch (tb.type)
-            {
-                case borderType.d: if (!hduration) return;
-                    break;
-                case borderType.fd: if (!hfeedDuration) return;
-                    break;
-                case borderType.maxdate: if (!hdateMax) return;
-                    break;
-                case borderType.nb: if (!hNb) return;
-                    break; 
-                default:
-                    return;
-            }
-            limit.signal(tb);
-
-        }
-
-
-        public void signal(CauseDatas cd)
-        {
-            int nb = 0;
-            for (int i = 0; i < Causes.NB_TYPE; i++)
-            {
-                var data = cd.datas[i];
-                if (data == null)
-                    continue;
-                var type = data.type;
-
-                switch (type)
-                {
-                    case borderType.d: if (!hduration) cd.datas[i].Virtuel = true;
-                        break;
-                    case borderType.fd: if (!hfeedDuration) cd.datas[i].Virtuel = true;
-                        break;
-                    case borderType.maxdate: if (!hdateMax) cd.datas[i].Virtuel = true;
-                        break;
-                    case borderType.nb:
-                        if (!hNb)
-                            cd.datas[i].Virtuel = true; break;
-                    default:
-                        cd.datas[i].Virtuel = true; break;
-                }
-
-                if (cd.datas[i] != null && !cd.datas[i].Virtuel)
-                    nb++;
-
-            }
-
-            if (nb <= 1)
-                return; 
-            this.limit.signal(cd);
-        }
-
-
-        public IDictionary<string, TrackInfoItunes> getAllTracks()
-        {
-            throw new NotImplementedException();
-        }
     }
 }
 ]]></content>
