@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-   <file path="\pdb.podcast\Auto\AutoBuilder.cs">
+  <file path="\pdb.podcast\Auto\AutoBuilder.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1252,6 +1252,22 @@ namespace pdb.podcast.Auto
 
 
             }
+
+            setDelta(); 
+           
+
+        }
+
+        public static void SetDelta()
+        {
+            foreach (AutoBuilder item in list)
+            {
+                item.setDelta();
+            }
+        }
+
+        private void setDelta()
+        {
             mustUpdate = false;
             canGo = false;
 
@@ -1259,7 +1275,6 @@ namespace pdb.podcast.Auto
             double target = conf.target;
             delta = target - total;
             log("delta {0}", delta);
-
         }
 
         private bool check3()
@@ -1636,11 +1651,14 @@ namespace pdb.podcast.Auto
         private void checkCause(CauseDatas cause)
         {
             bool up = delta > 0;
-            bool selected = cause.Selected;
-            if (up && selected)
-                return;
-            if (!up && !selected)
-                return;
+            if (Conf.AutoSelect)
+            {
+                bool selected = cause.Selected;
+                if (up && selected)
+                    return;
+                if (!up && !selected)
+                    return;
+            }
 
             if (up)
             {
@@ -1749,6 +1767,724 @@ namespace pdb.podcast.Auto
 }
 ]]></content>
   </file>
+  <file path="\pdb.podcast\Auto\AutoBuilderItem.cs">
+    <content><![CDATA[using pdb.podcast.Tuning;
+using pdb.util;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using pdb.podcast.Delta;
+using TimeSpan = pdb.util.timeSpan;
+using pdb.podcast.Selection;
+using pdb.podcast.Report;
+
+namespace pdb.podcast.Auto
+{
+    class AutoBuilderItem : IBorder
+    {
+
+
+        /// <summary>
+        /// Valeur initiale de la valeur gérée
+        /// </summary>
+        public double org;
+        private double pertinentOrg = -1;
+        private timeSpan tpertinentOrg;
+        public TimeSpan torg;
+        private TimeSpan tmin;
+        private TimeSpan tmax;
+        /// <summary>
+        /// Valeur modifiée
+        /// </summary>
+        private double newv;
+        private double evolSize;
+        public double NewV { get { return newv; } }
+        internal TrackBorderItem rejected(bool real) { return real ? _rejected : _rejectedLight; }
+        internal TrackBorderItem selected(bool real) { return real ? _selected : _selectedLight; }
+        internal void makePertinent() { pertinentOrg = org; }
+
+        public void checkAjout(IEnumerable<TrackInfoItunes> list)
+        {
+            if (pertinentOrg == org)
+                return;
+
+            var lcauses = _causes;
+
+
+            foreach (Causes causes in lcauses)
+            {
+                foreach (TrackInfoItunes t in list)
+                {
+                    if (causes.candidat.Location == t.Location)
+                    {
+                        pertinentOrg = org;
+                        return;
+                    }
+                }
+
+            }
+
+
+        }
+
+        private string name;
+
+        /// <summary>
+        /// Attribut concerné
+        /// </summary>
+        XmlAttribute att;
+        XmlElement xml;
+        public double dd;
+        public double d;
+        private bool lastStrict;
+        private bool lastUp;
+        private double lastDelta;
+
+        private double lastOrg;
+
+        private pdb.podcast.Tuning.Auto conf;
+        public readonly borderType type;
+        private AutoBuilder parent;
+        public AutoBuilderItem(AutoBuilder parent, pdb.podcast.Tuning.Auto conf)
+        {
+            this.parent = parent;
+            this.conf = conf;
+            this.type = conf.type;
+            this.name = string.Format("{0}:{1}", conf.name, type);
+            if (conf.pente == 0)
+                d = conf.max - conf.min;
+            else
+                d = conf.pente - conf.min;
+            dd = d * d;
+        }
+
+        private bool _toSave;
+        public bool ToSave { get { return _toSave; } }
+
+        public double Org { get { return org; } }
+
+        public void setConf(pdb.podcast.Tuning.Auto conf) { this.conf = conf; }
+
+        #region border
+        private TrackBorderItem _selected;
+        private TrackBorderItem _selectedLight;
+        private TrackBorderItem _rejected;
+        private TrackBorderItem _rejectedLight;
+
+        //private bool verify(TrackBorderItem tb)
+        //{
+        //    return true;
+        //    double sourceValue = -1;
+        //    var source = tb.source;
+        //    switch (type)
+        //    {
+        //        case borderType.d: sourceValue = source.Duration; break;
+        //        case borderType.fd: sourceValue = source.FeedDuration; break;
+        //        case borderType.maxdate: sourceValue = (source.DateMax - Conf.Date0).TotalDays; break;
+        //        default: return false;
+        //    }
+
+        //    if (Math.Abs(org - sourceValue) > 2.0E-7)
+        //        return false;
+        //    return true;
+        //}
+        private void setSelect(TrackBorderItem tb)
+        {
+            // pour down mémo des track sélectionnés
+
+            _selected = tb;
+
+        }
+
+        private void setRejec(TrackBorderItem tb)
+        {
+            // A REVOIR
+
+            //// pour up mémo des tracks rejetés
+            ////1. S'il est par ailleurs déjà intégré, pas pertinent
+            //if (parent.Source.contains(tb.candidat))
+            //{
+            //    return;
+            //    if (_rejected != null)
+            //    {
+            //        if (_rejected.status > borderStatus.rejectedXtraLight)
+            //            return;
+            //        if (tb.val >= _rejected.val)
+            //            return; 
+            //    }
+
+            //    tb.status = borderStatus.rejectedXtraLight; 
+            //}
+
+
+            ////2. On est en cours de construction donc il se peut que ce candidat soit in fine ajouté par d'autres
+            //// intéret en up . S'il est dans la mémoire pas pertinent en up
+            //if (parent.Mem.dict.ContainsKey(tb.candidat.Location))
+            //    return;
+            _rejected = tb;
+        }
+
+
+        public void signal(TrackBorderItem tb)
+        {
+
+            if (tb.Virtual && !Conf.BorderVirtual)
+                return;
+            if (tb.Selected)
+            {
+                if (tb.val >= torg)
+                    return;
+                if (tb.val <= tmin)
+                    return;
+
+                if (!tb.Virtual)
+                {
+                    if (_selected == null)
+                        _selected = tb;
+                    else if (tb.val > _selected.val)
+                        _selected = tb;
+                }
+
+                if (_selectedLight == null)
+                    _selectedLight = tb;
+                else if (tb.val > _selectedLight.val)
+                    _selectedLight = tb;
+
+                //if (_selected == null)
+                //    setSelect(tb);
+                //else
+                //{
+                //    if (tb.status > _selected.status && !Conf.BorderIdem)
+                //        setSelect(tb);
+                //    else if (tb.status == _selected.status || Conf.BorderIdem)
+                //    {
+                //        if (tb.val > _selected.val)
+                //            setSelect(tb);
+                //    }
+                //}
+
+            }
+            else
+            {
+
+                if (tb.val <= torg)
+                    return;
+                if (tb.val >= tmax)
+                    return;
+
+                if (!tb.Virtual)
+                {
+                    if (_rejected == null)
+                        _rejected = tb;
+                    else if (tb.val < _rejected.val)
+                        _rejected = tb;
+                }
+
+                if (_rejectedLight == null)
+                    _rejectedLight = tb;
+                else if (tb.val < _rejectedLight.val)
+                    _rejectedLight = tb;
+
+
+                //if (_rejected == null)
+                //    setRejec(tb);
+                //else
+                //{
+                //    if (tb.status > _rejected.status && !Conf.BorderIdem)
+                //        setRejec(tb);
+                //    else if (tb.status == _rejected.status || Conf.BorderIdem)
+                //    {
+                //        if (tb.val < _rejected.val)
+                //            setRejec(tb);
+                //    }
+                //}
+
+            }
+        }
+        #endregion
+
+        public void setOrg(XmlElement xml)
+        {
+            // Program.logAuto.log(ToString());
+            _rejected = null;
+            _selected = null;
+            _toSave = false;
+            this.xml = xml;
+            att = this.xml.Attributes[type.ToString()];
+            lastOrg = org;
+            if (att == null)
+                org = -1;
+            else
+                org = Convert.ToDouble(att.Value);
+
+            if (org < conf.min)
+            {
+                org = conf.min;
+                newv = org;
+                save();
+            }
+            else if (org > conf.max)
+            {
+                org = conf.max;
+                newv = org;
+                save();
+            }
+            torg = getValue(org);
+            tmin = getValue(conf.min);
+            tmax = getValue(conf.max);
+            if (pertinentOrg < 0)
+                pertinentOrg = org;
+            tpertinentOrg = getValue(pertinentOrg);
+            //  misc.log(ToString());
+        }
+        private double dt = -1; public double Dt { get { return dt; } set { dt = value; } }
+        private double tension; public double Tension { get { return tension; } }
+        private int _stop = AutoBuilder.STOP_MAX;
+        public bool Stop(int level) { return _stop < level; }
+
+        public void stop(int level)
+        {
+            newv = lastOrg;
+            org = lastOrg;
+            if (_stop > level)
+                _stop = level;
+            save();
+        }
+        public void reset()
+        {
+            _stop = AutoBuilder.STOP_MAX;
+        }
+        public void setTension(bool up, bool real, bool checkSelect)
+        {
+
+            dt = getDt(up, real, checkSelect);
+        }
+
+        public void setTension()
+        {
+            tension = _getTension(org);
+        }
+
+        private double getDt(bool up, bool real, bool checkSelect)
+        {
+            double t0 = _getTension(pertinentOrg);
+            tension = _getTension(up, real, checkSelect);
+            return (tension - t0) / conf.coeff;
+
+        }
+
+        private double getTension(bool up, bool real, bool selected)
+        {
+            return _getTension(up, real, selected) / conf.coeff;
+        }
+
+        public double getValue(TimeSpan val)
+        {
+            switch (type)
+            {
+
+                case borderType.d:
+                case borderType.fd:
+                case borderType.nb:
+                case borderType.c:
+                    return val.TotalMinute;
+                case borderType.maxdate: return val.TotalDay;
+                default: return -1;
+
+            }
+
+        }
+
+        private TimeSpan getValue(double val)
+        {
+            switch (type)
+            {
+                case borderType.d:
+                case borderType.fd:
+                case borderType.nb:
+                case borderType.c:
+                    return TimeSpan.FromMinutes(val);
+                case borderType.maxdate: return TimeSpan.FromDays(val);
+                default: return new TimeSpan();
+
+            }
+        }
+        public double EvolSize { get { return evolSize; } }
+
+        public List<Causes> getCauses()
+        {
+            return _causes;
+        }
+
+        //public List<Causes> getcauses(bool up, bool strict)
+        //{
+        //    List<Causes> list = null;
+        //    if (up)
+        //    {
+        //        if (strict)
+        //            list = _causesRejetStrict;
+        //        else
+        //            list = _causesRejet;
+        //    }
+        //    else
+        //    {
+        //        if (strict)
+        //            list = _causesSelectStrict;
+        //        else
+        //            list = _causesSelect;
+        //    }
+        //    return list;
+        //}
+
+        public void gap(bool up, bool fix, double _gap)
+        {
+            _gap = Math.Abs(_gap);
+            if (fix)
+            {
+                newv = Math.Abs(_gap);
+            }
+            else
+            {
+                if (up)
+                    newv = org + _gap;
+                else
+                    newv = org - _gap;
+            }
+            save();
+        }
+
+        private double _getTension(bool up, bool strict, bool checkSelect)
+        {
+            lastStrict = strict;
+            lastUp = up;
+            // double t0 = getTension(org, dd);
+            newv = org;
+            evolSize = 0;
+            var list = _causes;
+
+
+            if (list.Count > 0)
+            {
+                int ifin = 2;
+                bool bselect = !up;
+                if (checkSelect)
+                {
+                    ifin = 1;
+                }
+
+                CauseItem cause = null;
+
+                for (int i = 0; i < ifin; i++)
+                {
+                    var _cause = list[0].getCause(type, strict, !up, bselect);
+                    bselect = !bselect;
+                    if (_cause == null)
+                        continue;
+                    if (cause == null)
+                        cause = _cause;
+                    else
+                    {
+                        if (up)
+                        {
+                            if (_cause.val < cause.val)
+                                cause = _cause;
+                        }
+                        else
+                        {
+                            if (_cause.val > cause.val)
+                                cause = _cause;
+                        }
+                    }
+                }
+                if (cause == null)
+                    return int.MaxValue;
+                newv = Math.Round(getValue(cause.val), 8);
+                foreach (var c in list)
+                {
+                    var cand = c.candidat;
+                    evolSize += Stat.getSizeinMo(cand);
+                }
+            }
+            else
+                return int.MaxValue;
+
+
+            //if (false)
+            //{
+
+            //    if (up)
+            //    {
+            //        var _rejected = strict ? this._rejected : this._rejectedLight;
+            //        if (_rejected == null)
+            //            return int.MaxValue;
+            //        newv = Math.Abs(Math.Round(getValue(_rejected.val), 8));
+            //        evolSize = Stat.getSizeinMo(_rejected.candidat);
+
+            //    }
+            //    else
+            //    {
+            //        var _selected = strict ? this._selected : this._selectedLight;
+            //        if (_selected == null)
+            //            return int.MaxValue;
+            //        newv = Math.Round(getValue(_selected.val), 8);
+            //    }
+            //}
+
+            return _getTension(newv);
+        }
+
+        public void save()
+        {
+            //  xml.SetAttribute(type.ToString(), newv.ToString()); 
+            att.Value = newv.ToString();
+            _toSave = true;
+        }
+
+        public void save(timeSpan val)
+        {
+            this.newv = Math.Round(getValue(val), 8);
+            save();
+        }
+
+
+
+        private List<Causes> _causes = new List<Causes>();
+        //private List<Causes> _causesRejet = new List<Causes>();
+        //private List<Causes> _causesSelect = new List<Causes>();
+
+        //private List<Causes> _causesRejetStrict = new List<Causes>();
+        //private List<Causes> _causesSelectStrict = new List<Causes>();
+
+
+
+        //public void after()
+        //{            
+        //    _causesRejet = new List<Causes>();
+        //    _causesSelect = new List<Causes>();
+        //    _causesRejetStrict = new List<Causes>();
+        //    _causesSelectStrict = new List<Causes>();
+        //    after(true, true);
+        //    after(true, false);
+        //    after(false, true);
+        //    after(false, false);
+        //}
+        public void after(bool up, bool strict, bool checkSelection)
+        {
+            _causes = new List<Causes>();
+            var list = parent.CauseRegister.getList(false);
+            int min = int.MaxValue;
+            //  int minStrict = int.MaxValue;
+            if (!up)
+            {
+                min = 0;
+                //   minStrict = 0; 
+            }
+            int orgValue = torg.Value;
+            foreach (Causes causes in list)
+            {
+                var candidat = causes.candidat;
+                if (checkSelection)
+                {
+                    if (up && candidat.Selected)
+                        continue;
+                    if (!up && !candidat.Selected)
+                        continue;
+                }
+                int ifin = 2;
+                bool bselect = !up;
+                if (checkSelection)
+                {
+                    ifin = 1;
+                }
+
+                for (int i = 0; i < ifin; i++)
+                {
+
+
+                    var cause = causes.getCause(type, strict, !up, bselect);
+                    bselect = !bselect;
+                    if (cause == null)
+                        continue;
+                    if (up && cause.Ok)
+                        continue;
+                    if (!up && !cause.Ok)
+                        continue;
+                    //if (value < 0)
+                    //    value = -value;
+                    int value = cause.val.Value;
+
+                    if (up)
+                    {
+
+                        if (value == min)
+                        {
+                            _causes.Add(causes);
+
+                        }
+                        else if (value < min)
+                        {
+                            _causes.Clear();
+                            _causes.Add(causes);
+                            min = value;
+                        }
+
+                    }
+                    else
+                    {
+                        if (value >= orgValue)
+                            continue;
+
+                        if (value == min)
+                        {
+                            _causes.Add(causes);
+                        }
+                        else if (value > min)
+                        {
+                            _causes.Clear();
+                            _causes.Add(causes);
+                            min = value;
+                        }
+
+
+                    }
+                }
+
+            }
+        }
+
+
+        private double _getTension(double org)
+        {
+            var d2 = org - conf.min;
+            if (conf.pente > 0)
+                return (d2 / d);
+
+            var d1 = org - conf.max;
+
+            return -1 + 2 * (d1 * d1 + d2 * d2) / dd;
+        }
+
+        public double getTension(timeSpan org)
+        {
+            var _org = getValue(org);
+            var t = _getTension(_org);
+           // dt = t - _getTension(pertinentOrg); 
+
+            return t; 
+        }
+
+
+
+
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine();
+            sb.Append(name); sb.Append(" ");
+            sb.Append(org); sb.Append(" ");
+
+            if (newv != 0 && newv != org)
+            {
+                sb.Append("==>");
+                sb.Append(newv);
+                sb.Append(" ");
+            }
+
+            sb.Append("stop="); sb.Append(_stop); sb.Append(" ");
+
+            sb.Append("pertinent="); sb.Append(pertinentOrg); sb.Append(" ");
+            sb.Append("tension="); sb.Append(tension); sb.Append(" ");
+            if (dt != -1)
+            {
+                sb.Append("dt="); sb.Append(dt); sb.Append(" ");
+            }
+
+
+            if (newv != 0 && newv != org)
+            {
+                sb.Append("<==");
+            }
+            var causes = _causes; // getcauses(lastUp, lastStrict);
+            foreach (Causes cause in causes)
+            {
+                sb.AppendLine();
+                var strStrict = lastStrict ? "strict " : "light ";
+                var strselect = lastUp ? "rejet " : "select ";
+                sb.Append(strselect);
+                sb.Append(strStrict);
+                sb.Append(cause.getCause(type, lastStrict, !lastUp, !lastUp));
+                sb.Append(" "); sb.Append(cause.candidat);
+            }
+
+            //if (_causesRejetStrict.Count > 0)
+            //{
+
+
+            //    foreach (Causes cause in _causesRejetStrict)
+            //    {
+            //        sb.AppendLine();
+            //        sb.Append("rejet strict "); sb.Append(cause.getCause(type,true,false));                     
+            //    }
+            //}
+
+            //else if (_causesRejet.Count > 0)
+            //{
+
+            //    foreach (Causes cause in _causesRejet)
+            //    {
+            //        sb.AppendLine();
+            //        sb.Append("rejet light "); sb.Append(cause.getCause(type,false, false));      
+            //    }
+            //}
+
+            //if (_causesSelectStrict.Count > 0)
+            //{
+
+            //    foreach (Causes cause in _causesSelectStrict)
+            //    {
+            //        sb.AppendLine();
+            //        sb.Append("select strict "); sb.Append(cause.getCause(type,true,true));      
+            //    }
+            //}
+
+            //else if (_causesSelect.Count > 0)
+            //{              
+            //    foreach (Causes cause in _causesSelectStrict)
+            //    {
+            //        sb.AppendLine();
+            //        sb.Append("select light "); sb.Append(cause.getCause(type,false,true));      
+            //    }
+            //}
+
+
+
+            if (_selected != null)
+            {
+                sb.AppendLine();
+                sb.Append(_selected);
+            }
+
+            if (_rejected != null)
+            {
+                sb.AppendLine();
+                sb.Append(_rejected);
+            }
+            sb.AppendLine();
+            return sb.ToString();
+        }
+
+
+        public void signal(CauseDatas cd)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+]]></content>
+  </file>
   <file path="\pdb.podcast\Load\FeedLimitItemLoader.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -1822,9 +2558,6 @@ namespace pdb.podcast.Load
         timeSpan currentDuration = new timeSpan();
         timeSpan currentDurationVirtuel = new timeSpan();
         timeSpan durationStop = new timeSpan();
-      
-
-
 
         /// <summary>
         /// Nombre total
@@ -1843,8 +2576,6 @@ namespace pdb.podcast.Load
         public void phase2()
         {
             currentDuration = new timeSpan();
-            //list = new List<TrackInfoItunes>();
-            //selected = new BgDictString0<TrackInfoItunes>(); 
             currentDurationVirtuel = new timeSpan();
             durationStop = new timeSpan();
             nb = 0;
@@ -1852,24 +2583,6 @@ namespace pdb.podcast.Load
             nbStop = 0;
             state = loadState.selection;
             endByFd = null;
-            _indexForTotal = -1;
-        }
-
-        private int nbTest;
-        private  timeSpan dureeTest;
-
-        public void phaseTest()
-        {
-            nbTest = 0;
-            dureeTest = new timeSpan(); 
-        }
-        public bool test( int _nbMax, timeSpan tsMax, TrackInfoItunes track)
-        {
-          
-            nbTest++;
-            dureeTest += track.Duree;
-        
-            return (nbTest <= _nbMax && dureeTest <= tsMax); 
         }
 
 
@@ -1944,60 +2657,6 @@ namespace pdb.podcast.Load
                 return currentDuration;
             return currentDurationVirtuel;
         }
-        //  public void addTrackSuppl(TrackInfoItunes candidat) { durationForTotal += candidat.Duree; }
-        //  public timeSpan DureeSupl { get { return durationForTotal; } }
-
-        /// <summary>
-        /// Quelle duree pour obtenir un nb d'éléménts et une durée min
-        /// </summary>
-        /// <param name="nb">nb d'éléments</param>
-        /// <param name="fd">durée min</param>
-        /// <returns></returns>
-        //public timeSpan getTotalDurationFor(int nb, timeSpan fd)
-        //{
-        //    if (_indexForTotal > 0)
-        //    {
-        //    }
-        //    timeSpan ret = new timeSpan();
-        //    timeSpan aux = new timeSpan();
-
-        //    int _nb = 0;
-        //    int count = list.Count;
-        //    for (int i = 0; i < count; i++)
-        //    {
-        //        var t = list[i];
-        //        _nb++;
-        //        aux += t.Duree;
-        //        if (i >= _indexForTotal)
-        //        {
-        //            if (!selected.ContainsKey(t.Location))
-        //            {
-        //                if (_nb <= nb || aux <= fd)
-        //                    ret += t.Duree;
-        //                else
-        //                {
-        //                }
-
-        //            }
-        //            else
-        //            {
-        //            }
-        //        }
-
-
-        //        //if (_nb > nbMax && _nb > nb)
-        //        //    return ret;
-        //        //aux += t.Duree;
-        //        //if (aux > durationMax && aux > fd)
-        //        //    return ret;
-
-        //        //if (i >= _indexForTotal)
-        //        //{
-        //        //    ret += t.Duree;
-        //        //}
-        //    }
-        //    return ret;
-        //}
 
         public timeSpan getDurationStop(bool real)
         {
@@ -2021,9 +2680,8 @@ namespace pdb.podcast.Load
         }
 
         public int Nb { get { return nb; } }
-        private int _indexForTotal = -1;
-        public int IndexBase { get { return _indexForTotal; } set { _indexForTotal = value; } }
-        public bool control(TrackInfoItunes track, bool select, bool real, bool increment, bool forTotal)
+
+        public bool control(TrackInfoItunes track, bool select, bool load, bool real, bool increment)
         {
             //if (state == loadState.end)
             //    return false;
@@ -2045,7 +2703,7 @@ namespace pdb.podcast.Load
                 log("-->  {0} ok {1} ", phase, str);
             }
 
-            var ok = checkStatus(string.Format("-->  {0}", phase), select, track, limit, real, increment, forTotal);
+            var ok = checkStatus(string.Format("-->  {0}", phase), load, track, limit, real, increment);
 
             if (!ok)
                 return false;
@@ -2080,25 +2738,23 @@ namespace pdb.podcast.Load
 
 
 
-        private bool checkStatus(string phase, bool select, TrackInfoItunes track, LimitItem itemSource, bool real, bool increment, bool forTotal)
+        private bool checkStatus(string phase, bool load, TrackInfoItunes track, LimitItem itemSource, bool real, bool increment)
         {
             endByFd = null;
             _okFd = true;
             _okNb = true;
             bool ret = true;
             //        string str = string.Format("{0} {1} {2} {3} {4}", limit, itemSource, (nb), currentDuration.TotalMinutes.ToString("0"), track.ToString());
-            //nbVirtuel = nb;
-            //currentDurationVirtuel = currentDuration; 
-            if (forTotal && _indexForTotal < 0)
-                _indexForTotal = nb;
+            nbVirtuel = nb;
+            currentDurationVirtuel = currentDuration; 
             var nbBase = real ? nb : nbVirtuel;
 
             var _nb = nbBase + 1;
             var durationBase = real ? currentDuration : currentDurationVirtuel;
             var dur = durationBase + track.Duree;
 
-            int _nbMax = select ? this.nbMax : this.loadNbMax;
-            var _durationMax = select ? this.durationMax : this.loadDurationMax;
+            int _nbMax = load ? this.loadNbMax : this.nbMax;
+            var _durationMax = load ? this.loadDurationMax : this.durationMax; 
 
             if (_nb > _nbMax)
             {
@@ -2188,16 +2844,6 @@ namespace pdb.podcast.Load
                 {
                     nb += 1;
                     currentDuration += track.Duree;
-
-                 //   list.Add(track);
-                    //if (ret)
-                    //{
-                    //    if (selected.ContainsKey(track.Location))
-                    //    {
-                    //    }
-                    //    else
-                    //    selected.Add(track.Location, track); 
-                    //}
                 }
 
                 currentDurationVirtuel += track.Duree;
@@ -2244,7 +2890,7 @@ namespace pdb.podcast.Load
         public List<TrackInfoItunes> use = new List<TrackInfoItunes>();
         private Logger log;
         timeSpan currentDuration = new timeSpan();
-        timeSpan currentDurationVirtual = new timeSpan();
+       // timeSpan currentDurationVirtual = new timeSpan();
         timeSpan durationStop = new timeSpan();
         timeSpan currentContrib = new timeSpan();
         timeSpan trackDurationMax;
@@ -2252,7 +2898,7 @@ namespace pdb.podcast.Load
 
 
 
-        List<TrackInfoItunes> list = new List<TrackInfoItunes>();
+        // List<TrackInfoItunes> list = new List<TrackInfoItunes>();
         BgDictString0<TrackInfoItunes> selectedByFd = new BgDictString0<TrackInfoItunes>();
         BgDictString0<TrackInfoItunes> manageByFd = new BgDictString0<TrackInfoItunes>();
         bool loadEqSel;
@@ -2540,7 +3186,7 @@ namespace pdb.podcast.Load
         public void phase2()
         {
             currentDuration = new timeSpan();
-            currentDurationVirtual = new timeSpan();
+          //  currentDurationVirtual = new timeSpan();
             selectedByFd = new BgDictString0<TrackInfoItunes>();
             manageByFd = new BgDictString0<TrackInfoItunes>();
 
@@ -2670,6 +3316,10 @@ namespace pdb.podcast.Load
                 if (candidat.Album == "Géopolitique")
                 {
                 }
+
+                if (candidat.Name == "Le monde selon Etienne Klein 17.01.13")
+                {
+                }
                 var location = candidat.Location;
                 if (string.IsNullOrEmpty(location))
                     continue;
@@ -2701,7 +3351,7 @@ namespace pdb.podcast.Load
                 // rejouer le controle pour incrémenter nb et fd      
                 if (!increment) // données venant de sous-dossier (histo, voisins....)
                 {
-                    _control = loader.control(candidat, select, okDate && okTotalDuration, true, false);
+                    _control = loader.control(candidat, select, false, okDate && okTotalDuration, true);
                     if (_control && !selectedByFd.ContainsKey(location))
                         selectedByFd.Add(location, candidat);
                     if (!manageByFd.ContainsKey(location))
@@ -2739,6 +3389,8 @@ namespace pdb.podcast.Load
 
                 if (increment)
                 {
+                    var newDuration = currentDuration + candidat.Duree; 
+                    okTotalDuration = newDuration  <= durationMax;
                     if (manageByFd.ContainsKey(location))
                     {
                         _control = false;
@@ -2747,31 +3399,26 @@ namespace pdb.podcast.Load
                     }
                     else
                     {
-                        _control = loader.control(candidat, select, true, true, true);
-                        loader.IndexBase = index;
+                        _control = loader.control(candidat, select, false,okDate && okTotalDuration, true);
+
                     }
 
-
-
-                    // si les deux autres sont bons, incrémenter la durée totale
-                    var newDuration = currentDuration;
-                    if (!manageByFd.ContainsKey(location))
+                    if (_control)
                     {
-                        if (_control)
-                        {
-                            currentDurationVirtual += candidat.Duree;
-                            if (okDate)
-                                currentDuration += candidat.Duree;
-                        }
+                        //currentDurationVirtual += candidat.Duree;
+                        if (okDate)
+                            currentDuration += candidat.Duree;
                     }
-                    newDuration = currentDurationVirtual; 
+                    
+
+                    // newDuration = currentDuration;
                     if (_control && !selectedByFd.ContainsKey(location))
                         selectedByFd.Add(location, candidat);
                     if (!manageByFd.ContainsKey(location))
                         manageByFd.Add(location, candidat);
-                    okTotalDuration = newDuration <= durationMax;
+                    //  okTotalDuration = newDuration <= durationMax;
 
-                
+
 
                     //okTotalDuration = newDuration <= durationMax;
                     //_control = loader.control(candidat, select, okDate && okTotalDuration, true,true);
@@ -2787,38 +3434,46 @@ namespace pdb.podcast.Load
                     if (!_selection)
                     {
 
+
+                        var _fd = loader.getCurrentDuration(false);
+
+                        if (_fd > newDuration)
+                        {
+                            newDuration = _fd;
+                            okTotalDuration = newDuration <= durationMax;
+                        }
                         if (_control)
                         {
                         }
                         else
                         {
-                            var fd = loader.getCurrentDuration(true);
-                            var nb = loader.getNb(true);
+                            //var fd = loader.getCurrentDuration(true);
+                            //var nb = loader.getNb(true);
 
-                            newDuration = new timeSpan();
-                            foreach (FeedLimitItemLoader l in loaders.Values)
-                                l.phaseTest();
-                            for (int j = 0; j <= index; j++)
-                            {
-                                TrackInfoItunes t = list[j];
-                                var subloader = getLoader(t.Album);
-                                var subok = subloader.test(nb, fd, t);
-                                if (j >= subloader.IndexBase)
-                                {
-                                    if (subok || selectedByFd.ContainsKey(location))
-                                        newDuration += t.Duree;
-                                }
+                            //newDuration = new timeSpan();
+                            //foreach (FeedLimitItemLoader l in loaders.Values)
+                            //    l.phaseTest();
+                            //for (int j = 0; j <= index; j++)
+                            //{
+                            //    TrackInfoItunes t = list[j];
+                            //    var subloader = getLoader(t.Album);
+                            //    var subok = subloader.test(nb, fd, t);
+                            //    if (j >= subloader.IndexBase)
+                            //    {
+                            //        if (subok || selectedByFd.ContainsKey(location))
+                            //            newDuration += t.Duree;
+                            //    }
 
-                            }
-                            // newDuration += getDuration(nb, fd);
+                            //}
+                            //// newDuration += getDuration(nb, fd);
 
-                            if (newDuration < currentDuration)
-                            {
-                            }
-                            else if (newDuration > currentDurationVirtual)
-                            {
-                            }
-                            okTotalDuration = newDuration <= durationMax;
+                            //if (newDuration < currentDuration)
+                            //{
+                            //}
+                            //else if (newDuration > currentDurationVirtual)
+                            //{
+                            //}
+                            //okTotalDuration = newDuration <= durationMax;
                         }
 
 
@@ -2836,8 +3491,8 @@ namespace pdb.podcast.Load
                             //loader.OkFd, loader.getCurrentDuration(okDate && okTotalDuration)
                             //, loader.OkNb, loader.getNb(okDate && okTotalDuration)
                             //, okTotalDuration, newDuration, candidat, limit);
-                                loader.OkFd, loader.getCurrentDuration(true)
-                        , loader.OkNb, loader.getNb(true)
+                                loader.OkFd, _fd// loader.getCurrentDuration (false)
+                        , loader.OkNb, loader.getNb(false)
                         , okTotalDuration, newDuration, candidat, limit);
 
                         limit.signal(dataAuto);
@@ -2967,6 +3622,8 @@ namespace pdb.podcast.Load
 
                     if (!_control)
                         continue;
+                    newDuration = currentDuration;
+                    okTotalDuration = newDuration <= durationMax;
                     if (!okTotalDuration)
                     {
                         if (!Logger.CreateNullLoggers)
@@ -3029,6 +3686,643 @@ namespace pdb.podcast.Load
         }
 
         public LimitItem Item { get { return limit; } }
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.podcast\Tuning\Conf.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Xml;
+using pdb.ordo.conf;
+using pdb.podcast.Auto;
+using pdb.util;
+
+namespace pdb.podcast.Tuning
+{
+    public enum menage
+    {
+        none,
+        read,
+        name
+    }
+    public class Conf
+    {
+        //private static string CONF_FILE = @"..\conf.xml";
+        #region membres
+        private DirConf root;
+        private bool buildLimitMulti;
+        private bool single;
+        private Move move;
+        private bool deleteDoublon;
+        private bool getDescription;
+        private int volumeMin = int.MinValue;
+        private bool simulation;
+        private string copyAll;
+        private int maxScan = 10;
+        private ConfOrdo ordo = new ConfOrdo();
+        private menage menage = menage.none;
+        private string poubelle = ""; 
+        // private string zique;
+        private bool writePlayLists;
+        private bool writePreSel;
+        private bool writeItems;
+        private bool writeUse;
+        private bool writeExclu;
+        private bool genFeed;
+        private int genFeedPrior = 11;
+        private int genUsePrior = 11;
+        private int genExcluPrior = 11;
+        private bool transmit = true;
+        private bool transmitTotal = true;
+        private bool transmitTotalGuest = true;
+        private bool? cascading = null;
+        private bool autoBlock;
+
+        private ConfDate dates = new ConfDate();
+
+        private List<SelectParam> selectParams = new List<SelectParam>();
+        private Journal journal;
+        private string rootIt = "auto";
+        private bool onlyEnabled = true;
+        private bool onlyUnRead = true;
+
+        // private Auto auto = null;
+        private bool logGen = true;
+        private DateTime date0;
+        private Html html = new Html();
+
+        private bool autoSequence = true;
+        private bool borderVirtual;
+        private bool borderIdem;
+        private bool borderGranSlam;
+        private bool borderTb;
+        private bool autoSelect; 
+
+        private Export export = new Export(); 
+
+        #endregion
+        public static readonly Conf Instance = new Conf();
+        private static bool started;
+        private Conf() { confFile = new FileInfo(@"..\conf.xml"); }
+        public void setConfFile(string conf)
+        {
+            this.confFile = new FileInfo(@"..\" + conf);
+        }
+
+        #region getters
+        public static bool BuildLimitMulti { get { return Instance.buildLimitMulti; } }
+        public static bool Single { get { return Instance.single; } }
+        public static DirConf DirConf { get { return Instance.root; } }
+        public static Move Move { get { return Instance.move; } }
+        public static bool DeleteDoublon { get { return Instance.deleteDoublon; } }
+        public static bool GetDescription { get { return Instance.getDescription; } }
+        public static int VolumeMin { get { return Instance.volumeMin; } }
+        public static bool Simulation { get { return Instance.simulation; } }
+        public static string CopyAll { get { return Instance.copyAll; } }
+        public static ConfOrdo Ordo { get { return Instance.ordo; } }
+        public static int MaxScan { get { return Instance.maxScan; } }
+        public static menage Menage { get { return Instance.menage; } }
+        public static string Poubelle { get { return Instance.poubelle; } }
+        public static bool WritePlayLists { get { return Instance.writePlayLists; } }
+        public static bool WritePreSel { get { return Instance.writePreSel; } }
+        public static bool WriteItems { get { return Instance.writeItems; } }
+        public static bool WriteUse { get { return Instance.writeUse; } }
+        public static bool WriteExclu { get { return Instance.writeExclu; } }
+        public static bool GenFeed { get { return Instance.genFeed; } }
+        public static int GenFeedPrior { get { return Instance.genFeedPrior; } }
+        public static int GenUsePrior { get { return Instance.genUsePrior; } }
+        public static int GenExcluPrior { get { return Instance.genExcluPrior; } }
+
+        public static bool Transmit { get { return Instance.transmit; } }
+        public static bool TransmitTotal { get { return Instance.transmitTotal; } }
+        public static bool TransmitTotalGuest { get { return Instance.transmitTotalGuest; } }
+        public static bool? Cascading { get { return Instance.cascading; } }
+        public static Dictionary<int, DateTime> PlayedDates { get { return Instance.dates.Dates; } }
+        public static List<SelectParam> SelectParams { get { return Instance.selectParams; } }
+        internal static Journal Journal { get { return Instance.journal; } }
+        public static string RootIt { get { return Instance.rootIt; } }
+
+        public static bool OnlyEnabled { get { return Instance.onlyEnabled; } }
+        public static bool OnlyUnRead { get { return Instance.onlyUnRead; } }
+
+        public static bool AutoBlock { get { return Instance.autoBlock; } }
+        public static bool LogGen { get { return Instance.logGen; } }
+        public static DateTime Date0 { get { return Instance.date0; } }
+        internal static Html Html { get { return Instance.html; } }
+
+        public static bool AutoSequence { get { return Instance.autoSequence; } }
+        public static bool BorderVirtual { get { return Instance.borderVirtual; } }
+        public static bool BorderIdem { get { return Instance.borderIdem; } }
+        public static bool BorderGranSlam { get { return Instance.borderGranSlam; } }
+        public static bool BorderTb { get { return Instance.borderTb; } }
+        public static bool AutoSelect { get { return Instance.autoSelect; } }
+        public static Export Export { get { return Instance.export; } }
+      
+
+        //  public static string Zique { get { return Instance.zique; } }
+        #endregion
+
+        private DateTime lastModif = DateTime.MinValue;
+        private FileInfo confFile;
+        public FileInfo ConfFile { get { return confFile; } }
+        #region load
+
+        public XmlElement load(bool waitForModification)
+        {
+
+            while (true)
+            {
+                confFile.Refresh();
+                if (!confFile.Exists)
+                    throw new ApplicationException(confFile + " n'existe pas !!");
+                DateTime dt = confFile.LastWriteTime;
+                if (dt > lastModif || !waitForModification)
+                    break;
+                Thread.Sleep(1000);
+            }
+
+            lastModif = confFile.LastWriteTime;
+
+            XmlDocument l_doc = new XmlDocument();
+            l_doc.Load(confFile.FullName);
+
+            XmlElement xroot = l_doc.DocumentElement;
+            XMLTool l_xmlConf = new XMLTool(xroot);
+
+            string str = l_xmlConf.getNodeValue("volumeMin");
+            if (!string.IsNullOrEmpty(str))
+                volumeMin = Convert.ToInt32(str);
+
+            str = l_xmlConf.getNodeValue("maxScan");
+            if (!string.IsNullOrEmpty(str))
+                maxScan = Convert.ToInt32(str);
+
+            buildLimitMulti = l_xmlConf.getBoolValue("buildLimitMulti");
+            simulation = l_xmlConf.getBoolValue("simulation");
+            //   zique = l_xmlConf.getNodeValue("zique");
+
+            deleteDoublon = l_xmlConf.getBoolValue("deleteDoublon");
+            getDescription = l_xmlConf.getBoolValue("getDescription");
+            copyAll = l_xmlConf.getNodeValue("copyAll");
+
+            poubelle = l_xmlConf.getNodeValue("poubelle"); 
+
+            str = l_xmlConf.getNodeValue("menage");
+            if (!string.IsNullOrEmpty(str))
+                menage = (menage)(Enum.Parse(typeof(menage), str, true));
+
+            writePlayLists = l_xmlConf.getBoolValue("writePlayLists");
+            writePreSel = l_xmlConf.getBoolValue("writePreSel");
+            writeItems = l_xmlConf.getBoolValue("writeItems");
+            writeUse = l_xmlConf.getBoolValue("writeUse");
+            writeExclu = l_xmlConf.getBoolValue("writeExclu");
+            genFeed = l_xmlConf.getBoolValue("genFeed");
+            str = l_xmlConf.getNodeValue("genFeedPrior");
+            if (!string.IsNullOrEmpty(str))
+                genFeedPrior = Convert.ToInt32(str);
+
+            str = l_xmlConf.getNodeValue("genUsePrior");
+            if (!string.IsNullOrEmpty(str))
+                genUsePrior = Convert.ToInt32(str);
+
+            str = l_xmlConf.getNodeValue("genExcluPrior");
+            if (!string.IsNullOrEmpty(str))
+                genExcluPrior = Convert.ToInt32(str);
+
+            transmit = l_xmlConf.getBoolValue("transmit");
+            transmitTotal = l_xmlConf.getBoolValue("transmitTotal");
+            transmitTotalGuest = l_xmlConf.getBoolValue("transmitTotalGuest");
+            onlyEnabled = l_xmlConf.getBoolValue("onlyEnabled", true);
+            onlyUnRead = l_xmlConf.getBoolValue("onlyUnRead", true);
+            str = l_xmlConf.getNodeValue("cascading");
+            if (!string.IsNullOrEmpty(str))
+                cascading = "true".Equals(str);
+            //  cascading = l_xmlConf.getBoolValue("cascading");
+
+            str = l_xmlConf.getNodeValue("date0");
+            if (!string.IsNullOrEmpty(str))
+                date0 = Convert.ToDateTime(str);
+
+            var xDates = l_xmlConf.NodeLookUp("playedDates");
+            dates = new ConfDate(xDates);
+
+            logGen = l_xmlConf.getBoolValue("logGen");
+            var createNullLoggerOrg = Logger.CreateNullLoggers;
+
+            Logger.CreateNullLoggers = !logGen;
+            XmlElement xDir = l_xmlConf.NodeLookUp("dir");
+
+            var rootLimit = new Limits();
+            buildLimit(xDir, rootLimit, null);
+
+            root = new DirConf(rootLimit, xDir.Attributes["name"].InnerText, null);
+            root.build(null, xDir); 
+            buildDirChilds(xDir, root);
+
+            XmlElement xMove = l_xmlConf.NodeLookUp("move");
+            move = new Move(xMove);
+
+            ordo = new ConfOrdo(l_xmlConf.NodeLookUp("ordo"));
+
+            selectParams.Clear();
+
+            var xSelect = l_xmlConf.getNode("select");
+            foreach (XMLTool xsub in xSelect)
+                selectParams.Add(new SelectParam(xsub));
+
+            journal = null;
+            var xJournal = XMLTool.NodeLookUp(xroot, "journal");
+            if (xJournal != null)
+            {
+                journal = new Tuning.Journal();
+                buildLimitItem(xJournal, xJournal, journal);
+                var xxJournal = new XMLTool(xJournal);
+                journal.NbJour = xxJournal.getIntAttValue("nbJour");
+            }
+
+            rootIt = l_xmlConf.getNodeValue("rootIt");
+
+            autoBlock = l_xmlConf.getBoolValue("autoBlock", true);
+            //XmlElement xAuto = l_xmlConf.NodeLookUp("auto");
+            //if (xAuto == null)
+            //    auto = null;
+            //else
+            //    auto = new Auto(xAuto);
+
+            XmlElement xHtml = l_xmlConf.NodeLookUp("html");
+            html = new Html(xHtml);
+
+            autoSequence = l_xmlConf.getBoolValue("autoSequence", true);
+            borderVirtual = l_xmlConf.getBoolValue("borderVirtual", false);
+            borderIdem = l_xmlConf.getBoolValue("borderIdem", false);
+            borderGranSlam = l_xmlConf.getBoolValue("borderGranSlam", false);
+            borderTb = l_xmlConf.getBoolValue("borderTb", false);
+            autoSelect = l_xmlConf.getBoolValue("autoSelect", false);
+
+            var xExport = l_xmlConf.NodeLookUp("export"); // export = l_xmlConf.getNodeValue("export");
+            export = new Tuning.Export(xExport); 
+
+            Logger.CreateNullLoggers = createNullLoggerOrg;
+            started = true;
+            return xroot;
+
+        }
+
+        #region limites
+
+        private void buildDirChilds(XmlNode node, DirConf parent)
+        {
+            AutoBuilder.setClient(parent, node); 
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (child.Name == "auto")
+                {
+                    AutoBuilder.build(child, parent);
+                }
+                else
+                {
+                    if (child.Name == "dir")
+                    {
+                        string name = (child.Attributes["name"].InnerText);
+                        Limits childLimite = parent.Limites.Clone() as Limits;
+                        DirConf sub = new DirConf(childLimite, name, parent);
+                        sub.build(node, child);
+                        //if (child.Attributes["d"] != null)
+                        //    sub.Duration = Convert.ToSingle(child.Attributes["d"].Value);
+
+                       
+
+                        if (child.Attributes["all"] != null)
+                        {
+                            sub.HistoAll = child.Attributes["all"].Value == "true";
+                        }
+                        if (child.Attributes["serial"] != null)
+                        {
+                            sub.Serial = child.Attributes["serial"].Value == "true";
+                        }
+
+                        if (child.Attributes["cascading"] != null)
+                            sub.Cascading = child.Attributes["cascading"].Value == "true";
+                        if (child.Attributes["selectionPre"] != null)
+                            sub.SelectionPre = child.Attributes["selectionPre"].Value == "true";
+
+                        if (child.Attributes["transmit"] != null)
+                            sub.TransmitToParent = child.Attributes["transmit"].Value == "true";
+                        if (child.Attributes["transmitTotal"] != null)
+                            sub.TransmitTotal = child.Attributes["transmitTotal"].Value == "true";
+                        if (child.Attributes["transmitTotalGuest"] != null)
+                            sub.TransmitTotalGuest = child.Attributes["transmitTotalGuest"].Value == "true";
+                        buildLimit(child, childLimite, sub);
+                        parent.addChild(sub);
+                        if (!started)
+                            misc.log(sub.display());
+                        buildDirChilds(child, sub);
+
+                    }
+                }
+            }
+
+        }
+
+        private void buildLimitItem(XmlNode parent, XmlNode child, LimitItem item)
+        {
+            string strTd = child.InnerText;
+            if (!string.IsNullOrEmpty(strTd) && child.Name == "td")
+                item.Td = Convert.ToInt32(strTd);
+
+            AutoBuilder.setClient(item, child); 
+
+            foreach (XmlNode sub in child.ChildNodes)
+            {
+                if (sub.Name == "auto")
+                    AutoBuilder.build(sub, item);
+            }
+
+            item.build(parent, child);
+
+            //var dAtt0 = parent.Attributes["d"];
+            //if (dAtt0 != null)
+            //    item.Duration = Convert.ToSingle(dAtt0.InnerText);
+
+            //var dAtt = child.Attributes["d"];
+            //if (dAtt != null)
+            //    item.Duration = Convert.ToSingle(dAtt.InnerText);
+
+            //var cAtt0 = parent.Attributes["c"];
+            //if (cAtt0 != null)
+            //    item.Contribution = Convert.ToSingle(cAtt0.InnerText);
+
+            //var cAtt = child.Attributes["c"];
+            //if (cAtt != null)
+            //    item.Contribution = Convert.ToSingle(cAtt.InnerText);
+
+            //var fdAtt0 = parent.Attributes["fd"];
+            //if (fdAtt0 != null)
+            //    item.FeedDuration = Convert.ToSingle(fdAtt0.InnerText);
+
+            //var fdAtt = child.Attributes["fd"];
+            //if (fdAtt != null)
+            //    item.FeedDuration = Convert.ToSingle(fdAtt.InnerText);
+
+            //var nbAtt0 = parent.Attributes["nb"];
+            //if (nbAtt0 != null)
+            //    item.Nb = Convert.ToInt32(nbAtt0.InnerText);
+            //var nbAtt = child.Attributes["nb"];
+            //if (nbAtt != null)
+            //    item.Nb = Convert.ToInt32(nbAtt.InnerText);
+
+            //var dateAtt0 = parent.Attributes["date"];
+            //if (dateAtt0 != null)
+            //    item.DateMin = getDate(dateAtt0.InnerText);
+            //var dateAtt = child.Attributes["date"];
+            //if (dateAtt != null)
+            //    item.DateMin = getDate(dateAtt.InnerText);
+
+            //var dateAtt0Max = parent.Attributes["maxdate"];
+            //if (dateAtt0Max != null)
+            //    item.DateMax = getDate(dateAtt0Max.InnerText);
+            //var dateAttMax = child.Attributes["maxdate"];
+            //if (dateAttMax != null)
+            //    item.DateMax = getDate(dateAttMax.InnerText);
+        }
+
+        public static DateTime getDate(string str)
+        {
+            int delta = -1;
+            double d = -1;
+            if (Date0 > DateTime.MinValue)
+                //{
+                //    if (int.TryParse(str, out delta))
+                //    {
+                //        int dt = delta;
+                //        if (delta % 365 == 0)
+                //        {
+                //            dt = delta / 365;
+                //            return Date0.AddYears(dt);
+                //        }
+
+                //        if (delta % 30 == 0)
+                //        {
+                //            dt = delta / 30;
+                //            return Date0.AddMonths(dt);
+                //        }
+                //        return Date0.AddDays(delta);
+                //    }
+                //    else
+                if (double.TryParse(str, out d))
+                {
+                    return Date0.AddDays(d);
+                }
+            //       }
+
+            return Convert.ToDateTime(str);
+        }
+
+        private void buildLimit(XmlNode node, Limits limits, DirConf dir)
+        {
+
+            Limit[] tab = new Limit[Limits.NB];
+
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (child.Name == "list")
+                {
+
+                    int level = Convert.ToInt32(child.Attributes["l"].InnerText);
+                    Limit limit = new Limit(level);
+                    var items = new List<LimitItem>();
+
+                    double tdMin = 0;
+                    foreach (XmlNode xItem in child.ChildNodes)
+                    {
+                        if (xItem.Name == "auto")
+                        {
+                            AutoBuilder.build(xItem, limit);
+                        }
+                        else if (xItem.Name == "td")
+                        {
+                            var item = new LimitItem(limit);
+                            buildLimitItem(child, xItem, item);
+                            item.TdMin = tdMin;
+
+                            var itemTd = item.Td;
+                            if (itemTd < int.MaxValue)
+                                tdMin = item.Td;
+                            items.Add(item);
+                        }
+                    }
+
+                    if (items.Count == 0)
+                    {
+                        var defaultItem = new LimitItem(limit);
+                        buildLimitItem(child, child, defaultItem);
+                        items.Add(defaultItem);
+                    }
+
+                    limit.Items = items;
+
+                    //var dAtt = child.Attributes["d"];
+                    //if (dAtt != null)
+                    //    limit.Duration = Convert.ToInt32(dAtt.InnerText);
+
+                    //var fdAtt = child.Attributes["fd"];
+                    //if (fdAtt != null)
+                    //    limit.FeedDuration = Convert.ToInt32(fdAtt.InnerText);
+
+                    //var nbAtt = child.Attributes["nb"];
+                    //if (nbAtt != null)
+                    //    limit.Nb = Convert.ToInt32(nbAtt.InnerText);
+                    tab[level] = limit;
+                }
+
+            }
+
+            Limit current = null;
+            bool oneTabAtLeast = false;
+            //  LimitItem currentItem = null;
+
+            double currentDuration = int.MaxValue;
+            double lcurrentDuration = int.MaxValue;
+            double currentContrib = int.MaxValue;
+            double currentFeedDuration = int.MaxValue;
+            double lcurrentFeedDuration = int.MaxValue;
+            int currentNb = int.MaxValue;
+            int lcurrentNb = int.MaxValue;
+
+            double currentTd = int.MaxValue;
+
+            double currentTdMin = int.MaxValue;
+            DateTime currentDateMin = DateTime.MinValue;
+            DateTime currentDateMax = DateTime.MaxValue;
+
+            for (int i = 0; i < Limits.NB; i++)
+            {
+
+                //if (tab[i] != null)
+                //{
+
+                if (tab[i] != null)
+                {
+                    current = tab[i];
+                    oneTabAtLeast = true;
+
+                }
+
+                if (!oneTabAtLeast)
+                    current = limits[i];
+
+                var _limit = limits[i];
+                _limit.Level = i;
+                limits[i].Parent = limits;
+
+                //foreach (LimitItem currentItem in current.Items)
+                //{
+
+                if (_limit.Items.Count != current.Items.Count)
+                {
+                    _limit.Items.Clear();
+                }
+
+                for (int j = 0; current != null && j < current.Items.Count; j++)
+                {
+
+                    var currentItem = current.Items[j];
+                    // if (currentItem.Duration < int.MaxValue)
+                    currentDuration = currentItem.Duration;
+                    lcurrentDuration = currentItem.LoadDuration;
+                    //if (currentItem.Contribution < int.MaxValue)
+                    currentContrib = currentItem.Contribution;
+                    // if (currentItem.FeedDuration < int.MaxValue)
+                    currentFeedDuration = currentItem.FeedDuration;
+                    lcurrentFeedDuration = currentItem.LoadFeedDuration;
+
+                    //   if (currentItem.Nb < int.MaxValue)
+                    currentNb = currentItem.Nb;
+                    lcurrentNb = currentItem.LoadNb;
+                    //  if (currentItem.Td < int.MaxValue)
+                    currentTd = currentItem.Td;
+                    currentTdMin = currentItem.TdMin;
+
+                    currentDateMin = currentItem.DateMin;
+                    currentDateMax = currentItem.DateMax;
+                    //}
+                    //}
+
+                    //if (current != null)
+                    //{
+                    LimitItem _limitItem = null;
+                    if (j >= _limit.Items.Count)
+                    {
+                        _limitItem = currentItem.Clone() as LimitItem;
+                        _limit.Items.Add(_limitItem);
+                        _limitItem.Limit = _limit;
+
+                    }
+                    else
+                    {
+                        _limitItem = _limit.Items[j];
+
+                    }
+                    //if (currentDuration < int.MaxValue)
+                    _limitItem.setDuration(currentDuration, false); // Duration = currentDuration;
+                    _limitItem.LoadDuration = lcurrentDuration;
+                    //if (currentContrib < int.MaxValue)
+                    //    _limitItem.Contribution = currentContrib;
+                    // if (currentFeedDuration < int.MaxValue)
+                    _limitItem.setFeedDuration(currentFeedDuration, false); // FeedDuration = currentFeedDuration;
+                    _limitItem.LoadFeedDuration = lcurrentFeedDuration;
+                    // if (currentNb < int.MaxValue)
+                    _limitItem.setNbMax(currentNb, false);
+                    _limitItem.LoadNb = lcurrentNb;
+                    //   if (currentTd < int.MaxValue)
+                    _limitItem.Td = currentTd;
+                    _limitItem.TdMin = currentTdMin;
+                    _limitItem.DateMin = currentDateMin;
+                    _limitItem.setDateMax(currentDateMax, false); 
+                    _limitItem.Contribution = currentContrib;
+
+                    
+
+                    if (dir != null)
+                    {
+                        if (_limitItem.Duration == int.MaxValue)
+                            _limitItem.setDuration(dir.Duration, true); // Duration = dir.Duration;
+                        if (_limitItem.LoadDuration == int.MaxValue)
+                            _limitItem.LoadDuration = dir.LoadDuration;
+                        if (_limitItem.Contribution == int.MaxValue)
+                            _limitItem.Contribution = dir.Contribution;
+                        if (_limitItem.Td == int.MaxValue)
+                            _limitItem.Td = dir.Td;
+                        if (_limitItem.Nb == int.MaxValue)
+                            _limitItem.setNbMax(dir.Nb,true);
+                        if (_limitItem.LoadNb == int.MaxValue)
+                            _limitItem.LoadNb = dir.LoadNb;
+                        if (_limitItem.FeedDuration == int.MaxValue)
+                            _limitItem.setFeedDuration(dir.FeedDuration,true);
+                        if (_limitItem.LoadFeedDuration == int.MaxValue)
+                            _limitItem.LoadFeedDuration = dir.LoadFeedDuration;
+                        if (_limitItem.DateMin == DateTime.MinValue)
+                            _limitItem.DateMin = dir.DateMin;
+                        if (_limitItem.DateMax == DateTime.MaxValue)
+                            _limitItem.setDateMax(dir.DateMax,true);
+                    }
+
+                    _limitItem.setParent(dir); 
+
+                }
+
+                //}
+                // }
+
+            }
+
+        }
+        #endregion
+        #endregion
 
     }
 }
