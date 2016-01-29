@@ -1,1199 +1,1483 @@
 <?xml version="1.0" encoding="utf-8"?>
-<db version="3" seq_piece="27634">
+<db version="3" seq_piece="27658">
   <pieces>
-    <piece id="1698">
+    <piece id="871">
       <classement>
         <version>
-          <date>28/01/2016 12:14:24</date>
-          <class>1410</class>
+          <date>29/01/2016 13:53:19</date>
+          <class>3435</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="25692" parent="871">
+      <disabled />
+    </piece>
+    <piece id="1012">
+      <classement>
+        <version>
+          <date>29/01/2016 13:41:57</date>
+          <class>04511</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - Anthologie Mornas &amp; Coladeras (2002)\Mornas &amp; Coladeras - Cd #02\01 - Bondade E Maldade.mp3</file>
+      </files>
+      <disabled />
+    </piece>
+    <piece id="26670" parent="1012">
+      <disabled />
+      <duration>301930</duration>
+    </piece>
+    <piece id="7345">
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill Deraime 23 titres (Best Of)\best-of\Bill Deraime - Louisianne.mp3</file>
+      </files>
+    </piece>
+    <piece id="26615" parent="7345">
+      <disabled />
+    </piece>
+    <piece id="7348">
+      <classement>
+        <version>
+          <date>29/01/2016 15:46:28</date>
+          <class>4041</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill Deraime 23 titres (Best Of)\best-of\Bill Deraime - Y'en avait marre.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 15:47:15</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="26628" parent="7348">
+      <album>
+        <version>
+          <date>29/01/2016 15:11:23</date>
+          <value>Louisiane</value>
+        </version>
+      </album>
+      <disabled />
+    </piece>
+    <piece id="7349">
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill Deraime 23 titres (Best Of)\best-of\Bill Deraime - Pamela.mp3</file>
+      </files>
+    </piece>
+    <piece id="26617" parent="7349">
+      <album>
+        <version>
+          <date>29/01/2016 15:11:25</date>
+          <value>Louisiane</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="7352">
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill Deraime 23 titres (Best Of)\best-of\Bill Deraime - S'coue toi.mp3</file>
+      </files>
+    </piece>
+    <piece id="26623" parent="7352">
+      <album>
+        <version>
+          <date>29/01/2016 15:11:29</date>
+          <value>Louisiane</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="8637">
+      <album />
+    </piece>
+    <piece id="9631">
+      <classement>
+        <version>
+          <date>29/01/2016 14:19:14</date>
+          <class>3403</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\3 Compilations\1988 Samba Pa Ti @320\07 Samba Pa Ti.mp3</file>
+        <file>2016\Santana\3 Compilations\1995 Dance Of The Rainbow Serpent @320\CD1\05 - Samba Pa Ti.mp3</file>
+        <file>2016\Santana\3 Compilations\1995 Love Songs @320\01 - Samba Pa Ti.mp3</file>
+        <file>2016\Santana\3 Compilations\2008 Multi Dimensional Warrior @320\CD2\07 - 07 Samba Pa Ti.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 14:22:14</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="27312" parent="9631">
+      <disabled />
+      <duration>274160</duration>
+    </piece>
+    <piece id="27328" parent="9631">
+      <disabled />
+      <duration>285235</duration>
+    </piece>
+    <piece id="27358" parent="9631">
+      <disabled />
+      <duration>285235</duration>
+    </piece>
+    <piece id="27444" parent="9631">
+      <disabled />
+      <duration>283329</duration>
+    </piece>
+    <piece id="9770">
+      <track />
+    </piece>
+    <piece id="9771">
+      <track />
+    </piece>
+    <piece id="9772">
+      <track />
+    </piece>
+    <piece id="9773">
+      <track />
+    </piece>
+    <piece id="26082">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:14</date>
+          <value>Mother Popcorn</value>
+        </version>
+      </name>
+      <classement>
+        <version>
+          <date>29/01/2016 15:43:47</date>
+          <class>03021</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="26083">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:18</date>
+          <value>Funky Drummer</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26084">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:21</date>
+          <value>Get It Up (I Feel Like Being A) Sex Machine</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26085">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:25</date>
+          <value>Super Bad (Parts 1+2)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26086">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:27</date>
+          <value>Talkin' Loud &amp; Sayin' Nothing</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26087">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:31</date>
+          <value>Get Up, Get Into It And Get Involved</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26088">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:33</date>
+          <value>Soul Power (Parts 1+2)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26089">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:36</date>
+          <value>Brother Rapp/Ain't It Funky Now (Live)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26090">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:40</date>
+          <value>Hot Pants (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26091">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:44</date>
+          <value>I'm A Greedy Man (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26092">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:47</date>
+          <value>Make It Funky (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26093">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:50</date>
+          <value>It's A New Day (Live)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26094">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:53</date>
+          <value>I Got Ants In My Pants (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26095">
+      <name>
+        <version>
+          <date>29/01/2016 15:09:56</date>
+          <value>King Heroin</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26096">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:17</date>
+          <value>There It Is (Part 1)</value>
+        </version>
+      </name>
+      <classement>
+        <version>
+          <date>29/01/2016 16:51:17</date>
+          <class>05323</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 16:51:08</date>
+        <date>29/01/2016 16:46:50</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="26097">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:23</date>
+          <value>Public Enemy No.1 (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26098">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:27</date>
+          <value>Get On The Good Foot</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26099">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:33</date>
+          <value>I Got A Bag Of My Own</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26100">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:38</date>
+          <value>Doing It To Death</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26101">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:42</date>
+          <value>The Payback</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26102">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:47</date>
+          <value>Papa Don't Take No Mess (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26103">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:51</date>
+          <value>Stoned To The Bone (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26104">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:54</date>
+          <value>My Thang</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26105">
+      <name>
+        <version>
+          <date>29/01/2016 16:43:58</date>
+          <value>Funky President (People It's Bad)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26106">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:02</date>
+          <value>Hot (I Need To be Loved, Loved, Loved)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26107">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:07</date>
+          <value>Get Up Offa That Thing (Release The Pressure)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26108">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:10</date>
+          <value>Body Heat (Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26109">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:14</date>
+          <value>It's Too Funky In Here</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26110">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:18</date>
+          <value>Rapp Payback (Where Iz Moses)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26111">
+      <name>
+        <version>
+          <date>29/01/2016 16:44:23</date>
+          <value>Unity (With Afrika Bambaataa Part 1)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26517">
+      <classement>
+        <version>
+          <date>29/01/2016 12:56:37</date>
+          <class>2340</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill Deraime 23 titres (Best Of)\best-of\Bill Deraime - Babylone tu deconnes.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 12:56:39</date>
+        <date>29/01/2016 12:48:38</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="26610" parent="26517">
+      <track>
+        <version>
+          <date>29/01/2016 12:51:07</date>
+          <value>7</value>
+        </version>
+      </track>
+      <disabled />
+      <duration>287223</duration>
+    </piece>
+    <piece id="26522">
+      <classement>
+        <version>
+          <date>29/01/2016 14:51:09</date>
+          <class>3351</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 14:52:08</date>
+      </dates>
+      <disabled />
+      <duration>285551</duration>
+    </piece>
+    <piece id="26533">
+      <classement>
+        <version>
+          <date>29/01/2016 14:17:16</date>
+          <class>1222</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Bill Deraime - Discographie (1993-2010)\Bill.Deraime-Brailleur.De.Fond.2CD-2010-CFD.By.Cochise\CD1\106-bill_deraime-avant_la_paix.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 14:16:42</date>
+        <date>29/01/2016 14:16:15</date>
+      </dates>
+      <disabled />
+      <duration>279620</duration>
+    </piece>
+    <piece id="26634" parent="26533">
+      <disabled />
+    </piece>
+    <piece id="26534">
+      <duration>230823</duration>
+    </piece>
+    <piece id="26547">
+      <duration>464178</duration>
+    </piece>
+    <piece id="26556">
+      <classement>
+        <version>
+          <date>29/01/2016 11:44:26</date>
+          <class>2155</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 11:46:34</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="26579">
+      <classement>
+        <version>
+          <date>29/01/2016 15:52:26</date>
+          <class>2250</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="26587">
+      <duration>263220</duration>
+    </piece>
+    <piece id="26590">
+      <duration>273251</duration>
+    </piece>
+    <piece id="26591">
+      <classement>
+        <version>
+          <date>29/01/2016 11:35:08</date>
+          <class>3313</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="26594">
+      <classement>
+        <version>
+          <date>29/01/2016 16:07:58</date>
+          <class>1430</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 16:05:15</date>
+      </dates>
+      <disabled />
+      <duration>270299</duration>
+    </piece>
+    <piece id="26604">
+      <classement>
+        <version>
+          <date>29/01/2016 15:22:48</date>
+          <class>03321</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 15:22:34</date>
+        <date>29/01/2016 15:12:48</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="26607">
+      <classement>
+        <version>
+          <date>29/01/2016 15:08:37</date>
+          <class>02341</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 15:10:33</date>
+      </dates>
+      <disabled />
+      <duration>292579</duration>
+    </piece>
+    <piece id="26613">
+      <album>
+        <version>
+          <date>29/01/2016 15:11:31</date>
+          <value>Louisiane</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="26614">
+      <duration>252188</duration>
+    </piece>
+    <piece id="26619">
+      <album>
+        <version>
+          <date>29/01/2016 15:11:27</date>
+          <value>Louisiane</value>
+        </version>
+      </album>
+      <duration>297025</duration>
+    </piece>
+    <piece id="26624">
+      <dates>
+        <date>29/01/2016 13:56:51</date>
+        <date>29/01/2016 13:56:42</date>
+      </dates>
+      <duration>244665</duration>
+    </piece>
+    <piece id="26629">
+      <classement>
+        <version>
+          <date>29/01/2016 13:43:55</date>
+          <class>1132</class>
           <rating>40</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="1752">
+    <piece id="26690">
       <classement>
         <version>
-          <date>28/01/2016 15:55:17</date>
-          <class>2542</class>
+          <date>29/01/2016 11:59:56</date>
+          <class>2455</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - Anthologie Mornas &amp; Coladeras (2002)\Mornas &amp; Coladeras - Cd #01\02 - Flor Di Nha Esperança.mp3</file>
+        <file>Artiste inconnu\Album inconnu\cesaria\01 Flor di nha esperanca.mp3</file>
+      </files>
+      <dates>
+        <date>22/02/2015 23:22:43</date>
+        <date>22/02/2015 22:22:43</date>
+        <date>11/07/2014 17:55:13</date>
+        <date>08/04/2014 17:17:38</date>
+        <date>07/04/2014 18:41:10</date>
+        <date>18/10/2013 15:12:07</date>
+        <date>28/09/2013 12:33:54</date>
+        <date>28/09/2013 11:33:54</date>
+        <date>01/02/2013 08:48:36</date>
+        <date>24/10/2012 22:23:02</date>
+      </dates>
+      <disabled />
+      <duration>256993</duration>
+    </piece>
+    <piece id="509" parent="26690">
+      <disabled />
+      <duration>256967</duration>
+    </piece>
+    <piece id="26656" parent="26690">
+      <disabled />
+      <duration>256346</duration>
+    </piece>
+    <piece id="26716">
+      <classement>
+        <version>
+          <date>29/01/2016 16:43:01</date>
+          <class>01533</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 15:56:51</date>
-        <date>28/01/2016 15:52:20</date>
+        <date>29/01/2016 16:43:28</date>
       </dates>
       <disabled />
+      <duration>295582</duration>
     </piece>
-    <piece id="1753">
-      <duration>423073</duration>
-    </piece>
-    <piece id="1961">
+    <piece id="26724">
+      <name>
+        <version>
+          <date>29/01/2016 16:15:48</date>
+          <value>Mar Azul</value>
+        </version>
+      </name>
       <classement>
         <version>
-          <date>28/01/2016 15:45:50</date>
-          <class>1201</class>
+          <date>29/01/2016 16:24:15</date>
+          <class>1231</class>
           <rating>60</rating>
         </version>
       </classement>
+      <files>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - Anthologie Mornas &amp; Coladeras (2002)\Mornas &amp; Coladeras - Cd #01\01 - Mar Azul.mp3</file>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - Sodade\06. Mar Azul.mp3</file>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - The Best Of (1998)\12 - Mar Azul.mp3</file>
+      </files>
       <dates>
-        <date>28/01/2016 15:46:52</date>
+        <date>29/01/2016 16:19:25</date>
       </dates>
       <disabled />
+      <duration>218254</duration>
     </piece>
-    <piece id="2704">
+    <piece id="26655" parent="26724">
+      <disabled />
+      <duration>218390</duration>
+    </piece>
+    <piece id="26767" parent="26724">
+      <disabled />
+      <duration>217320</duration>
+    </piece>
+    <piece id="26787" parent="26724">
+      <disabled />
+      <duration>218729</duration>
+    </piece>
+    <piece id="26725">
+      <name>
+        <version>
+          <date>29/01/2016 16:22:35</date>
+          <value>Cize</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26726">
+      <name>
+        <version>
+          <date>29/01/2016 16:22:44</date>
+          <value>Estanhadinha</value>
+        </version>
+      </name>
+      <duration>164311</duration>
+    </piece>
+    <piece id="26727">
+      <name>
+        <version>
+          <date>29/01/2016 16:23:00</date>
+          <value>Cabo Verde</value>
+        </version>
+      </name>
+      <duration>194770</duration>
+    </piece>
+    <piece id="26728">
+      <name>
+        <version>
+          <date>29/01/2016 16:23:09</date>
+          <value>Belga</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26729">
+      <name>
+        <version>
+          <date>29/01/2016 16:23:18</date>
+          <value>Cretcheu Diceu</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26730">
+      <name>
+        <version>
+          <date>29/01/2016 16:23:23</date>
+          <value>Cinturão Tem Mele (Dança Tchà Tchà Tchà)</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26731">
+      <name>
+        <version>
+          <date>29/01/2016 16:23:30</date>
+          <value>Separação</value>
+        </version>
+      </name>
+    </piece>
+    <piece id="26732">
+      <dates>
+        <date>29/01/2016 11:42:46</date>
+      </dates>
+      <duration>277009</duration>
+    </piece>
+    <piece id="26733">
+      <duration>208281</duration>
+    </piece>
+    <piece id="26740">
       <classement>
         <version>
-          <date>28/01/2016 18:15:33</date>
-          <class>05041</class>
-          <rating>0</rating>
+          <date>29/01/2016 11:42:22</date>
+          <class>2333</class>
+          <rating>60</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="2759">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(01) [The Jimi Hendrix Experience] EXP.flac</file>
-      </files>
+    <piece id="26750">
+      <album>
+        <version>
+          <date>29/01/2016 16:53:05</date>
+          <value>São Vicente</value>
+        </version>
+      </album>
     </piece>
-    <piece id="2760">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(02) [The Jimi Hendrix Experience] Up From The Skies.flac</file>
-      </files>
+    <piece id="26752">
+      <album>
+        <version>
+          <date>29/01/2016 16:53:07</date>
+          <value>São Vicente</value>
+        </version>
+      </album>
     </piece>
-    <piece id="2761">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(03) [The Jimi Hendrix Experience] Spanish Castle Magic.flac</file>
-      </files>
+    <piece id="26760">
+      <album>
+        <version>
+          <date>29/01/2016 16:53:10</date>
+          <value>São Vicente</value>
+        </version>
+      </album>
     </piece>
-    <piece id="2762">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(04) [The Jimi Hendrix Experience] Wait Until Tomorrow.flac</file>
-      </files>
+    <piece id="26776">
+      <classement>
+        <version>
+          <date>29/01/2016 15:26:20</date>
+          <class>02141</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>295503</duration>
     </piece>
-    <piece id="2763">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(05) [The Jimi Hendrix Experience] Ain't No Telling.flac</file>
-      </files>
+    <piece id="26793">
+      <classement>
+        <version>
+          <date>29/01/2016 13:51:25</date>
+          <class>00001410</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 13:51:41</date>
+        <date>29/01/2016 13:51:01</date>
+      </dates>
+      <disabled />
     </piece>
-    <piece id="2764">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(06) [The Jimi Hendrix Experience] Little Wing.flac</file>
-      </files>
+    <piece id="26797">
+      <duration>207389</duration>
     </piece>
-    <piece id="2765">
+    <piece id="26809">
+      <classement>
+        <version>
+          <date>29/01/2016 15:55:47</date>
+          <class>3150</class>
+          <rating>60</rating>
+        </version>
+      </classement>
       <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(07) [The Jimi Hendrix Experience] If 6 Was 9.flac</file>
+        <file>2016\Cesaria Evora - Discography\Cesaria Evora - Sodade\01. Sodade.mp3</file>
       </files>
+      <disabled />
+      <duration>293519</duration>
     </piece>
-    <piece id="2766">
+    <piece id="26762" parent="26809">
+      <disabled />
+      <duration>293832</duration>
+    </piece>
+    <piece id="26823">
+      <classement>
+        <version>
+          <date>29/01/2016 14:11:51</date>
+          <class>005320</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>255119</duration>
+    </piece>
+    <piece id="26833">
+      <classement>
+        <version>
+          <date>29/01/2016 15:40:48</date>
+          <class>1054</class>
+          <rating>20</rating>
+        </version>
+      </classement>
       <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(08) [The Jimi Hendrix Experience] You Got Me Floatin'.flac</file>
+        <file>Artiste inconnu\Album inconnu\cesaria\01 Isolada.mp3</file>
       </files>
+      <dates>
+        <date>29/01/2016 15:36:26</date>
+        <date>29/01/2016 15:32:05</date>
+        <date>08/02/2015 15:07:26</date>
+        <date>08/02/2015 14:36:03</date>
+        <date>08/02/2015 14:07:26</date>
+        <date>11/07/2014 10:07:40</date>
+        <date>08/04/2014 17:17:38</date>
+        <date>07/04/2014 18:41:10</date>
+        <date>10/01/2014 12:12:06</date>
+        <date>24/09/2013 04:02:48</date>
+        <date>24/09/2013 03:02:48</date>
+        <date>05/02/2013 08:03:13</date>
+        <date>17/11/2012 16:51:32</date>
+      </dates>
+      <disabled />
+      <duration>329568</duration>
     </piece>
-    <piece id="2767">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(09) [The Jimi Hendrix Experience] Castles Made Of Sand.flac</file>
-      </files>
+    <piece id="510" parent="26833">
+      <disabled />
     </piece>
-    <piece id="2768">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(10) [The Jimi Hendrix Experience] She's So Fine.flac</file>
-      </files>
+    <piece id="26834">
+      <duration>203710</duration>
     </piece>
-    <piece id="2769">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(11) [The Jimi Hendrix Experience] One Rainy Wish.flac</file>
-      </files>
-    </piece>
-    <piece id="2770">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(12) [The Jimi Hendrix Experience] Little Miss Lover.flac</file>
-      </files>
-    </piece>
-    <piece id="2771">
-      <files>
-        <file>500\#051-100\#082 Jimi Hendrix - Axis Bold As Love\(13) [The Jimi Hendrix Experience] Bold As Love.flac</file>
-      </files>
-    </piece>
-    <piece id="3701">
-      <files>
-        <file>500\#051-100\#053 Ray Charles - The Birth of Soul\The Very Best Of\01 - Georgia On My Mind.flac</file>
-        <file>500\300513.VA.-.Rolling.Stone.Magazine.500\044 - Ray Charles - Georgia On My Mind (1960).mp3</file>
-      </files>
-    </piece>
-    <piece id="25766" parent="3701">
+    <piece id="26847">
+      <name>
+        <version>
+          <date>29/01/2016 11:51:55</date>
+          <value>Cucli</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 12:05:32</date>
+          <date>29/01/2016 11:51:31</date>
           <value>1</value>
         </version>
       </track>
-      <disabled />
-    </piece>
-    <piece id="26417" parent="3701">
-      <disabled />
-    </piece>
-    <piece id="3817">
       <classement>
         <version>
-          <date>28/01/2016 10:18:42</date>
-          <class>2240</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <files>
-        <file>500\#001-050\#027 Robert Johnson - King of The Delta Blues\Centennial Collection, Disc 2\01 - Stones in My Passway.flac</file>
-      </files>
-      <dates>
-        <date>28/01/2016 10:19:59</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="25516" parent="3817">
-      <disabled />
-    </piece>
-    <piece id="4072">
-      <classement>
-        <version>
-          <date>28/01/2016 12:38:39</date>
-          <class>3343</class>
-          <rating>60</rating>
+          <date>29/01/2016 11:55:54</date>
+          <class>2310</class>
+          <rating>20</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 12:40:47</date>
+        <date>29/01/2016 11:57:07</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="4329">
-      <classement>
+    <piece id="26848">
+      <name>
         <version>
-          <date>28/01/2016 12:16:19</date>
-          <class>55200</class>
-          <rating>0</rating>
+          <date>29/01/2016 11:52:00</date>
+          <value>Sangue de beirona</value>
         </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 12:21:50</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="5767">
-      <classement>
-        <version>
-          <date>28/01/2016 18:11:42</date>
-          <class>03411</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>381571</duration>
-    </piece>
-    <piece id="5944">
-      <classement>
-        <version>
-          <date>28/01/2016 12:36:35</date>
-          <class>02413</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>420598</duration>
-    </piece>
-    <piece id="6704">
-      <classement>
-        <version>
-          <date>28/01/2016 12:34:51</date>
-          <class>001033</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="7980">
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:40:58</date>
-          <value>24</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:40:15</date>
-          <value>5</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:39:05</date>
-          <value>4</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7983">
-      <track>
-        <version>
-          <date>28/01/2016 15:40:46</date>
-          <value>22</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:38:43</date>
+          <date>29/01/2016 11:51:33</date>
           <value>2</value>
         </version>
       </track>
     </piece>
-    <piece id="7986">
+    <piece id="26849">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:09</date>
+          <value>Coragem irmon</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:39:15</date>
-          <value>11</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7987">
-      <track>
-        <version>
-          <date>28/01/2016 15:38:37</date>
-          <value>12</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7988">
-      <track>
-        <version>
-          <date>28/01/2016 15:39:20</date>
-          <value>13</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7989">
-      <track>
-        <version>
-          <date>28/01/2016 15:39:00</date>
-          <value>14</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7990">
-      <track>
-        <version>
-          <date>28/01/2016 15:38:49</date>
-          <value>15</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7991">
-      <track>
-        <version>
-          <date>28/01/2016 15:40:42</date>
-          <value>21</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:38:54</date>
-          <value>1</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7992">
-      <track>
-        <version>
-          <date>28/01/2016 15:40:55</date>
-          <value>23</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:40:12</date>
-          <value>4</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:39:26</date>
+          <date>29/01/2016 11:51:34</date>
           <value>3</value>
         </version>
       </track>
     </piece>
-    <piece id="7993">
+    <piece id="26850">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:12</date>
+          <value>Petit pays</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:01</date>
-          <value>25</value>
+          <date>29/01/2016 11:51:34</date>
+          <value>4</value>
         </version>
+      </track>
+    </piece>
+    <piece id="26851">
+      <name>
         <version>
-          <date>28/01/2016 15:40:18</date>
-          <value>6</value>
+          <date>29/01/2016 11:52:20</date>
+          <value>Sabine largam</value>
         </version>
+      </name>
+      <track>
         <version>
-          <date>28/01/2016 15:38:12</date>
+          <date>29/01/2016 11:51:35</date>
           <value>5</value>
         </version>
       </track>
     </piece>
-    <piece id="7994">
+    <piece id="26852">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:25</date>
+          <value>Pe di boi</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:04</date>
-          <value>26</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:40:21</date>
-          <value>7</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:38:07</date>
+          <date>29/01/2016 11:51:36</date>
           <value>6</value>
         </version>
       </track>
     </piece>
-    <piece id="7995">
+    <piece id="26853">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:28</date>
+          <value>Miss Perfumado</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:08</date>
-          <value>27</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:40:24</date>
-          <value>8</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:38:31</date>
+          <date>29/01/2016 11:51:37</date>
           <value>7</value>
         </version>
       </track>
     </piece>
-    <piece id="7996">
+    <piece id="26854">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:31</date>
+          <value>Tchintchirote</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:10</date>
-          <value>28</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:40:28</date>
-          <value>9</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:38:25</date>
+          <date>29/01/2016 11:51:38</date>
           <value>8</value>
         </version>
       </track>
     </piece>
-    <piece id="7997">
+    <piece id="26855">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:34</date>
+          <value>Do e di men cretchen</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:15</date>
-          <value>29</value>
+          <date>29/01/2016 11:51:39</date>
+          <value>9</value>
         </version>
+      </track>
+    </piece>
+    <piece id="26856">
+      <name>
         <version>
-          <date>28/01/2016 15:40:33</date>
+          <date>29/01/2016 11:52:37</date>
+          <value>Sodade</value>
+        </version>
+      </name>
+      <track>
+        <version>
+          <date>29/01/2016 11:51:40</date>
           <value>10</value>
         </version>
       </track>
     </piece>
-    <piece id="7998">
+    <piece id="26857">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:39</date>
+          <value>Angola</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 15:41:20</date>
-          <value>30</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="7999">
-      <track>
-        <version>
-          <date>28/01/2016 15:41:28</date>
-          <value>31</value>
-        </version>
-        <version>
-          <date>28/01/2016 15:37:31</date>
+          <date>29/01/2016 11:51:41</date>
           <value>11</value>
         </version>
       </track>
     </piece>
-    <piece id="9591">
-      <classement>
+    <piece id="26858">
+      <name>
         <version>
-          <date>28/01/2016 14:14:15</date>
-          <class>00001310</class>
-          <rating>0</rating>
+          <date>29/01/2016 11:52:42</date>
+          <value>Jailza</value>
         </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="10124">
-      <classement>
-        <version>
-          <date>28/01/2016 18:09:12</date>
-          <class>1211</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="10392">
-      <classement>
-        <version>
-          <date>28/01/2016 18:00:23</date>
-          <class>001550</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 17:59:40</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="10598">
-      <classement>
-        <version>
-          <date>28/01/2016 12:43:56</date>
-          <class>1313</class>
-          <rating>20</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 12:44:31</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="11274">
-      <files>
-        <file>500\#001-050\#024 James Brown - Live at The Apollo\01 - Introduction to James Brown.flac</file>
-      </files>
-    </piece>
-    <piece id="25460" parent="11274">
-      <disabled />
-    </piece>
-    <piece id="12337">
-      <classement>
-        <version>
-          <date>28/01/2016 16:11:56</date>
-          <class>03113</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="13319">
-      <classement>
-        <version>
-          <date>28/01/2016 16:01:05</date>
-          <class>1253</class>
-          <rating>20</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="14521">
-      <classement>
-        <version>
-          <date>28/01/2016 15:29:55</date>
-          <class>03311</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="15391">
-      <classement>
-        <version>
-          <date>28/01/2016 15:42:06</date>
-          <class>003150</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 15:42:44</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="16071">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A1 - No Action.flac</file>
-      </files>
-      <dates>
-        <date>28/01/2016 12:02:36</date>
-      </dates>
-    </piece>
-    <piece id="16072">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A2 - This Year's Girl.flac</file>
-      </files>
-    </piece>
-    <piece id="16073">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A3 - The Beat.flac</file>
-      </files>
-    </piece>
-    <piece id="16074">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A4 - Pump It Up.flac</file>
-      </files>
-    </piece>
-    <piece id="16075">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A5 - Little Triggers.flac</file>
-      </files>
-    </piece>
-    <piece id="16076">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\A6 - You Belong to Me.flac</file>
-      </files>
-    </piece>
-    <piece id="16077">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\B1 - Hand in Hand.flac</file>
-      </files>
-    </piece>
-    <piece id="16078">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\B2 - Lip Service.flac</file>
-      </files>
-    </piece>
-    <piece id="16079">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\B3 - Living in Paradise.flac</file>
-      </files>
-    </piece>
-    <piece id="16080">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\B4 - Lipstick Vogue.flac</file>
-      </files>
-    </piece>
-    <piece id="16081">
-      <files>
-        <file>500\#051-100\#098 Elvis Costello - This Year's Model\B5 - Radio Radio.flac</file>
-      </files>
-    </piece>
-    <piece id="16130">
-      <classement>
-        <version>
-          <date>28/01/2016 15:48:11</date>
-          <class>01221</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="17079">
-      <classement>
-        <version>
-          <date>28/01/2016 14:08:38</date>
-          <class>0000002300</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="17657">
-      <classement>
-        <version>
-          <date>28/01/2016 16:04:21</date>
-          <class>1151</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 16:07:42</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="17929">
-      <classement>
-        <version>
-          <date>28/01/2016 15:15:01</date>
-          <class>00005200</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="20264">
-      <classement>
-        <version>
-          <date>28/01/2016 17:57:02</date>
-          <class>02512</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="20869">
-      <classement>
-        <version>
-          <date>28/01/2016 12:29:54</date>
-          <class>02313</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 12:27:46</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="21203">
-      <classement>
-        <version>
-          <date>28/01/2016 15:27:46</date>
-          <class>000001030</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 15:27:22</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="21979">
-      <classement>
-        <version>
-          <date>28/01/2016 15:35:49</date>
-          <class>0005430</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="22378">
-      <classement>
-        <version>
-          <date>28/01/2016 15:59:09</date>
-          <class>0001230</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 15:58:57</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="23457">
-      <classement>
-        <version>
-          <date>28/01/2016 14:11:37</date>
-          <class>00004030</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="24085">
-      <classement>
-        <version>
-          <date>28/01/2016 12:31:08</date>
-          <class>01441</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 12:31:32</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="25620">
-      <classement>
-        <version>
-          <date>28/01/2016 11:59:50</date>
-          <class>2330</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>28/01/2016 12:00:29</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="25768">
+      </name>
       <track>
         <version>
-          <date>28/01/2016 12:05:38</date>
-          <value>3</value>
+          <date>29/01/2016 11:51:41</date>
+          <value>12</value>
         </version>
       </track>
     </piece>
-    <piece id="25771">
-      <track>
+    <piece id="26859">
+      <name>
         <version>
-          <date>28/01/2016 12:05:46</date>
-          <value>6</value>
+          <date>29/01/2016 11:52:44</date>
+          <value>Mar azul</value>
         </version>
-      </track>
-    </piece>
-    <piece id="25772">
+      </name>
       <track>
         <version>
-          <date>28/01/2016 12:05:51</date>
-          <value>7</value>
-        </version>
-      </track>
-    </piece>
-    <piece id="25778">
-      <track>
-        <version>
-          <date>28/01/2016 12:06:09</date>
+          <date>29/01/2016 11:51:42</date>
           <value>13</value>
         </version>
       </track>
+      <duration>241835</duration>
     </piece>
-    <piece id="25780">
+    <piece id="26860">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:46</date>
+          <value>Quem bo e</value>
+        </version>
+      </name>
       <track>
         <version>
-          <date>28/01/2016 12:06:16</date>
+          <date>29/01/2016 11:51:43</date>
+          <value>14</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="26861">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:49</date>
+          <value>Partida</value>
+        </version>
+      </name>
+      <track>
+        <version>
+          <date>29/01/2016 11:51:44</date>
           <value>15</value>
         </version>
       </track>
     </piece>
-    <piece id="25899">
+    <piece id="26862">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:51</date>
+          <value>Regresso</value>
+        </version>
+      </name>
+      <track>
+        <version>
+          <date>29/01/2016 11:51:45</date>
+          <value>16</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="26863">
+      <name>
+        <version>
+          <date>29/01/2016 11:52:53</date>
+          <value>Sangue de beirona</value>
+        </version>
+      </name>
+      <track>
+        <version>
+          <date>29/01/2016 11:51:46</date>
+          <value>17</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="26884">
+      <duration>263423</duration>
+    </piece>
+    <piece id="26888">
+      <duration>402162</duration>
+    </piece>
+    <piece id="26898">
+      <duration>284505</duration>
+    </piece>
+    <piece id="26960">
       <classement>
         <version>
-          <date>28/01/2016 11:06:13</date>
-          <class>002450</class>
+          <date>29/01/2016 14:53:27</date>
+          <class>01341</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 11:06:41</date>
+        <date>29/01/2016 14:53:13</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="25922">
+    <piece id="26961">
+      <duration>226982</duration>
+    </piece>
+    <piece id="26985">
       <classement>
         <version>
-          <date>28/01/2016 11:31:12</date>
-          <class>3201</class>
-          <rating>60</rating>
+          <date>29/01/2016 16:31:00</date>
+          <class>1012</class>
+          <rating>40</rating>
         </version>
       </classement>
+      <dates>
+        <date>29/01/2016 16:29:53</date>
+      </dates>
+      <disabled />
+      <duration>135004</duration>
+    </piece>
+    <piece id="26997">
       <files>
-        <file>500\300513.VA.-.Rolling.Stone.Magazine.500\022 - The Ronettes - Be My Baby (1963).mp3</file>
+        <file>2016\Santana\4 Some Extra live, Bootlegs &amp; Other albums\1991 Salsa Samba &amp; Santana @320\07 Carnaval.mp3</file>
       </files>
-      <disabled />
+      <duration>137829</duration>
     </piece>
-    <piece id="26395" parent="25922">
-      <disabled />
+    <piece id="27534" parent="26997">
+      <duration>137826</duration>
     </piece>
-    <piece id="26041">
-      <name>
-        <version>
-          <date>28/01/2016 10:21:55</date>
-          <value>Please Please Please</value>
-        </version>
-      </name>
+    <piece id="27000">
+      <duration>320344</duration>
+    </piece>
+    <piece id="27019">
       <classement>
         <version>
-          <date>28/01/2016 10:23:57</date>
-          <class>04411</class>
+          <date>29/01/2016 11:51:00</date>
+          <class>02021</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 10:22:44</date>
+        <date>29/01/2016 11:50:45</date>
+        <date>29/01/2016 11:48:02</date>
       </dates>
       <disabled />
+      <duration>87670</duration>
     </piece>
-    <piece id="26042">
-      <name>
-        <version>
-          <date>28/01/2016 10:21:58</date>
-          <value>Why Do You Do Me</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26043">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:04</date>
-          <value>Try Me</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26044">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:07</date>
-          <value>Tell Me What I Did Wrong</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26045">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:11</date>
-          <value>Bewildered</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26046">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:14</date>
-          <value>Good Good Lovin'</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26047">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:17</date>
-          <value>I'll Go Crazy</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26048">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:21</date>
-          <value>I Know It's True</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26049">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:25</date>
-          <value>(Do The) Mashed Potatoes (Part 1)</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26050">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:29</date>
-          <value>Think</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26051">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:32</date>
-          <value>Baby, You're Right</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26052">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:35</date>
-          <value>Lost Someone</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26053">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:38</date>
-          <value>Night Train</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26054">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:41</date>
-          <value>I've Got Money</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26055">
-      <name>
-        <version>
-          <date>28/01/2016 10:06:48</date>
-          <value>I Don't Mind (Live)</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26056">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:52</date>
-          <value>Prisoner Of Love</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26057">
-      <name>
-        <version>
-          <date>28/01/2016 10:22:58</date>
-          <value>Devil's Den</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26058">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:01</date>
-          <value>Out Of The Blue</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26059">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:04</date>
-          <value>Out Of Sight</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26060">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:07</date>
-          <value>Grits</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26061">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:10</date>
-          <value>Maybe The Last Time</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26062">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:13</date>
-          <value>It's A Man's World</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26063">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:17</date>
-          <value>I Got You</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26064">
-      <name>
-        <version>
-          <date>28/01/2016 10:23:21</date>
-          <value>Papa's Got A Brand New Bag (Parts 1+2+3)</value>
-        </version>
-      </name>
-    </piece>
-    <piece id="26112">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\101 The Zombies - Care of Cell 44.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\201 The Zombies - Care of Cell 44.mp3</file>
-      </files>
-      <dates>
-        <date>03/01/2016 15:26:15</date>
-        <date>01/09/2015 15:13:11</date>
-        <date>31/08/2015 18:40:26</date>
-      </dates>
-    </piece>
-    <piece id="26113">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\102 The Zombies - A Rose for Emily.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\202 The Zombies - A Rose for Emily.mp3</file>
-      </files>
-    </piece>
-    <piece id="26114">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\103 The Zombies - Maybe After Hes Gone.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\203 The Zombies - Maybe After Hes Gone.mp3</file>
-      </files>
-    </piece>
-    <piece id="26115">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\104 The Zombies - Beechwood Park.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\204 The Zombies - Beechwood Park.mp3</file>
-      </files>
-    </piece>
-    <piece id="26116">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\105 The Zombies - Brief Candles.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\205 The Zombies - Brief Candles.mp3</file>
-      </files>
-    </piece>
-    <piece id="26117">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\106 The Zombies - Hung Up on A Dream.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\206 The Zombies - Hung Up on A Dream.mp3</file>
-      </files>
-    </piece>
-    <piece id="26118">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\107 The Zombies - Changes.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\207 The Zombies - Changes.mp3</file>
-      </files>
-    </piece>
-    <piece id="26119">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\108 The Zombies - I Want Her She Wants Me.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\208 The Zombies - I Want Her She Wants Me.mp3</file>
-      </files>
-    </piece>
-    <piece id="26120">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\109 The Zombies - This Will Be Our Year.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\209 The Zombies - This Will Be Our Year.mp3</file>
-      </files>
-      <dates>
-        <date>19/06/2015 22:13:12</date>
-        <date>18/06/2015 15:42:10</date>
-      </dates>
-    </piece>
-    <piece id="26121">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\110 The Zombies - Butchers Tale (Western Front 1914).mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\210 The Zombies - Butchers Tale (Western Front 1914).mp3</file>
-      </files>
-    </piece>
-    <piece id="26122">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\111 The Zombies - Friends of Mine.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\211 The Zombies - Friends of Mine.mp3</file>
-      </files>
-    </piece>
-    <piece id="26123">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\112 The Zombies - Time of the Season.mp3</file>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\212 The Zombies - Time of the Season.mp3</file>
-      </files>
-    </piece>
-    <piece id="26124">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\113 The Zombies - Ill Call You Mine.mp3</file>
-      </files>
-    </piece>
-    <piece id="26125">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\114 The Zombies - Imagine the Swan.mp3</file>
-      </files>
-    </piece>
-    <piece id="26126">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\115 The Zombies - Conversation Off Floral Street.mp3</file>
-      </files>
-    </piece>
-    <piece id="26127">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\116 The Zombies - If it Dont Work Out.mp3</file>
-      </files>
-    </piece>
-    <piece id="26128">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\118 The Zombies - Dont Cry for Me.mp3</file>
-      </files>
-    </piece>
-    <piece id="26129">
-      <files>
-        <file>2001\2\The  Zombies\Odessey and Oracle-2CD\117 The Zombies - I Know She Will.mp3</file>
-      </files>
-    </piece>
-    <piece id="26135">
+    <piece id="27066">
       <classement>
         <version>
-          <date>28/01/2016 11:27:16</date>
-          <class>003350</class>
+          <date>29/01/2016 15:06:37</date>
+          <class>01153</class>
           <rating>0</rating>
         </version>
       </classement>
-      <dates>
-        <date>28/01/2016 11:26:52</date>
-        <date>28/01/2016 11:09:40</date>
-        <date>28/01/2016 11:09:03</date>
-      </dates>
       <disabled />
-      <duration>3344</duration>
+      <duration>296102</duration>
     </piece>
-    <piece id="26170">
+    <piece id="27085">
       <classement>
         <version>
-          <date>28/01/2016 11:08:27</date>
-          <class>3233</class>
+          <date>29/01/2016 11:53:31</date>
+          <class>004520</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>272148</duration>
+    </piece>
+    <piece id="27087">
+      <duration>144305</duration>
+    </piece>
+    <piece id="27096">
+      <classement>
+        <version>
+          <date>29/01/2016 16:13:56</date>
+          <class>01204</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\3 Compilations\2008 Multi Dimensional Warrior @320\CD1\13 - 13 BailandoAquatic Park.mp3</file>
+        <file>2016\Santana\4 Some Extra live, Bootlegs &amp; Other albums\1991 Salsa Samba &amp; Santana @320\17 Bailando.mp3</file>
+      </files>
+      <disabled />
+      <duration>346292</duration>
+    </piece>
+    <piece id="27436" parent="27096">
+      <disabled />
+      <duration>344717</duration>
+    </piece>
+    <piece id="27544" parent="27096">
+      <disabled />
+      <duration>346283</duration>
+    </piece>
+    <piece id="27105">
+      <classement>
+        <version>
+          <date>29/01/2016 16:54:23</date>
+          <class>02222</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>269483</duration>
+    </piece>
+    <piece id="27115">
+      <classement>
+        <version>
+          <date>29/01/2016 16:36:24</date>
+          <class>1022</class>
           <rating>60</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 11:09:00</date>
+        <date>29/01/2016 16:38:33</date>
+      </dates>
+      <disabled />
+      <duration>444034</duration>
+    </piece>
+    <piece id="27173">
+      <classement>
+        <version>
+          <date>29/01/2016 16:27:31</date>
+          <class>002003</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\3 Compilations\2003 Ceremony (Remixes &amp; Rarities) @320\CD2 (Rarities Bonus CD)\01 Nothing At All.mp3</file>
+      </files>
+      <disabled />
+      <duration>268962</duration>
+    </piece>
+    <piece id="27398" parent="27173">
+      <disabled />
+      <duration>262953</duration>
+    </piece>
+    <piece id="27189">
+      <classement>
+        <version>
+          <date>29/01/2016 13:49:05</date>
+          <class>1420</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>29/01/2016 13:48:18</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="26213">
+    <piece id="27190">
+      <duration>257441</duration>
+    </piece>
+    <piece id="27193">
       <classement>
         <version>
-          <date>28/01/2016 10:13:48</date>
-          <class>02212</class>
+          <date>29/01/2016 16:00:31</date>
+          <class>003450</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\4 Some Extra live, Bootlegs &amp; Other albums\2006 Just Feel Better (single) @320\01 Just Feel Better (feat. Steven Tyler).mp3</file>
+      </files>
+      <disabled />
+      <duration>252792</duration>
+    </piece>
+    <piece id="27631" parent="27193">
+      <disabled />
+      <duration>252974</duration>
+    </piece>
+    <piece id="27217">
+      <duration>213111</duration>
+    </piece>
+    <piece id="27227">
+      <duration>253868</duration>
+    </piece>
+    <piece id="27231">
+      <classement>
+        <version>
+          <date>29/01/2016 14:09:56</date>
+          <class>04311</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 10:12:31</date>
-        <date>28/01/2016 10:10:12</date>
+        <date>29/01/2016 14:09:52</date>
       </dates>
       <disabled />
+      <duration>437686</duration>
     </piece>
-    <piece id="27030">
+    <piece id="27236">
+      <duration>535548</duration>
+    </piece>
+    <piece id="27261">
+      <duration>402604</duration>
+    </piece>
+    <piece id="27279">
       <classement>
         <version>
-          <date>28/01/2016 12:10:12</date>
-          <class>002250</class>
+          <date>29/01/2016 14:46:15</date>
+          <class>2220</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\1 Studio Albums\1969 Santana (Legacy Edition) @320\CD1\01 - Waiting.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 14:47:22</date>
+      </dates>
+      <disabled />
+      <duration>247358</duration>
+    </piece>
+    <piece id="26880" parent="27279">
+      <disabled />
+      <duration>247357</duration>
+    </piece>
+    <piece id="27288">
+      <duration>289313</duration>
+    </piece>
+    <piece id="27302">
+      <duration>403753</duration>
+    </piece>
+    <piece id="27320">
+      <duration>295789</duration>
+    </piece>
+    <piece id="27377">
+      <duration>294905</duration>
+    </piece>
+    <piece id="27387">
+      <classement>
+        <version>
+          <date>29/01/2016 17:31:01</date>
+          <class>002103</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>28/01/2016 12:10:17</date>
-        <date>28/01/2016 12:09:31</date>
+        <date>29/01/2016 17:31:30</date>
       </dates>
       <disabled />
+      <duration>227766</duration>
     </piece>
-    <piece id="430" deleted="true" />
-    <piece id="431" deleted="true" />
-    <piece id="432" deleted="true" />
-    <piece id="433" deleted="true" />
-    <piece id="434" deleted="true" />
-    <piece id="14003" deleted="true" />
-    <piece id="14004" deleted="true" />
-    <piece id="14005" deleted="true" />
-    <piece id="14006" deleted="true" />
-    <piece id="14007" deleted="true" />
-    <piece id="14008" deleted="true" />
-    <piece id="14009" deleted="true" />
-    <piece id="14010" deleted="true" />
-    <piece id="14011" deleted="true" />
-    <piece id="14012" deleted="true" />
-    <piece id="14013" deleted="true" />
-    <piece id="14014" deleted="true" />
-    <piece id="14015" deleted="true" />
-    <piece id="14016" deleted="true" />
-    <piece id="14017" deleted="true" />
-    <piece id="14018" deleted="true" />
-    <piece id="14019" deleted="true" />
-    <piece id="14020" deleted="true" />
-    <piece id="14021" deleted="true" />
-    <piece id="14022" deleted="true" />
-    <piece id="14023" deleted="true" />
-    <piece id="14024" deleted="true" />
-    <piece id="14025" deleted="true" />
-    <piece id="14026" deleted="true" />
-    <piece id="14027" deleted="true" />
-    <piece id="14028" deleted="true" />
-    <piece id="14029" deleted="true" />
-    <piece id="14030" deleted="true" />
-    <piece id="14031" deleted="true" />
-    <piece id="14032" deleted="true" />
-    <piece id="26136" deleted="true" />
-    <piece id="26137" deleted="true" />
-    <piece id="26138" deleted="true" />
-    <piece id="26139" deleted="true" />
-    <piece id="26140" deleted="true" />
-    <piece id="26141" deleted="true" />
-    <piece id="26142" deleted="true" />
-    <piece id="26143" deleted="true" />
-    <piece id="26144" deleted="true" />
-    <piece id="26145" deleted="true" />
-    <piece id="26146" deleted="true" />
-    <piece id="26147" deleted="true" />
-    <piece id="26148" deleted="true" />
-    <piece id="26344" deleted="true" />
-    <piece id="26345" deleted="true" />
-    <piece id="26346" deleted="true" />
-    <piece id="26347" deleted="true" />
-    <piece id="26348" deleted="true" />
-    <piece id="26349" deleted="true" />
-    <piece id="26350" deleted="true" />
-    <piece id="26351" deleted="true" />
-    <piece id="26352" deleted="true" />
-    <piece id="26353" deleted="true" />
-    <piece id="26354" deleted="true" />
+    <piece id="27425">
+      <duration>145741</duration>
+    </piece>
+    <piece id="27466">
+      <duration>302135</duration>
+    </piece>
+    <piece id="27472">
+      <duration>245424</duration>
+    </piece>
+    <piece id="27498">
+      <classement>
+        <version>
+          <date>29/01/2016 16:59:46</date>
+          <class>2023</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\1 Studio Albums\1971 Santana III (35Th Anniversary Edition) @320\CD1\05 - Everybody's Everything.mp3</file>
+        <file>2016\Santana\3 Compilations\1995 Dance Of The Rainbow Serpent @320\CD1\06 - Everybody's Everything.mp3</file>
+        <file>Santana\The Very Best Of\14 Everybody's Everything.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 16:59:31</date>
+        <date>08/01/2015 13:57:53</date>
+        <date>27/03/2014 09:45:57</date>
+        <date>29/10/2013 21:02:05</date>
+        <date>01/09/2013 21:00:19</date>
+        <date>21/12/2012 22:54:34</date>
+      </dates>
+      <disabled />
+      <duration>211988</duration>
+    </piece>
+    <piece id="3911" parent="27498">
+      <disabled />
+    </piece>
+    <piece id="26921" parent="27498">
+      <disabled />
+      <duration>213581</duration>
+    </piece>
+    <piece id="27329" parent="27498">
+      <disabled />
+      <duration>211989</duration>
+    </piece>
+    <piece id="27499">
+      <duration>321493</duration>
+    </piece>
+    <piece id="27513">
+      <classement>
+        <version>
+          <date>29/01/2016 15:04:31</date>
+          <class>002550</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <files>
+        <file>2016\Santana\4 Some Extra live, Bootlegs &amp; Other albums\1991 Salsa Samba &amp; Santana @320\05 Brotherhood.mp3</file>
+      </files>
+      <dates>
+        <date>29/01/2016 15:03:03</date>
+      </dates>
+      <disabled />
+      <duration>261385</duration>
+    </piece>
+    <piece id="27532" parent="27513">
+      <disabled />
+      <duration>261046</duration>
+    </piece>
+    <piece id="27517">
+      <duration>431626</duration>
+    </piece>
+    <piece id="27527">
+      <duration>529562</duration>
+    </piece>
+    <piece id="27528">
+      <classement>
+        <version>
+          <date>29/01/2016 13:39:52</date>
+          <class>004050</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>235237</duration>
+    </piece>
+    <piece id="27533">
+      <duration>129075</duration>
+    </piece>
+    <piece id="27549">
+      <duration>303787</duration>
+    </piece>
+    <piece id="27588">
+      <duration>262171</duration>
+    </piece>
+    <piece id="27596">
+      <duration>293256</duration>
+    </piece>
+    <piece id="27606">
+      <duration>251721</duration>
+    </piece>
   </pieces>
 </db>
