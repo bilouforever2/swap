@@ -1,585 +1,2059 @@
 <?xml version="1.0" encoding="utf-8"?>
-<db version="3" seq_piece="30938">
+<db version="3" seq_piece="31438">
   <pieces>
-    <piece id="1081">
-      <files>
-        <file>Chet Baker\Let's Get Lost\08. Zingaro (aka Portrait in black a.mp3</file>
-      </files>
-      <dates>
-        <date>10/04/2015 21:39:01</date>
-        <date>10/04/2015 20:58:11</date>
-        <date>30/07/2014 13:35:30</date>
-        <date>27/11/2013 16:18:10</date>
-        <date>17/10/2013 14:11:44</date>
-        <date>17/10/2013 13:11:44</date>
-        <date>25/11/2012 13:56:50</date>
-      </dates>
-    </piece>
-    <piece id="1741">
+    <piece id="214">
       <classement>
         <version>
-          <date>03/02/2016 15:48:22</date>
-          <class>3440</class>
+          <date>04/02/2016 13:19:16</date>
+          <class>001241</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 12:01:05</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="1690">
+      <classement>
+        <version>
+          <date>04/02/2016 16:11:53</date>
+          <class>000005400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>258000</duration>
+    </piece>
+    <piece id="2999">
+      <classement>
+        <version>
+          <date>04/02/2016 10:07:03</date>
+          <class>01234</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10366" parent="3507">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:49</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10374" parent="3520">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:50</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10377" parent="3578">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:51</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="3580">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:52</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="3581">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:53</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10375" parent="3581">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:54</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="3583">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:55</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:33:11</date>
+          <value>31</value>
+        </version>
+        <version>
+          <date>04/02/2016 10:29:41</date>
+          <value>21</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="3587">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:56</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:29:51</date>
+          <value>6</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="3590">
+      <classement>
+        <version>
+          <date>04/02/2016 10:40:36</date>
+          <class>2243</class>
           <rating>60</rating>
         </version>
       </classement>
       <dates>
-        <date>03/02/2016 15:51:56</date>
+        <date>04/02/2016 10:41:23</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="2955">
+    <piece id="10369" parent="3610">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:59</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10387" parent="3637">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:00</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10367" parent="3638">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:01</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="5445">
+      <artist>
+        <version>
+          <date>04/02/2016 13:37:22</date>
+          <value>-</value>
+        </version>
+      </artist>
       <classement>
         <version>
-          <date>03/02/2016 11:33:14</date>
-          <class>02251</class>
+          <date>04/02/2016 13:34:40</date>
+          <class>000000000002</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>489143</duration>
+    </piece>
+    <piece id="5446">
+      <artist>
+        <version>
+          <date>04/02/2016 13:48:32</date>
+          <value>-</value>
+        </version>
+      </artist>
+      <classement>
+        <version>
+          <date>04/02/2016 13:48:18</date>
+          <class>0003130</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="3003">
+    <piece id="5714">
       <classement>
         <version>
-          <date>03/02/2016 16:05:10</date>
-          <class>03151</class>
+          <date>04/02/2016 15:29:00</date>
+          <class>002133</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>275931</duration>
+    </piece>
+    <piece id="5739">
+      <classement>
+        <version>
+          <date>04/02/2016 17:24:50</date>
+          <class>005003</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 17:27:48</date>
+      </dates>
+      <disabled />
+      <duration>283901</duration>
+    </piece>
+    <piece id="5943">
+      <classement>
+        <version>
+          <date>04/02/2016 16:16:28</date>
+          <class>04251</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 16:16:47</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="6275">
+      <classement>
+        <version>
+          <date>04/02/2016 15:36:13</date>
+          <class>00001130</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="3462">
+    <piece id="6633">
       <classement>
         <version>
-          <date>03/02/2016 16:43:16</date>
-          <class>1010</class>
+          <date>04/02/2016 15:34:34</date>
+          <class>00000002000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="6634">
+      <classement>
+        <version>
+          <date>04/02/2016 15:38:55</date>
+          <class>0002410</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>313469</duration>
+    </piece>
+    <piece id="7079">
+      <classement>
+        <version>
+          <date>04/02/2016 15:00:21</date>
+          <class>004403</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>118257</duration>
+    </piece>
+    <piece id="7122">
+      <classement>
+        <version>
+          <date>04/02/2016 15:14:15</date>
+          <class>03004</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="7532">
+      <classement>
+        <version>
+          <date>04/02/2016 10:09:22</date>
+          <class>00004130</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="8891">
+      <classement>
+        <version>
+          <date>04/02/2016 13:29:33</date>
+          <class>000000000300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="8892">
+      <classement>
+        <version>
+          <date>04/02/2016 14:53:36</date>
+          <class>00003230</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9245">
+      <classement>
+        <version>
+          <date>04/02/2016 16:06:09</date>
+          <class>0001240</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9383">
+      <classement>
+        <version>
+          <date>04/02/2016 16:59:25</date>
+          <class>000001010</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9384">
+      <classement>
+        <version>
+          <date>04/02/2016 17:12:35</date>
+          <class>00001040</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 17:11:10</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="9385">
+      <classement>
+        <version>
+          <date>04/02/2016 18:24:06</date>
+          <class>000001230</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9440">
+      <classement>
+        <version>
+          <date>04/02/2016 15:25:23</date>
+          <class>000000000011</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9441">
+      <classement>
+        <version>
+          <date>04/02/2016 13:58:18</date>
+          <class>0000003100</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9442">
+      <classement>
+        <version>
+          <date>04/02/2016 16:12:49</date>
+          <class>000000000011</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9458">
+      <classement>
+        <version>
+          <date>04/02/2016 13:25:48</date>
+          <class>000000000004</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>281130</duration>
+    </piece>
+    <piece id="9459">
+      <classement>
+        <version>
+          <date>04/02/2016 13:56:47</date>
+          <class>000000000002</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>259345</duration>
+    </piece>
+    <piece id="9460">
+      <classement>
+        <version>
+          <date>04/02/2016 14:00:31</date>
+          <class>000000000002</class>
           <rating>80</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="3543">
+    <piece id="9461">
       <classement>
         <version>
-          <date>03/02/2016 17:48:19</date>
-          <class>3423</class>
+          <date>04/02/2016 14:34:57</date>
+          <class>000000000003</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>132101</duration>
+    </piece>
+    <piece id="9516">
+      <classement>
+        <version>
+          <date>04/02/2016 13:55:01</date>
+          <class>000000000020</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>442201</duration>
+    </piece>
+    <piece id="9618">
+      <classement>
+        <version>
+          <date>04/02/2016 15:50:02</date>
+          <class>0000004100</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9770">
+      <track />
+    </piece>
+    <piece id="9771">
+      <track />
+    </piece>
+    <piece id="9772">
+      <track />
+    </piece>
+    <piece id="9773">
+      <track />
+    </piece>
+    <piece id="10134">
+      <classement>
+        <version>
+          <date>04/02/2016 17:55:05</date>
+          <class>0000005500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10170">
+      <classement>
+        <version>
+          <date>04/02/2016 15:15:21</date>
+          <class>000000000005</class>
           <rating>60</rating>
         </version>
       </classement>
-      <dates>
-        <date>03/02/2016 17:52:43</date>
-      </dates>
       <disabled />
     </piece>
-    <piece id="3575">
+    <piece id="10171">
       <classement>
         <version>
-          <date>03/02/2016 16:03:21</date>
-          <class>1554</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 16:04:03</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="3576">
-      <duration>1028274</duration>
-    </piece>
-    <piece id="3580">
-      <classement>
-        <version>
-          <date>03/02/2016 16:53:07</date>
-          <class>3110</class>
-          <rating>60</rating>
+          <date>04/02/2016 15:16:36</date>
+          <class>000000000005</class>
+          <rating>80</rating>
         </version>
       </classement>
       <disabled />
-      <duration>990883</duration>
+      <duration>219899</duration>
     </piece>
-    <piece id="3632">
+    <piece id="10172">
       <classement>
         <version>
-          <date>03/02/2016 18:10:05</date>
-          <class>555000</class>
-          <rating>0</rating>
-        </version>
-        <version>
-          <date>03/02/2016 18:04:22</date>
-          <class>55300</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 18:13:43</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="4777">
-      <classement>
-        <version>
-          <date>03/02/2016 11:30:08</date>
-          <class>1413</class>
-          <rating>40</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>594999</duration>
-    </piece>
-    <piece id="5606">
-      <classement>
-        <version>
-          <date>03/02/2016 14:53:45</date>
-          <class>001143</class>
+          <date>04/02/2016 15:18:32</date>
+          <class>000000000011</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
+      <duration>176196</duration>
     </piece>
-    <piece id="6114">
+    <piece id="10173">
       <classement>
         <version>
-          <date>03/02/2016 16:54:41</date>
-          <class>1214</class>
-          <rating>40</rating>
+          <date>04/02/2016 15:18:52</date>
+          <class>000000000005</class>
+          <rating>100</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="6487">
+    <piece id="10174">
       <classement>
         <version>
-          <date>03/02/2016 17:12:29</date>
-          <class>01052</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>542903</duration>
-    </piece>
-    <piece id="7517">
-      <duration>609343</duration>
-    </piece>
-    <piece id="8894">
-      <classement>
-        <version>
-          <date>03/02/2016 16:17:36</date>
-          <class>0004030</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="9603">
-      <classement>
-        <version>
-          <date>03/02/2016 16:00:43</date>
-          <class>0002210</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="9630">
-      <classement>
-        <version>
-          <date>03/02/2016 16:12:39</date>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="10478">
-      <duration>688319</duration>
-    </piece>
-    <piece id="11321">
-      <classement>
-        <version>
-          <date>03/02/2016 15:16:26</date>
-          <class>04053</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="11342">
-      <classement>
-        <version>
-          <date>03/02/2016 14:36:40</date>
-          <class>04351</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <files>
-        <file>500\#001-050\#047 John Coltrane - A Love Supreme\01 - Part 1 - Acknowledgement.flac</file>
-      </files>
-      <disabled />
-      <duration>462853</duration>
-    </piece>
-    <piece id="11343">
-      <files>
-        <file>500\#001-050\#047 John Coltrane - A Love Supreme\02 - Part 2 - Resolution.flac</file>
-      </files>
-    </piece>
-    <piece id="11344">
-      <files>
-        <file>500\#001-050\#047 John Coltrane - A Love Supreme\03 - Part 3 - Pursuance.flac</file>
-      </files>
-    </piece>
-    <piece id="11489">
-      <files>
-        <file>500\#001-050\#012 Miles Davis - Kind Of Blue\01-So What.mp3</file>
-      </files>
-    </piece>
-    <piece id="12160">
-      <classement>
-        <version>
-          <date>03/02/2016 15:01:56</date>
-          <class>05251</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="12504">
-      <classement>
-        <version>
-          <date>03/02/2016 15:14:26</date>
-          <class>02551</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="12889">
-      <classement>
-        <version>
-          <date>03/02/2016 15:09:29</date>
-          <class>005250</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="13453">
-      <classement>
-        <version>
-          <date>03/02/2016 17:59:19</date>
-          <class>04151</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="13457">
-      <classement>
-        <version>
-          <date>03/02/2016 11:38:52</date>
-          <class>01334</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 11:41:21</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="13851">
-      <classement>
-        <version>
-          <date>03/02/2016 14:42:15</date>
-          <class>05151</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="14567">
-      <classement>
-        <version>
-          <date>03/02/2016 13:18:53</date>
-          <class>1542</class>
-          <rating>60</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 13:19:40</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="14593">
-      <classement>
-        <version>
-          <date>03/02/2016 18:21:53</date>
-          <class>0005510</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="14609">
-      <classement>
-        <version>
-          <date>03/02/2016 16:29:02</date>
-          <class>001311</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="15793">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\01 Planet Claire.m4a</file>
-      </files>
-    </piece>
-    <piece id="15794">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\02 52 Girls.m4a</file>
-      </files>
-    </piece>
-    <piece id="15795">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\03 Dance This Mess Around.m4a</file>
-      </files>
-    </piece>
-    <piece id="15796">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\04 Rock Lobster.m4a</file>
-      </files>
-    </piece>
-    <piece id="15797">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\05 Lava.m4a</file>
-      </files>
-    </piece>
-    <piece id="15798">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\06 There's A Moon In The Sky (Called The Moon).m4a</file>
-      </files>
-    </piece>
-    <piece id="15799">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\07 Hero Worship.m4a</file>
-      </files>
-    </piece>
-    <piece id="15800">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\08 6060-842.m4a</file>
-      </files>
-    </piece>
-    <piece id="15801">
-      <files>
-        <file>500\101 - 200\152 # 1979 - The B-52's - The B-52's\09 Downtown.m4a</file>
-      </files>
-    </piece>
-    <piece id="16518">
-      <classement>
-        <version>
-          <date>03/02/2016 14:59:24</date>
-          <class>0002330</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="17125">
-      <classement>
-        <version>
-          <date>03/02/2016 16:34:20</date>
-          <class>1244</class>
+          <date>04/02/2016 15:19:15</date>
+          <class>000000000010</class>
           <rating>20</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="18269">
+    <piece id="10175">
       <classement>
         <version>
-          <date>03/02/2016 17:04:08</date>
-          <class>03251</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 17:01:58</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="20054">
-      <classement>
-        <version>
-          <date>03/02/2016 17:07:38</date>
-          <class>02004</class>
-          <rating>0</rating>
+          <date>04/02/2016 15:19:36</date>
+          <class>000000000010</class>
+          <rating>40</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="20521">
+    <piece id="10176">
       <classement>
         <version>
-          <date>03/02/2016 11:43:48</date>
-          <class>05051</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="22788">
-      <classement>
-        <version>
-          <date>03/02/2016 17:10:10</date>
-          <class>000000000003</class>
-          <rating>0</rating>
-        </version>
-        <version>
-          <date>03/02/2016 14:51:40</date>
-          <class>000000000003000</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="23930">
-      <classement>
-        <version>
-          <date>03/02/2016 15:11:08</date>
-          <class>0003330</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 15:11:14</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="27202">
-      <classement>
-        <version>
-          <date>03/02/2016 18:29:02</date>
-          <class>02103</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>578826</duration>
-    </piece>
-    <piece id="27239">
-      <classement>
-        <version>
-          <date>03/02/2016 16:21:44</date>
-          <class>002503</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <disabled />
-      <duration>661974</duration>
-    </piece>
-    <piece id="27247">
-      <classement>
-        <version>
-          <date>03/02/2016 15:58:46</date>
-          <class>05004</class>
-          <rating>0</rating>
-        </version>
-      </classement>
-      <dates>
-        <date>03/02/2016 15:57:58</date>
-      </dates>
-      <disabled />
-      <duration>311567</duration>
-    </piece>
-    <piece id="27248">
-      <duration>406235</duration>
-    </piece>
-    <piece id="27268">
-      <classement>
-        <version>
-          <date>03/02/2016 13:24:56</date>
-          <class>1525</class>
+          <date>04/02/2016 15:19:50</date>
+          <class>000000000010</class>
           <rating>60</rating>
         </version>
       </classement>
       <disabled />
-      <duration>450695</duration>
     </piece>
-    <piece id="27408">
+    <piece id="10177">
       <classement>
         <version>
-          <date>03/02/2016 14:57:34</date>
-          <class>05453</class>
+          <date>04/02/2016 15:20:44</date>
+          <class>000000000110</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
-      <duration>463887</duration>
     </piece>
-    <piece id="27556">
+    <piece id="10178">
       <classement>
         <version>
-          <date>03/02/2016 16:11:06</date>
-          <class>03451</class>
+          <date>04/02/2016 15:24:18</date>
+          <class>000000000010</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>226038</duration>
+    </piece>
+    <piece id="10179">
+      <classement>
+        <version>
+          <date>04/02/2016 15:24:35</date>
+          <class>000000000010</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10180">
+      <classement>
+        <version>
+          <date>04/02/2016 15:25:03</date>
+          <class>000000000011</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10198">
+      <classement>
+        <version>
+          <date>04/02/2016 14:03:25</date>
+          <class>000000000003</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>221859</duration>
+    </piece>
+    <piece id="10199">
+      <classement>
+        <version>
+          <date>04/02/2016 14:33:25</date>
+          <class>000000000003</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10200">
+      <classement>
+        <version>
+          <date>04/02/2016 14:33:48</date>
+          <class>000000000003</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>383532</duration>
+    </piece>
+    <piece id="10201">
+      <classement>
+        <version>
+          <date>04/02/2016 14:35:19</date>
+          <class>000000000004</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10202">
+      <classement>
+        <version>
+          <date>04/02/2016 14:39:51</date>
+          <class>000000000050</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10214">
+      <classement>
+        <version>
+          <date>04/02/2016 14:44:42</date>
+          <class>000000000013</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10230">
+      <classement>
+        <version>
+          <date>04/02/2016 16:28:43</date>
+          <class>00000420</class>
           <rating>0</rating>
         </version>
       </classement>
       <dates>
-        <date>03/02/2016 16:11:27</date>
+        <date>04/02/2016 16:28:31</date>
+        <date>04/02/2016 16:27:55</date>
       </dates>
       <disabled />
-      <duration>367077</duration>
     </piece>
-    <piece id="29150">
+    <piece id="10231">
       <classement>
         <version>
-          <date>03/02/2016 18:19:19</date>
-          <class>01132</class>
+          <date>04/02/2016 17:06:34</date>
+          <class>00001340</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 17:06:42</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="10232">
+      <classement>
+        <version>
+          <date>04/02/2016 10:01:33</date>
+          <class>0001320</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 18:27:23</date>
+        <date>04/02/2016 18:25:36</date>
+        <date>04/02/2016 18:24:45</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="10233">
+      <dates>
+        <date>04/02/2016 18:26:17</date>
+      </dates>
+      <duration>40821</duration>
+    </piece>
+    <piece id="3582" parent="10315">
+      <album>
+        <version>
+          <date>04/02/2016 10:28:41</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10378" parent="10315">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:03</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10372" parent="10334">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:04</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10376" parent="10339">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:05</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10368">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:06</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10380">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:07</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="10381">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:07</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:30:28</date>
+          <value>23</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10382">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:08</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:30:36</date>
+          <value>24</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10383">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:09</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:30:44</date>
+          <value>25</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10384">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:10</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:31:18</date>
+          <value>26</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10385">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:11</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:31:35</date>
+          <value>27</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10386">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:12</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:31:49</date>
+          <value>28</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10388">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:13</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:32:12</date>
+          <value>30</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10389">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:14</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:32:32</date>
+          <value>31</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10390">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:15</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:32:46</date>
+          <value>32</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10391">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:16</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 10:32:56</date>
+          <value>33</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="10373" parent="10451">
+      <album>
+        <version>
+          <date>04/02/2016 10:29:17</date>
+          <value>The Best of Pink Floyd</value>
+        </version>
+      </album>
+    </piece>
+    <piece id="12743">
+      <classement>
+        <version>
+          <date>04/02/2016 11:04:18</date>
+          <class>2031</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="12928">
+      <classement>
+        <version>
+          <date>04/02/2016 10:44:28</date>
+          <class>003503</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="29531">
+    <piece id="14088">
       <classement>
         <version>
-          <date>03/02/2016 17:10:29</date>
-          <class>000000000200</class>
+          <date>04/02/2016 11:16:32</date>
+          <class>2002</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 11:34:07</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="14638">
+      <classement>
+        <version>
+          <date>04/02/2016 18:02:16</date>
+          <class>0003430</class>
           <rating>0</rating>
         </version>
       </classement>
+      <dates>
+        <date>04/02/2016 18:00:53</date>
+      </dates>
+      <disabled />
     </piece>
-    <piece id="29593">
+    <piece id="15166">
       <classement>
         <version>
-          <date>03/02/2016 16:25:57</date>
-          <class>003403</class>
+          <date>04/02/2016 10:13:17</date>
+          <class>1224</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="16800">
+      <classement>
+        <version>
+          <date>04/02/2016 17:14:33</date>
+          <class>0001003</class>
           <rating>0</rating>
         </version>
       </classement>
       <disabled />
     </piece>
-    <piece id="1082" deleted="true" />
-    <piece id="10477" deleted="true" />
-    <piece id="10370" deleted="true" />
-    <piece id="15321" deleted="true" />
-    <piece id="15322" deleted="true" />
-    <piece id="12695" deleted="true" />
-    <piece id="12696" deleted="true" />
-    <piece id="12697" deleted="true" />
-    <piece id="12698" deleted="true" />
-    <piece id="12699" deleted="true" />
-    <piece id="3577" deleted="true" />
-    <piece id="25409" deleted="true" />
-    <piece id="25708" deleted="true" />
-    <piece id="25709" deleted="true" />
-    <piece id="25710" deleted="true" />
-    <piece id="28103" deleted="true" />
-    <piece id="28104" deleted="true" />
-    <piece id="28105" deleted="true" />
-    <piece id="28106" deleted="true" />
-    <piece id="28107" deleted="true" />
-    <piece id="28108" deleted="true" />
-    <piece id="28109" deleted="true" />
-    <piece id="28110" deleted="true" />
-    <piece id="28111" deleted="true" />
+    <piece id="17080">
+      <classement>
+        <version>
+          <date>04/02/2016 15:33:49</date>
+          <class>0000003200</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17081">
+      <classement>
+        <version>
+          <date>04/02/2016 16:23:56</date>
+          <class>0000001210</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17082">
+      <classement>
+        <version>
+          <date>04/02/2016 16:41:55</date>
+          <class>0000003500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17083">
+      <classement>
+        <version>
+          <date>04/02/2016 17:08:52</date>
+          <class>0000004400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17084">
+      <classement>
+        <version>
+          <date>04/02/2016 17:38:41</date>
+          <class>000000001000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17085">
+      <classement>
+        <version>
+          <date>04/02/2016 17:39:18</date>
+          <class>000000000011</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17086">
+      <classement>
+        <version>
+          <date>04/02/2016 17:39:47</date>
+          <class>000000000011</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17087">
+      <classement>
+        <version>
+          <date>04/02/2016 17:40:19</date>
+          <class>000000002000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17088">
+      <classement>
+        <version>
+          <date>04/02/2016 17:41:13</date>
+          <class>000001530</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17089">
+      <classement>
+        <version>
+          <date>04/02/2016 17:54:21</date>
+          <class>0000005400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17090">
+      <classement>
+        <version>
+          <date>04/02/2016 18:37:46</date>
+          <class>000000000012</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 18:37:55</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="17616">
+      <classement>
+        <version>
+          <date>04/02/2016 18:22:56</date>
+          <class>000004110</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 18:18:50</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="18727">
+      <classement>
+        <version>
+          <date>04/02/2016 15:48:02</date>
+          <class>00001230</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18779">
+      <duration>330933</duration>
+    </piece>
+    <piece id="18780">
+      <classement>
+        <version>
+          <date>04/02/2016 13:21:34</date>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 13:21:30</date>
+        <date>04/02/2016 12:01:28</date>
+      </dates>
+      <disabled />
+      <duration>21933</duration>
+    </piece>
+    <piece id="18781">
+      <classement>
+        <version>
+          <date>04/02/2016 13:22:33</date>
+          <class>000000000001</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 12:06:16</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="18782">
+      <classement>
+        <version>
+          <date>04/02/2016 13:31:02</date>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 13:30:54</date>
+        <date>04/02/2016 12:06:21</date>
+      </dates>
+      <disabled />
+      <duration>4867</duration>
+    </piece>
+    <piece id="18783">
+      <classement>
+        <version>
+          <date>04/02/2016 13:32:02</date>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 13:31:55</date>
+        <date>04/02/2016 12:10:18</date>
+      </dates>
+      <disabled />
+      <duration>4000</duration>
+    </piece>
+    <piece id="18784">
+      <classement>
+        <version>
+          <date>04/02/2016 13:44:36</date>
+          <class>000000000400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 12:14:31</date>
+      </dates>
+      <disabled />
+      <duration>252240</duration>
+    </piece>
+    <piece id="18785">
+      <classement>
+        <version>
+          <date>04/02/2016 14:48:39</date>
+          <class>000000000500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 14:48:15</date>
+        <date>04/02/2016 12:14:52</date>
+      </dates>
+      <disabled />
+      <duration>21067</duration>
+    </piece>
+    <piece id="18786">
+      <classement>
+        <version>
+          <date>04/02/2016 14:51:58</date>
+          <class>00002010</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 12:20:42</date>
+      </dates>
+      <disabled />
+      <duration>350000</duration>
+    </piece>
+    <piece id="18787">
+      <dates>
+        <date>04/02/2016 12:25:24</date>
+      </dates>
+      <duration>281160</duration>
+    </piece>
+    <piece id="18788">
+      <dates>
+        <date>04/02/2016 12:25:33</date>
+      </dates>
+      <duration>9773</duration>
+    </piece>
+    <piece id="18789">
+      <dates>
+        <date>04/02/2016 12:36:44</date>
+      </dates>
+      <duration>283960</duration>
+    </piece>
+    <piece id="18790">
+      <dates>
+        <date>04/02/2016 12:36:50</date>
+      </dates>
+      <duration>5507</duration>
+    </piece>
+    <piece id="18791">
+      <duration>290560</duration>
+    </piece>
+    <piece id="18806">
+      <classement>
+        <version>
+          <date>04/02/2016 15:10:22</date>
+          <class>0000001500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 15:10:06</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="18807">
+      <classement>
+        <version>
+          <date>04/02/2016 15:27:12</date>
+          <class>0000003400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18808">
+      <classement>
+        <version>
+          <date>04/02/2016 16:09:21</date>
+          <class>00000002300</class>
+          <rating>0</rating>
+        </version>
+        <version>
+          <date>04/02/2016 16:08:20</date>
+          <class>0000000230</class>
+          <rating>0</rating>
+        </version>
+        <version>
+          <date>04/02/2016 16:08:05</date>
+          <class>00000002300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18809">
+      <classement>
+        <version>
+          <date>04/02/2016 16:08:59</date>
+          <class>0000001110</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18810">
+      <classement>
+        <version>
+          <date>04/02/2016 16:22:30</date>
+          <class>0000002030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18811">
+      <classement>
+        <version>
+          <date>04/02/2016 16:43:17</date>
+          <class>0000005300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 16:43:41</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="18812">
+      <classement>
+        <version>
+          <date>04/02/2016 17:09:50</date>
+          <class>000001220</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18813">
+      <classement>
+        <version>
+          <date>04/02/2016 17:48:57</date>
+          <class>0000003030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18814">
+      <classement>
+        <version>
+          <date>04/02/2016 17:50:07</date>
+          <class>000001113</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 17:50:14</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="18815">
+      <classement>
+        <version>
+          <date>04/02/2016 17:52:08</date>
+          <class>0000005200</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="18953">
+      <classement>
+        <version>
+          <date>04/02/2016 17:15:55</date>
+          <class>000003330</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19088">
+      <classement>
+        <version>
+          <date>04/02/2016 18:35:20</date>
+          <class>00001240</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>302000</duration>
+    </piece>
+    <piece id="19172">
+      <classement>
+        <version>
+          <date>04/02/2016 13:28:11</date>
+          <class>000000000010</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19173">
+      <classement>
+        <version>
+          <date>04/02/2016 14:00:06</date>
+          <class>000000000002</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19174">
+      <classement>
+        <version>
+          <date>04/02/2016 14:01:21</date>
+          <class>000000000002</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19175">
+      <classement>
+        <version>
+          <date>04/02/2016 14:02:28</date>
+          <class>000000000003</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19176">
+      <classement>
+        <version>
+          <date>04/02/2016 14:32:46</date>
+          <class>000000000030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19177">
+      <classement>
+        <version>
+          <date>04/02/2016 14:36:58</date>
+          <class>000000000004</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19178">
+      <classement>
+        <version>
+          <date>04/02/2016 14:38:24</date>
+          <class>000000000040</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19179">
+      <classement>
+        <version>
+          <date>04/02/2016 14:45:27</date>
+          <class>000000000004</class>
+          <rating>60</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19180">
+      <classement>
+        <version>
+          <date>04/02/2016 14:46:10</date>
+          <class>000000000004</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19181">
+      <classement>
+        <version>
+          <date>04/02/2016 14:46:37</date>
+          <class>000000000004</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19182">
+      <classement>
+        <version>
+          <date>04/02/2016 14:47:04</date>
+          <class>000000000005</class>
+          <rating>20</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19183">
+      <classement>
+        <version>
+          <date>04/02/2016 14:47:53</date>
+          <class>000000000005</class>
+          <rating>40</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19312">
+      <classement>
+        <version>
+          <date>04/02/2016 14:58:31</date>
+          <class>003033</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 14:57:35</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="19805">
+      <classement>
+        <version>
+          <date>04/02/2016 15:42:39</date>
+          <class>000003130</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="19806">
+      <classement>
+        <version>
+          <date>04/02/2016 18:12:08</date>
+          <class>000005030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="20407">
+      <classement>
+        <version>
+          <date>04/02/2016 17:01:36</date>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 17:01:29</date>
+        <date>04/02/2016 17:01:24</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="20408">
+      <classement>
+        <version>
+          <date>04/02/2016 17:03:04</date>
+          <class>000004500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21149">
+      <classement>
+        <version>
+          <date>04/02/2016 13:33:49</date>
+          <class>000000000001</class>
+          <rating>100</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21150">
+      <classement>
+        <version>
+          <date>04/02/2016 13:40:28</date>
+          <class>000002030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21151">
+      <classement>
+        <version>
+          <date>04/02/2016 18:06:56</date>
+          <class>00000004300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21152">
+      <classement>
+        <version>
+          <date>04/02/2016 18:10:06</date>
+          <class>00001050</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21204">
+      <classement>
+        <version>
+          <date>04/02/2016 16:25:13</date>
+          <class>0000004200</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21205">
+      <classement>
+        <version>
+          <date>04/02/2016 16:58:24</date>
+          <class>000001300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 16:52:17</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="21206">
+      <classement>
+        <version>
+          <date>04/02/2016 18:04:15</date>
+          <class>000001040</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21243">
+      <classement>
+        <version>
+          <date>04/02/2016 17:44:58</date>
+          <class>00001140</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21328">
+      <classement>
+        <version>
+          <date>04/02/2016 17:07:51</date>
+          <class>000005500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22145">
+      <classement>
+        <version>
+          <date>04/02/2016 13:30:42</date>
+          <class>000000000001</class>
+          <rating>80</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22146">
+      <classement>
+        <version>
+          <date>04/02/2016 13:36:46</date>
+          <class>00001530</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22466">
+      <classement>
+        <version>
+          <date>04/02/2016 15:40:36</date>
+          <class>004203</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22789">
+      <classement>
+        <version>
+          <date>04/02/2016 13:52:51</date>
+          <class>001413</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22990">
+      <classement>
+        <version>
+          <date>04/02/2016 16:27:21</date>
+          <class>000003500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 16:27:00</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="22991">
+      <classement>
+        <version>
+          <date>04/02/2016 18:34:11</date>
+          <class>0002130</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 18:31:20</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="23008">
+      <classement>
+        <version>
+          <date>04/02/2016 16:33:01</date>
+          <class>001123</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23109">
+      <classement>
+        <version>
+          <date>04/02/2016 15:02:53</date>
+          <class>000000000130</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23110">
+      <classement>
+        <version>
+          <date>04/02/2016 15:04:16</date>
+          <class>000000000023</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23111">
+      <classement>
+        <version>
+          <date>04/02/2016 15:05:13</date>
+          <class>000000000033</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23112">
+      <classement>
+        <version>
+          <date>04/02/2016 15:06:42</date>
+          <class>000000000043</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23113">
+      <classement>
+        <version>
+          <date>04/02/2016 15:08:54</date>
+          <class>0000001400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23114">
+      <classement>
+        <version>
+          <date>04/02/2016 15:26:19</date>
+          <class>0000002500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23115">
+      <classement>
+        <version>
+          <date>04/02/2016 15:46:18</date>
+          <class>00000004000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23116">
+      <classement>
+        <version>
+          <date>04/02/2016 15:49:00</date>
+          <class>00000005000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23117">
+      <classement>
+        <version>
+          <date>04/02/2016 16:05:03</date>
+          <class>0000001030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23118">
+      <classement>
+        <version>
+          <date>04/02/2016 16:17:45</date>
+          <class>000000000021</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23119">
+      <classement>
+        <version>
+          <date>04/02/2016 16:20:21</date>
+          <class>000002110</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23120">
+      <classement>
+        <version>
+          <date>04/02/2016 17:36:00</date>
+          <class>00000003300</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23121">
+      <classement>
+        <version>
+          <date>04/02/2016 17:42:09</date>
+          <class>000000003000</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23122">
+      <classement>
+        <version>
+          <date>04/02/2016 17:43:19</date>
+          <class>0000002330</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23123">
+      <classement>
+        <version>
+          <date>04/02/2016 17:51:02</date>
+          <class>0000004500</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23252">
+      <classement>
+        <version>
+          <date>04/02/2016 15:12:43</date>
+          <class>00001030</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23253">
+      <classement>
+        <version>
+          <date>04/02/2016 18:14:23</date>
+          <class>00002110</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23397">
+      <classement>
+        <version>
+          <date>04/02/2016 15:38:11</date>
+          <class>00005330</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23575">
+      <classement>
+        <version>
+          <date>04/02/2016 17:22:44</date>
+          <class>0002530</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23591">
+      <classement>
+        <version>
+          <date>04/02/2016 17:56:54</date>
+          <class>0001150</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23733">
+      <classement>
+        <version>
+          <date>04/02/2016 15:21:59</date>
+          <class>0000002400</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23734">
+      <classement>
+        <version>
+          <date>04/02/2016 15:29:44</date>
+          <class>000002330</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 15:29:50</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="23735">
+      <classement>
+        <version>
+          <date>04/02/2016 17:00:51</date>
+          <class>00003530</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="24115">
+      <classement>
+        <version>
+          <date>04/02/2016 17:06:02</date>
+          <class>0001540</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="24757">
+      <classement>
+        <version>
+          <date>04/02/2016 16:31:01</date>
+          <class>00002310</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="26651">
+      <album>
+        <version>
+          <date>04/02/2016 15:44:43</date>
+          <value>Brailleur De Fond</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 15:44:43</date>
+          <value>9</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="26652">
+      <album>
+        <version>
+          <date>04/02/2016 15:44:49</date>
+          <value>Brailleur De Fond</value>
+        </version>
+      </album>
+      <track>
+        <version>
+          <date>04/02/2016 15:44:49</date>
+          <value>10</value>
+        </version>
+      </track>
+    </piece>
+    <piece id="27476">
+      <classement>
+        <version>
+          <date>04/02/2016 11:07:26</date>
+          <class>02304</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+      <duration>1206054</duration>
+    </piece>
+    <piece id="29229">
+      <classement>
+        <version>
+          <date>04/02/2016 16:45:28</date>
+          <class>0000005100</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="29230">
+      <classement>
+        <version>
+          <date>04/02/2016 17:29:27</date>
+          <class>000001410</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="29255">
+      <classement>
+        <version>
+          <date>04/02/2016 17:20:11</date>
+          <class>0002040</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="29413">
+      <classement>
+        <version>
+          <date>04/02/2016 13:33:05</date>
+          <class>000000000005</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <dates>
+        <date>04/02/2016 12:10:14</date>
+      </dates>
+      <disabled />
+    </piece>
+    <piece id="29419">
+      <dates>
+        <date>04/02/2016 12:32:00</date>
+      </dates>
+    </piece>
+    <piece id="29532">
+      <classement>
+        <version>
+          <date>04/02/2016 14:42:19</date>
+          <class>0001440</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="30758">
+      <classement>
+        <version>
+          <date>04/02/2016 17:33:10</date>
+          <class>00001510</class>
+          <rating>0</rating>
+        </version>
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="10371" deleted="true" />
   </pieces>
 </db>
