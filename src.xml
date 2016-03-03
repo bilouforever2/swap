@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  <file path="\pdb.util\Medianne.cs">
+    <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,11 +32,11 @@ namespace pdb.util
             var medianne = getMedianne_(list, coeffMedianne);
             if (list.Count == 1)
                 return medianne;
-            decimal ret = 0m;
+
             int count = list.Count;
 
 
-            List<decimal> _list = new List<decimal>(list);
+            decimal ret = medianne; 
 
             if (nbVirt > 0)
             {
@@ -45,18 +45,22 @@ namespace pdb.util
 
                 for (int i = 0; i < count; i++)
                 {
-                    if (_list[i] == 0m)
+                    if (list[i] == 0m)
                     {
                         i0 = i;
                         break;
                     }
                 }
 
-                if (i0 > 0)
+                for (int i00 = 1; i00 <= i0; i00++)
                 {
-                    int _count = Math.Min(count, i0 + nbVirt);
+
+                    List<decimal> _list = new List<decimal>(list);
+                    for (int i = i00; i < count; i++)
+                        _list[i] = 0m;
+                    int _count = Math.Min(count, i00 + nbVirt);
                     decimal[] virt = new decimal[_count];
-                    for (int i = 0; i < i0; i++)
+                    for (int i = 0; i < i00; i++)
                     {
                         decimal _coeff = 1m;
                         decimal _base = _list[i];
@@ -87,9 +91,28 @@ namespace pdb.util
                     }
                     //_list.Sort();
                     //_list.Reverse(); 
-                }
-            }
 
+
+
+                    var retAux = calcmedianneVirt(_list, coeffMedianne, quasi);
+                    if (retAux > ret)
+                        ret = retAux;
+                }
+
+
+            }
+            else
+                ret = calcmedianneVirt(list, coeffMedianne, quasi);
+            if (ret < medianne)
+                ret = medianne;
+            return ret;
+        }
+
+
+        private static decimal calcmedianneVirt(IList<decimal> _list, decimal coeffMedianne, bool quasi)
+        {
+            int count = _list.Count;
+            decimal ret = 0m;
             for (int i = 0; i < count; i++)
             {
                 if (i > 0)
@@ -108,9 +131,6 @@ namespace pdb.util
                     break;
 
             }
-
-            if (ret < medianne)
-                ret = medianne;
             return ret;
         }
 
