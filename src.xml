@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-    <file path="\pdb.util\Medianne.cs">
+  <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -51,10 +51,12 @@ namespace pdb.util
                         break;
                     }
                 }
+                if (i0 == 0)
+                    return medianne; 
 
                 for (int i00 = 1; i00 <= i0; i00++)
                 {
-
+                    decimal coeff = (decimal)i00 / (decimal)i0;
                     List<decimal> _list = new List<decimal>(list);
                     for (int i = i00; i < count; i++)
                         _list[i] = 0m;
@@ -95,6 +97,7 @@ namespace pdb.util
 
 
                     var retAux = calcmedianneVirt(_list, coeffMedianne, quasi);
+                    retAux *= coeff; 
                     if (retAux > ret)
                         ret = retAux;
                 }
@@ -228,6 +231,279 @@ namespace pdb.util
 
 
         //}
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\Album.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using pdb.util;
+using System;
+using System.Globalization;
+using pdb.gen.Tuning;
+using pdb.gen.conf;
+
+namespace pdb.gen.albums
+{
+    public class Album
+    {
+
+        private string name;
+        private static decimal medianne = 0.5m;
+        private static decimal medianneRest = 0.5m;
+        public static decimal Medianne { get { return medianne; } set { medianne = value; } }
+        private decimal classementValue;
+        private decimal classementValueLight;
+        private decimal classMoy; public decimal ClassementMoy { get { return classMoy; } }
+        public decimal ClassementValue { get { return classementValue; } }
+        public decimal ClassementValueLight { get { return classementValueLight; } }
+        private decimal durationValue = 0;
+        public decimal DurationValue { get { return durationValue; } }
+        private static ConfGen conf = CConf.ConfGen;
+        private bool _virtual;
+        public bool Virtual { get { return _virtual; } set { _virtual = value; } }
+
+        private List<Piece> list = new List<Piece>();
+        private static int _sID = 0;
+        private int _dID;
+
+
+        public Album(string name)
+        {
+            _sID++;
+            _dID = _sID;
+            this.name = name;
+            m_rank.init();
+        }
+
+        public string Name { get { return name; } }
+
+        public override string ToString()
+        {
+            return name;
+        }
+
+        private string equiv = "";
+        public string Equiv { get { return equiv; } }
+
+        private string equivLight = "";
+        public string EquivLight { get { return equivLight; } }
+
+        private string moyenne = "";
+        public string Moyenne { get { return moyenne; } }
+
+        //private Piece equiv;
+
+
+
+        public bool add(Piece piece)
+        {
+            if (list.Contains(piece))
+                return false;
+            if (piece.Enabled)
+                atLeastOneEnabled = true;
+            list.Add(piece);
+            piece.PieceAlbum = this;
+            return true;
+        }
+
+        public List<Piece> Tracks
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceClassementValueComparer());
+                return l;
+            }
+        }
+
+
+        public List<Piece> TrackByNumber
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceTrackNumberComparer());
+                return l;
+            }
+        }
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        private bool classed;
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        public bool Classed { get { return classed; } }
+
+        private bool atLeastOneEnabled;
+        public bool AtLeastOneEnabled { get { return atLeastOneEnabled; } }
+
+        public void makeSort(bool quasi, int medianneVirt) //IList<double> reference, IList<Piece> pieces)
+        {
+            try
+            {
+                //if (name == "The College Dropout")
+                //{
+                //}
+                decimal offset = conf.AlbumMoyOffset;
+                int count = list.Count;
+                list.Sort(new PieceSortComparer());
+                var listSortedValues = new List<decimal>();
+                for (int i = 0; i < count; i++)
+                {
+                    listSortedValues.Add(list[i].Rank.SortValue);
+                    if (!classed && list[i].isClassListNumeric)
+                        classed = true;
+                }
+
+                m_rank.SortValue = CalcMedianne.getMedianne(listSortedValues, medianne);
+
+                listSortedValues = new List<decimal>();
+                list.Sort(new PieceDurationValueComparer());
+                for (int i = 0; i < count; i++)
+                    listSortedValues.Add(list[i].Duration.TotalMilliseconds());
+                durationValue = CalcMedianne.getMedianne(listSortedValues, medianne);
+
+
+
+                listSortedValues = new List<decimal>();
+                list.Sort(new PieceClassementValueComparer());
+                decimal moy = 0m;
+                for (int i = 0; i < count; i++)
+                {
+                    var rapportClassement = list[i].RapportClassement;
+                    moy += rapportClassement;
+                    if (offset > 0m && rapportClassement > 0.0m)
+                        moy += offset;
+
+                    listSortedValues.Add(rapportClassement);
+                }
+                if (count > 0)
+                    moy /= count;
+                classMoy = moy;
+
+
+                classementValue = CalcMedianne.getMedianne(listSortedValues, medianne);
+
+                classementValueLight = CalcMedianne.getMedianneLight(listSortedValues, medianne, quasi, medianneVirt);
+
+
+
+
+                //int iequiv = CalcMedianne.getEquiv(reference, m_rank.SortValue, 0, reference.Count - 1);
+                //equiv = pieces[iequiv];
+                equiv = Piece.getClassementEquiv(classementValue); // (10000 * m_rank.SortValue).ToString("00000.0", cu); 
+                equivLight = Piece.getClassementEquiv(classementValueLight);
+
+                moyenne = Piece.getClassementEquiv(classMoy);
+            }
+            catch (Exception ex)
+            {
+                misc.log("impossible de faire le makeSort de l'album " + name + " " + ex.ToString());  
+            }
+
+
+
+        }
+
+        public decimal getTrackSortValue(int index)
+        {
+            if (index < 0 || index >= list.Count)
+                return 0;
+            return list[index].RapportClassement;
+        }
+
+        decimal firstTrackSortValue = -1;
+        public decimal getFirstTrackSortValue()
+        {
+            if (firstTrackSortValue == -1)
+            {
+                int count = list.Count;
+                if (count == 0)
+                    return -1;
+                var _list = new List<Piece>(list);
+                _list.Sort(new PieceSortComparer());
+                firstTrackSortValue = _list[count - 1].Rank.SortValue;
+            }
+            return firstTrackSortValue;
+        }
+
+        public void makeSelection()
+        {
+            list.Sort(new PieceRestComparer());
+            var listSortedValues = new List<decimal>();
+            for (int i = 0; i < list.Count; i++)
+                listSortedValues.Add(list[i].Rank.TimeRest);
+            m_rank.TimeRest = CalcMedianne.getMedianne(listSortedValues, medianneRest);
+        }
+
+        public List<Piece> Sort()
+        {
+            var _list = new List<Piece>(list);
+            _list.Sort(new PieceInAlbumComparer());
+            return _list;
+        }
+
+        public TimeSpan Duration
+        {
+            get
+            {
+                TimeSpan d = new TimeSpan();
+                foreach (Piece piece in list)
+                    d += piece.Duration;
+                return d;
+            }
+        }
+
+
+        #region Rank
+        private CRank m_rank = new CRank();
+
+        public CRank Rank { get { return m_rank; } }
+
+        private void initRank()
+        {
+            m_rank.init();
+        }
+
+        public int QRank
+        {
+            get { return m_rank.Quality; }
+            set { m_rank.Quality = value; }
+        }
+
+        public int LRank
+        {
+            get { return m_rank.Lenght; }
+            set { m_rank.Lenght = value; }
+        }
+
+        public int QLRank
+        {
+            get { return m_rank.Twice; }
+            set { m_rank.Twice = value; }
+        }
+
+
+        #endregion
+
+        #region tri
+
+
+
+        #endregion
+
+        public void sortVirtual()
+        {
+            list.Sort(new PieceInVirtualAlbumComparer());
+            int nb = 0;
+            foreach (var piece in list)
+            {
+                nb++;
+                piece.TrackNumber = nb;
+            }
+        }
     }
 }
 ]]></content>
