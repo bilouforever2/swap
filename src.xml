@@ -1,5 +1,235 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-   <file path="\PieceDb.Consolid\Piece.cs">
+   <file path="\pdb.player\ViewModel\DetailAlbumViewModel.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using pdb.gen.albums;
+
+namespace pdb.player.ViewModel
+{
+    class DetailAlbumViewModel : ViewModelBase
+    {
+        private TrackListViewModel currentTrack;
+        private Album _album; 
+
+
+        public DetailAlbumViewModel()
+        {
+            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentSelectedChanged);
+        }
+
+        void TrackListViewModel_CurrentSelectedChanged(object sender, System.EventArgs e)
+        {
+            if (currentTrack != TrackListViewModel.HumanSelected)
+            {
+                currentTrack = TrackListViewModel.HumanSelected;
+                if (currentTrack != null)
+                    _album = currentTrack.PieceGen.PieceAlbum; 
+            }
+        }
+
+        public List<TrackListViewModel> Album
+        {
+            get
+            {              
+                if (currentTrack == null)
+                    return null;
+              
+                var tracks = App.getAlbum(currentTrack);             
+
+                return tracks;
+            }
+        }
+
+        public TrackListViewModel SelectedTrackInAlbumView
+        {
+            get
+            {
+                if (currentTrack == null)
+                    return null;
+                var tracks = Album;
+                if (tracks == null || tracks.Count == 0)
+                    return null;
+                return tracks.Find(t => t.PieceId == currentTrack.PieceId);
+            }
+            set
+            {
+            }
+        }
+
+        public void makeSort()
+        {
+            if (_album == null)
+                return;
+            App.gen.Albums.makeSort(_album); 
+        }
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\AlbumCtl.xaml.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Threading;
+using pdb.player.ViewModel;
+
+namespace pdb.player.Vue
+{
+    /// <summary>
+    /// Interaction logic for AlbumCtl.xaml
+    /// </summary>
+    public partial class AlbumCtl : UserControl, ItrackProvider
+    {
+
+        private DetailAlbumViewModel model;
+        public AlbumCtl()
+        {
+            InitializeComponent();
+            Loaded += new RoutedEventHandler(AlbumCtl_Loaded);
+            App.refresh += new EventHandler(App_refresh);
+        }
+
+        void App_refresh(object sender, EventArgs e)
+        {
+            init();
+        }
+
+        void AlbumCtl_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.model = new DetailAlbumViewModel();
+            init();
+            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentHumanSelectedChanged);
+            TrackListViewModel.ClassementChange += new EventHandler(TrackListViewModel_ClassementChange);
+
+        }
+
+        void TrackListViewModel_ClassementChange(object sender, EventArgs e)
+        {
+            if (model == null)
+                return;
+            model.makeSort();
+            init();
+        }
+
+        void TrackListViewModel_CurrentHumanSelectedChanged(object sender, EventArgs e)
+        {
+            init();
+        }
+
+        private void init()
+        {
+            if (!CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(this.init), DispatcherPriority.DataBind);
+                return;
+            }
+            SortDescriptionCollection sort = null;
+            ICollectionView view = null;
+
+            view = CollectionViewSource.GetDefaultView(dg.ItemsSource);
+            if (view != null)
+                sort = view.SortDescriptions;
+
+            List<SortDescription> _sort = null;
+            if (sort != null)
+                _sort = new List<SortDescription>(sort);
+            base.DataContext = null;
+
+            dg.ItemsSource = null;
+            object sel;
+            if (dg.Items.Count > 0)
+            {
+                sel = dg.SelectedItem;
+            }
+            var alb = model.Album;
+            dg.ItemsSource = alb;
+            base.DataContext = model;
+
+            view = CollectionViewSource.GetDefaultView(dg.ItemsSource);
+
+            if (_sort != null && _sort.Count > 0)
+            {
+                view.SortDescriptions.Clear();
+                foreach (var _s in _sort)
+                {
+                    view.SortDescriptions.Add(_s);
+                    foreach (DataGridColumn _c in dg.Columns)
+                    {
+                        if (_s.PropertyName == _c.SortMemberPath)
+                        {
+                            _c.SortDirection = _s.Direction;
+                            break;
+                        }
+                    }
+                    break;
+
+                }
+            }
+            //dgStat.ItemsSource = null;
+
+            //var stats = model.Stats;
+            //dgStat.DataContext = null;
+            //dgStat.DataContext = stats.DefaultView;
+            //dgStat.ItemsSource = stats.DefaultView;
+
+
+            //base.DataContext = model;
+        }
+
+
+
+
+        private void dgAlbum_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var r = sender as DataGridRow;
+            var t = r.Item as TrackListViewModel;
+            PlayerViewModel.reset(this, t);
+        }
+
+        public System.ComponentModel.ICollectionView PresentationTracks
+        {
+            get { return CollectionViewSource.GetDefaultView(dg.ItemsSource); }
+        }
+
+        public PlayListViewModel PlayList
+        {
+            get { return null; }
+        }
+
+        public void Focus(int index)
+        {
+
+        }
+
+        public void doFilter(string filter)
+        {
+
+        }
+
+
+        public List<TrackListViewModel> SelectedTracks
+        {
+            get
+            {
+                var list = new List<TrackListViewModel>();
+                foreach (TrackListViewModel track in PresentationTracks)
+                    list.Add(track);
+                return list;
+            }
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\Piece.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -94,7 +324,7 @@ namespace pdb.gen
         public bool FirstClass { get { return track.FirstClass; } set { track.FirstClass = value; } }
         private Album album;
 
-        internal Album PieceAlbum { get { return album; } set { album = value; } }
+        public Album PieceAlbum { get { return album; } set { album = value; } }
         private static int _sID = 0;
         private int _dID;
         internal Piece(ITrackNativeDates track)
@@ -1247,282 +1477,145 @@ namespace pdb.gen
 
 ]]></content>
   </file>
-  <file path="\PieceDb.Consolid\albums\Album.cs">
-    <content><![CDATA[using System.Collections.Generic;
-using pdb.util;
+  <file path="\PieceDb.Consolid\albums\Albums.cs">
+    <content><![CDATA[using pdb.util;
+using System.Collections.Generic;
 using System;
-using System.Globalization;
-using pdb.gen.Tuning;
+using pdb.obj;
 using pdb.gen.conf;
 
 namespace pdb.gen.albums
 {
-    public class Album
+    public class Albums
     {
-
-        private string name;
-        private static decimal medianne = 0.5m;
-        private static decimal medianneRest = 0.5m;
-       // public static decimal Medianne { get { return medianne; } set { medianne = value; } }
-        private decimal classementValue;
-        private decimal classementValueLight;
-        private decimal classMoy; public decimal ClassementMoy { get { return classMoy; } }
-        public decimal ClassementValue { get { return classementValue; } }
-        public decimal ClassementValueLight { get { return classementValueLight; } }
-        private decimal durationValue = 0;
-        public decimal DurationValue { get { return durationValue; } }
-        private static ConfGen conf = CConf.ConfGen;
-        private bool _virtual;
-        public bool Virtual { get { return _virtual; } set { _virtual = value; } }
-
-        private List<Piece> list = new List<Piece>();
-        private static int _sID = 0;
-        private int _dID;
-
-
-        public Album(string name)
+        public Albums(Consolid consolid)
         {
-            _sID++;
-            _dID = _sID;
-            this.name = name;
-            m_rank.init();
+            this.consolid = consolid;
         }
-
-        public string Name { get { return name; } }
-
-        public override string ToString()
+        private BgDictString<Album> dict = new BgDictString<Album>();
+        private Consolid consolid;
+        private void check_(Piece piece)
         {
-            return name;
-        }
-
-        private string equiv = "";
-        public string Equiv { get { return equiv; } }
-
-        private string equivLight = "";
-        public string EquivLight { get { return equivLight; } }
-
-        private string moyenne = "";
-        public string Moyenne { get { return moyenne; } }
-
-        //private Piece equiv;
-
-
-
-        public bool add(Piece piece)
-        {
-            if (list.Contains(piece))
-                return false;
-            if (piece.Enabled)
-                atLeastOneEnabled = true;
-            list.Add(piece);
-            piece.PieceAlbum = this;
-            return true;
-        }
-
-        public List<Piece> Tracks
-        {
-            get
+            string __album = "-";
+            var _album = piece.Album;
+            if (!string.IsNullOrEmpty(_album))
             {
-                var l = new List<Piece>(list);
-                l.Sort(new PieceClassementValueComparer());
-                return l;
-            }
-        }
-
-
-        public List<Piece> TrackByNumber
-        {
-            get
-            {
-                var l = new List<Piece>(list);
-                l.Sort(new PieceTrackNumberComparer());
-                return l;
-            }
-        }
-        /// <summary>
-        /// Au moins un track est classé
-        /// </summary>
-        private bool classed;
-        /// <summary>
-        /// Au moins un track est classé
-        /// </summary>
-        public bool Classed { get { return classed; } }
-
-        private bool atLeastOneEnabled;
-        public bool AtLeastOneEnabled { get { return atLeastOneEnabled; } }
-
-        public void makeSort(ConfMedianne mode) //IList<double> reference, IList<Piece> pieces)
-        {
-            try
-            {
-                //if (name == "The College Dropout")
-                //{
-                //}
-                decimal offset = conf.AlbumMoyOffset;
-                int count = list.Count;
-                list.Sort(new PieceSortComparer());
-                var listSortedValues = new List<decimal>();
-                for (int i = 0; i < count; i++)
+                __album = _album.Trim();
+                var album = dict[__album];
+                if (album == null)
                 {
-                    listSortedValues.Add(list[i].Rank.SortValue);
-                    if (!classed && list[i].isClassListNumeric)
-                        classed = true;
+                    album = new Album(__album);
+                    album.Virtual = piece.Virtual;
+                    dict.Add(__album, album);
                 }
+                album.add(piece);
 
-                m_rank.SortValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
-
-                listSortedValues = new List<decimal>();
-                list.Sort(new PieceDurationValueComparer());
-                for (int i = 0; i < count; i++)
-                    listSortedValues.Add(list[i].Duration.TotalMilliseconds());
-                durationValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
-
-
-
-                listSortedValues = new List<decimal>();
-                list.Sort(new PieceClassementValueComparer());
-                decimal moy = 0m;
-                for (int i = 0; i < count; i++)
-                {
-                    var rapportClassement = list[i].RapportClassement;
-                    moy += rapportClassement;
-                    if (offset > 0m && rapportClassement > 0.0m)
-                        moy += offset;
-
-                    listSortedValues.Add(rapportClassement);
-                }
-                if (count > 0)
-                    moy /= count;
-                classMoy = moy;
-
-
-                var med = CalcMedianne.getMedianne(listSortedValues, medianne);
-                classementValue = med.d;
-                if (classementValue > 0m)
-                    list[med.index].Medianne = true;
-
-                med = AlbumMedianne.getMedianneLight(listSortedValues, list, mode);
-                classementValueLight = med.d;
-              
-
-
-
-
-                //int iequiv = CalcMedianne.getEquiv(reference, m_rank.SortValue, 0, reference.Count - 1);
-                //equiv = pieces[iequiv];
-                equiv = Piece.getClassementEquiv(classementValue); // (10000 * m_rank.SortValue).ToString("00000.0", cu); 
-                equivLight = Piece.getClassementEquiv(classementValueLight);
-
-                moyenne = Piece.getClassementEquiv(classMoy);
-            }
-            catch (Exception ex)
-            {
-                misc.log("impossible de faire le makeSort de l'album " + name + " " + ex.ToString());
             }
 
 
-
         }
-
-
-
-        public decimal getTrackSortValue(int index)
-        {
-            if (index < 0 || index >= list.Count)
-                return 0;
-            return list[index].RapportClassement;
-        }
-
-        decimal firstTrackSortValue = -1;
-        public decimal getFirstTrackSortValue()
-        {
-            if (firstTrackSortValue == -1)
-            {
-                int count = list.Count;
-                if (count == 0)
-                    return -1;
-                var _list = new List<Piece>(list);
-                _list.Sort(new PieceSortComparer());
-                firstTrackSortValue = _list[count - 1].Rank.SortValue;
-            }
-            return firstTrackSortValue;
-        }
-
-        public void makeSelection()
-        {
-            list.Sort(new PieceRestComparer());
-            var listSortedValues = new List<decimal>();
-            for (int i = 0; i < list.Count; i++)
-                listSortedValues.Add(list[i].Rank.TimeRest);
-            m_rank.TimeRest = CalcMedianne.getMedianne(listSortedValues, medianneRest).d;
-        }
-
-        public List<Piece> Sort()
-        {
-            var _list = new List<Piece>(list);
-            _list.Sort(new PieceInAlbumComparer());
-            return _list;
-        }
-
-        public TimeSpan Duration
-        {
-            get
-            {
-                TimeSpan d = new TimeSpan();
-                foreach (Piece piece in list)
-                    d += piece.Duration;
-                return d;
-            }
-        }
-
-
-        #region Rank
-        private CRank m_rank = new CRank();
-
-        public CRank Rank { get { return m_rank; } }
-
-        private void initRank()
-        {
-            m_rank.init();
-        }
-
-        public int QRank
-        {
-            get { return m_rank.Quality; }
-            set { m_rank.Quality = value; }
-        }
-
-        public int LRank
-        {
-            get { return m_rank.Lenght; }
-            set { m_rank.Lenght = value; }
-        }
-
-        public int QLRank
-        {
-            get { return m_rank.Twice; }
-            set { m_rank.Twice = value; }
-        }
-
-
-        #endregion
-
-        #region tri
-
-
-
-        #endregion
 
         public void sortVirtual()
         {
-            list.Sort(new PieceInVirtualAlbumComparer());
-            int nb = 0;
-            foreach (var piece in list)
+            foreach (Album album in dict.Values)
             {
-                nb++;
-                piece.TrackNumber = nb;
+                if (album.Virtual)
+                    album.sortVirtual();
             }
         }
+
+        public void check(Piece piece)
+        {
+            check_(piece);
+            foreach (Piece child in piece.Childs)
+                check_(child);
+        }
+
+        public Album getAlbum(TrackList piece)
+        {
+            return piece.Piece.PieceAlbum;
+            string __album = "-";
+            var _album = piece.Album;
+            if (!string.IsNullOrEmpty(_album))
+            {
+                __album = _album.Trim();
+                return dict[__album];
+            }
+            return null;
+        }
+
+
+        private ConfMedianne getConf()
+        {
+            var confSort = consolid.SortAlbumMode;
+            ///check to find first light
+            ConfMedianne confMedianne = null;
+            foreach (var cmp in confSort.ComposantsUtiles)
+            {
+                if (cmp.type == medianneMode.light || confMedianne == null)
+                    confMedianne = cmp;
+            }
+
+            return confMedianne; 
+
+        }
+
+        public void makeSort(Album album)
+        {
+            var confMedianne = getConf();
+            album.makeSort(confMedianne);
+        }
+
+        public void makeSort()
+        {
+            var confMedianne = getConf(); 
+            var listRef = new List<double>();
+            //foreach (Piece piece in reference)
+            //    listRef.Add(piece.RapportClassement); // piece.Rank.SortValue); 
+            var list = new List<Album>(dict.Values);
+            foreach (Album album in list)
+            {
+                album.makeSort(confMedianne); //listRef, reference); 
+            }
+
+            list.Sort(new AlbumClassComparer(consolid.SortAlbumMode));
+            list.Reverse();
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].Rank.Sort = i + 1;
+            }
+        }
+
+        public List<Album> makeSelection()
+        {
+            var list = new List<Album>(dict.Values);
+            foreach (Album album in list)
+            {
+                album.makeSelection();
+            }
+            list.Sort(new AlbumRestComparer());
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].Rank.RankRest = i + 1;
+            }
+            return list;
+        }
+
+
+        public List<Album> List
+        {
+            get
+            {
+                var list = new List<Album>();
+                foreach (Album album in dict.Values)
+                    list.Add(album);
+                list.Sort(new AlbumNameComparer());
+                return list;
+            }
+        }
+
+
+
     }
 }
 ]]></content>
