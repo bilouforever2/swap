@@ -1,641 +1,231 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
- <file path="\pdb.player\App.xaml">
-    <content><![CDATA[<Application x:Class="pdb.player.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:util="clr-namespace:pdb.player.Vue.Util"
-             StartupUri="Player.xaml">
-    <Application.Resources>
-        <util:StringFormatConverter x:Key="StringFormater" />
-        <util:TimeFormatConverter x:Key="TimeSpan" />
-        <util:IntFormatConverter x:Key="Int" />
-        <util:ClFormatConverter x:Key="cl" />
-        <util:BgColorFormatConverter x:Key="colorExport" />
-        <util:ForeColorFormatConverter x:Key="foreColor" />
-        <util:ColorDispoConverter x:Key="dispo" />
-        <util:BoolToVis x:Key="boolVis" />
-        <util:SortModeConverter x:Key="sortAlbum" />
-    </Application.Resources>
-</Application>
-]]></content>
-  </file>
-  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Threading;
-using pdb.player.ViewModel.Commande.Link;
-using pdb.player.ViewModel.Commande.PlayList;
-using pdb.player.ViewModel.Commande;
-
-namespace pdb.player.ViewModel
-{
-    public enum listDisplay
-    {
-        all,
-        onlyDisabled,
-        onlyEnabled
-    }
-
-    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
-    {
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
-        public event PropertyChangedEventHandler PropertyChanged;
-        //   private List<TrackListViewModel> tracks;
-        private Dictionary<int, TrackListViewModel> dict;
-        private object _lock = new object();
-        private PlayListViewModel parent;
-        private DispatcherOperation ope;
-
-
-        private bool onlyDisabled;
-        private bool onlyFathers;
-        public AllTracksViewModel(PlayListViewModel parent, bool onlyDisabled, bool onlyFathers)
-        {
-            this.parent = parent;
-            this.onlyDisabled = onlyDisabled;
-            this.onlyFathers = onlyFathers;
-            //   this.mode = mode; 
-            build();
-            PlayerViewModel.Instance.resumeChange += playerResumeChange;
-        }
-
-
-        void playerResumeChange(object sender, EventArgs e)
-        {
-            OnPropertyChanged("Resume");
-        }
-
-        public string Resume
-        {
-            get
-            {
-                return PlayerViewModel.Instance.Resume;
-            }
-            set
-            {
-
-            }
-        }
-
-        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
-        {
-            // Be nice - use BlockReentrancy like MSDN said
-
-            //var dispatcher = Dispatcher.CurrentDispatcher;
-            //if (dispatcher.CheckAccess())
-            //{
-            //    if (CollectionChanged == null)
-            //    {
-            //    }
-            //    else
-            //    {
-            //        CollectionChanged(this, e); 
-            //    }
-            //    return; 
-            //}
-
-            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
-
-
-
-            var eventHandler = CollectionChanged;
-            if (eventHandler != null)
-            {
-                Delegate[] delegates = eventHandler.GetInvocationList();
-                // Walk thru invocation list
-                foreach (NotifyCollectionChangedEventHandler handler in delegates)
-                {
-                    try
-                    {
-                        var dispatcherObject = handler.Target as DispatcherObject;
-                        // If the subscriber is a DispatcherObject and different thread
-                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
-                        // Invoke handler in the target dispatcher's thread
-                        {
-                            ope =
-                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
-                                            handler, this, e);
-                            ope.Completed += ope_Completed;
-
-
-                        }
-                        else // Execute handler as is
-                            handler(this, e);
-                    }
-                    catch (Exception ex)
-                    {
-                        App.log.log(ex.ToString());
-                    }
-                }
-            }
-            else
-            {
-            }
-
-            // PlayerViewModel.Instance.makeResume();
-
-        }
-
-        void ope_Completed(object sender, EventArgs e)
-        {
-            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
-            PlayerViewModel.Instance.makeResume();
-        }
-
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            var eventHandler = PropertyChanged;
-            if (eventHandler == null)
-            {
-                //   int toto = 0;
-            }
-            else
-            {
-                //var dispatcher = Dispatcher.CurrentDispatcher;
-                //if (dispatcher.CheckAccess())
-                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-                //else
-                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
-
-                Delegate[] delegates = eventHandler.GetInvocationList();
-                // Walk thru invocation list
-                foreach (PropertyChangedEventHandler handler in delegates)
-                {
-                    try
-                    {
-                        var dispatcherObject = handler.Target as DispatcherObject;
-                        // If the subscriber is a DispatcherObject and different thread
-                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
-                            // Invoke handler in the target dispatcher's thread
-                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
-                                          handler, this, new PropertyChangedEventArgs(propertyName));
-                        else // Execute handler as is
-                            handler(this, new PropertyChangedEventArgs(propertyName));
-                    }
-                    catch (Exception ex)
-                    {
-                        App.log.log(ex.ToString());
-                    }
-                }
-            }
-        }
-
-        public void refresh()
-        {
-            build();
-            foreach (TrackListViewModel track in this)
-                track.refresh();
-
-        }
-
-        public void init()
-        {
-            refresh();
-            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
-
-
-
-        public void build()
-        {
-            lock (_lock)
-            {
-                var list = new List<TrackListViewModel>();
-                var dict = new Dictionary<int, TrackListViewModel>();
-                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
-                if (this.dict == null)
-                {
-                    this.dict = new Dictionary<int, TrackListViewModel>();
-                    foreach (TrackListViewModel track in list)
-                    {
-                        Add(track);
-                        this.dict.Add(track.PieceId, track);
-                        track.PropertyChanged += track_PropertyChanged;
-                    }
-
-                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-                }
-                else
-                {
-
-                    foreach (TrackListViewModel newTrack in list)
-                    {
-                        if (!this.dict.ContainsKey(newTrack.PieceId))
-                        {
-                            Add(newTrack);
-                            this.dict.Add(newTrack.PieceId, newTrack);
-                            newTrack.PropertyChanged += track_PropertyChanged;
-                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
-                        }
-                    }
-
-                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
-                    {
-                        if (!dict.ContainsKey(track.PieceId))
-                        {
-                            Remove(track);
-                            this.dict.Remove(track.PieceId);
-                            track.PropertyChanged -= track_PropertyChanged;
-                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
-                        }
-                    }
-                }
-            }
-
-            //Clear(); 
-            //foreach (TrackListViewModel track in parent.Tracks)
-            //    Add(track); 
-        }
-
-        void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case "Duration":
-                case "Enabled":
-                    PlayerViewModel.Instance.makeResume();
-                    break;
-            }
-        }
-
-        public List<TrackListViewModel> AllTracks
-        {
-            get
-            {
-                build();
-                return this;
-            }
-        }
-
-        public List<TrackListViewModel> Tracks
-        {
-            get
-            {
-                return parent.Tracks;
-            }
-        }
-
-        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool onlyDisabled, bool onlyFathers)
-        {
-            foreach (TrackListViewModel t in parent.Tracks)
-            {
-                if (!t.Enabled || !onlyDisabled)
-                {
-                    if (t.PieceParentId < 0 || !onlyFathers)
-                    {
-                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
-                        {
-                            if (!dict.ContainsKey(t.PieceId))
-                            {
-                                dict.Add(t.PieceId, t);
-                                container.Add(t);
-                                //  t.Index = container.Count; 
-                            }
-                        }
-                    }
-                }
-
-            }
-
-            foreach (PlayListViewModel pl in parent)
-            {
-                AllTracksViewModel other = null;
-                if (onlyDisabled)
-                    other = pl.AlltracksVmd;
-                else
-                    other = pl.AlltracksVm;
-                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
-            }
-        }
-
-        #region cmd
-
-        private ICommand _contextCmdCheck;
-        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
-
-        private ICommand _contextCmdUnCheck;
-        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
-
-
-        private ICommand _contextLinkFather;
-        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
-
-        private ICommand _contextLinkChild;
-        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
-
-        private ICommand _contextLinkFusion;
-        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
-
-        private ICommand _contextUnLink;
-        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
-
-        private ICommand _contextExport;
-        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
-
-        private ICommand _contextExportCompress;
-        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
-
-        private ICommand _contextDelete;
-        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
-
-        public TrackListViewModel HumanSelected
-        {
-            get
-            {
-                return TrackListViewModel.HumanSelected;
-            }
-        }
-        
-        private ICommand _ContextCmdAddToList;
-        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
-
-        #endregion
-
-        #region from Ihm
-        private TrackListViewModel selectedTrack; 
-        public TrackListViewModel SelectedTrack
-        {
-            get
-            {
-                return selectedTrack; 
-            }
-            set
-            {
-                selectedTrack = value;
-                TrackListViewModel.HumanSelected = value;
-                if (selectedTrack != null)
-                    selectedTrack.IsSelected = true; 
-            }
-        }
-        #endregion
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.player\ViewModel\DetailAlbumViewModel.cs">
+  <file path="\pdb.player\Vue\ClassementCtl.xaml.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-namespace pdb.player.ViewModel
-{
-    class DetailAlbumViewModel : ViewModelBase
-    {
-        private TrackListViewModel humanSelected;
-        
-
-
-
-        public DetailAlbumViewModel()
-        {
-            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentSelectedChanged);
-        }
-
-        void TrackListViewModel_CurrentSelectedChanged(object sender, System.EventArgs e)
-        {
-            if (humanSelected != TrackListViewModel.HumanSelected)
-            {
-                humanSelected = TrackListViewModel.HumanSelected;
-            }
-        }
-
-        public List<TrackListViewModel> Album
-        {
-            get
-            {              
-                if (humanSelected == null)
-                    return null;
-                int index = 0; 
-                var tracks = App.getAlbum(humanSelected);
-
-                foreach (var t in tracks)
-                {
-                    index++;
-                    t.Index = index;
-                    if (t.PieceId == humanSelected.PieceId)
-                        t.IsSelected = true;
-                    else
-                        t.IsSelected = false; 
-                }
-
-                return tracks;
-            }
-        }
-
-        public TrackListViewModel SelectedTrackInAlbumView
-        {
-            get
-            {
-
-                if (humanSelected == null)
-                    return null;
-                var tracks = Album;
-                if (tracks == null || tracks.Count == 0)
-                    return null;
-                return tracks.Find(t => t.PieceId == humanSelected.PieceId);
-            }
-            set
-            {
-                humanSelected = value;
-                if (humanSelected != null)
-                    humanSelected.IsSelected = true; 
-                TrackListViewModel.HumanSelected = value;
-               
-                //var old = SelectedTrackInAlbumView; 
-                //if (value !=old)
-                //{
-                //    if (old != null)
-                //        old.IsSelected = false;
-                //    humanSelected = value;
-                //    SelectedTrackInAlbumView.IsSelected = true; 
-
-                //}
-            }
-        }
-
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.player\Vue\AlbumCtl.xaml">
-    <content><![CDATA[<UserControl x:Class="pdb.player.Vue.AlbumCtl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
-        <DataGrid  Grid.Column="0" DockPanel.Dock="Bottom" 
-                       Name="dg" 
-                       AutoGenerateColumns="False" 
-                        IsSynchronizedWithCurrentItem="false" 
-                                        
-                       SelectedItem="{Binding SelectedTrackInAlbumView}">
-
-
-
-            <!--<DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <EventSetter Event="MouseDoubleClick" Handler="dgAlbum_MouseDoubleClick" />
-                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
-                    <Setter Property="DataGridRow.IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                    <Setter Property="DataGridRow.Background" Value="White" />
-                    <Style.Triggers>
-                        <Trigger Property="DataGridRow.IsSelected" Value="True">
-                            <Setter Property="DataGridRow.Background" Value="Brown" />
-                        </Trigger>
-                    </Style.Triggers>
-
-                </Style>
-            </DataGrid.RowStyle>-->
-
-            <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="" Binding="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}"  />
-                <DataGridTextColumn Header="" Binding="{Binding Index,Mode=OneWay}"/>
-                <DataGridTextColumn Header="p" Binding="{Binding TrackNumber,Converter={StaticResource Int}}"/>
-                <DataGridTextColumn Header="Nom" Binding="{Binding Name,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="" Binding="{Binding MedianneStatus,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
-
-                <DataGridTextColumn Header="Virtuel" Binding="{Binding ClassementVirtuel,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="Classement" Binding="{Binding Classement,Converter={StaticResource cl},UpdateSourceTrigger=PropertyChanged}"/>
-
-                <DataGridTextColumn Header="Durée" Binding="{Binding Duration,Mode=OneWay,Converter={StaticResource TimeSpan}}"   >
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment" Value="Right" />
-                            <Setter Property="Padding" Value="0,0,3,0" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="Comment" Binding="{Binding Comment,Mode=OneWay}"/>
-
-            </DataGrid.Columns>
-
-
-            <DataGrid.ItemContainerStyle>
-
-                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
-                    <EventSetter Event="MouseDoubleClick" Handler="dgAlbum_MouseDoubleClick" />
-                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
-                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="dg_MouseClick" />
-                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />
-                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                    <Setter Property="FontWeight" Value="Normal" />
-                    <Setter Property="BorderThickness" Value="0" />
-                    <!--<Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="FontWeight" Value="Bold" />
-                        </Trigger>
-                        <DataTrigger Binding="{Binding Exis
-                    ts}" Value="False">
-                            <Setter Property="Background" Value="LightGray" />
-                        </DataTrigger>
-                    </Style.Triggers>-->
-                </Style>
-            </DataGrid.ItemContainerStyle>
-
-            <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
-                    <Setter Property="Foreground" Value="{Binding TV, Converter={StaticResource foreColor},  UpdateSourceTrigger=PropertyChanged}" />
-                    <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-
-
-
-
-                    <!--<Style.Triggers>
-                        <Trigger Property="IsSelected"  Value="True">-->
-                            <!--<Setter Property="Background"  Value="SteelBlue"/>-->
-                            <!--<Setter Property="Background"  Value="SteelBlue"/>-->
-                            <!--<Setter Property="Foreground"  Value="White" />-->
-                            <!--<Setter Property="BorderThickness" Value="1" />-->
-                        <!--</Trigger>
-                    </Style.Triggers>-->
-                </Style>
-            </DataGrid.CellStyle>
-           <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <!--<Setter Property="Height"  Value="20" />-->
-                 
-                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
-                    <Setter Property="Padding" Value="10,10,10,10" />
-                </Style>
-            </DataGrid.RowStyle>
-        </DataGrid>
-
-    </Grid>
-</UserControl>
-]]></content>
-  </file>
-  <file path="\pdb.player\Vue\AlbumCtl.xaml.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Threading;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using pdb.player.ViewModel;
-using pdb.gen.albums;
+using pdb.gen.stat;
+using pdb.player.Vue.Adorn;
+using System.ComponentModel;
+using pdb.gen;
+using System.Text.RegularExpressions;
+using System.Windows.Threading;
 
 namespace pdb.player.Vue
 {
-    /// <summary>
-    /// Interaction logic for AlbumCtl.xaml
-    /// </summary>
-    public partial class AlbumCtl : UserControl, ItrackProvider
+    public class TB : UIElement
     {
-        public static AlbumCtl Instance;
-        private DetailAlbumViewModel model;
-    //    private DataGridRow currentSelected;
-        public AlbumCtl()
+        private Border border;
+        private TextBlock tb;
+        public TB()
         {
+            border = new Border();
+            border.BorderThickness = new Thickness(0.3);
+            border.BorderBrush = Brushes.Gray;
+
+            tb = new TextBlock();
+            tb.TextAlignment = TextAlignment.Center;
+            border.Child = tb;
+            tb.FontSize = 10;
+            tb.HorizontalAlignment = HorizontalAlignment.Stretch;
+            tb.Visibility = System.Windows.Visibility.Visible;
+        }
+
+        public Brush Background { set { tb.Background = value; } }
+        public string Content { set { tb.Text = value; } }
+
+        protected override bool IsEnabledCore
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+
+
+
+    }
+
+
+    /// <summary>
+    /// Interaction logic for ClassementCtl.xaml
+    /// </summary>
+    public partial class ClassementCtl : UserControl
+    {
+
+
+
+        private DetailClassementViewModel model;
+        private StatCtl[,] tbs = new StatCtl[DynamicStat.ROWS + 1, DynamicStatLigne.COLS];
+        private Border[,] borders = new Border[DynamicStat.ROWS + 1, DynamicStatLigne.COLS];
+        public ClassementCtl()
+        {
+
             InitializeComponent();
-            Loaded += new RoutedEventHandler(AlbumCtl_Loaded);
-            App.refresh += new EventHandler(App_refresh);
-            Instance = this;
+            TbClass.PreviewTextInput += new TextCompositionEventHandler(TbClass_PreviewTextInput);
+
+            for (int i = -DynamicStatLigne.SEMI_COLS; i <= DynamicStatLigne.SEMI_COLS; i++)
+            {
+                var col = new ColumnDefinition();
+                col.Width = new GridLength(1, GridUnitType.Star);
+                tab.ColumnDefinitions.Add(col);
+            }
+
+            for (int j = 0; j <= DynamicStat.ROWS; j++)
+            {
+                var row = new RowDefinition();
+                row.Height = new GridLength(1, GridUnitType.Star);
+                tab.RowDefinitions.Add(row);
+            }
+
+            for (int c = 0; c < DynamicStatLigne.COLS; c++)
+            {
+                var border = new Border();
+                border.BorderThickness = new Thickness(0.3);
+                border.BorderBrush = Brushes.Gray;
+                border.Background = Brushes.LightGray;
+                border.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+                border.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                border.ClipToBounds = true;
+                var tb = new TextBlock();
+                tb.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
+                tb.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                tb.Background = Brushes.LightGray;
+                tb.Text = (c - DynamicStatLigne.SEMI_COLS).ToString();
+                tb.TextAlignment = TextAlignment.Center;
+                border.Child = tb;
+                tab.Children.Add(border);
+                Grid.SetRow(border, 0);
+                Grid.SetColumn(border, c);
+            }
+
+
+            for (int r = 1; r <= DynamicStat.ROWS; r++)
+            {
+                for (int c = 0; c < DynamicStatLigne.COLS; c++)
+                {
+                    var tb = new StatCtl();
+                    //var border = new Border();
+                    //border.BorderThickness = new Thickness(0.3);
+                    //border.BorderBrush = Brushes.Gray;
+
+                    //border.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
+                    ////var tb = new TextBlock();
+                    ////tb.TextAlignment = TextAlignment.Center;
+
+                    //////tb.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                    ////tb.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+                    ////tb.FontSize = 10;
+
+
+                    //border.Child = tb;
+                    //    border.ClipToBounds = true;
+                    tbs[r, c] = tb;
+                    // borders[r, c] = border;
+
+
+                    // AdornedControl ac = new AdornedControl(); 
+
+                    // tb.BorderThickness = new Thickness(0.2) ;
+                    // tb.BorderBrush = Brushes.Gray;
+                    // tb.FontSize = 10;
+
+
+                    tb.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                    tb.Margin = new Thickness(0);
+                    tb.Padding = new Thickness(0);
+
+                    //tab.Children.Add(border);
+
+                    //Grid.SetRow(border, r);
+                    //Grid.SetColumn(border, c);
+
+                    tab.Children.Add(tb);
+                    Grid.SetRow(tb, r);
+                    Grid.SetColumn(tb, c);
+
+                    //if (r == 0)
+                    //{
+                    //    tb.Background = Brushes.LightGray;
+                    //    tb.Text = (c - DynamicStatLigne.SEMI_COLS).ToString();
+                    //}
+
+
+                    if (c == DynamicStatLigne.SEMI_COLS || r == 3)
+                        tb.FontWeight = FontWeights.Bold;
+                }
+            }
+
+
+
+
+            this.Loaded += new RoutedEventHandler(ClassementCtl_Loaded);
+        }
+        Regex regex = new Regex(@"[0-5.\ ]+");
+        void TbClass_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            var text = e.Text;
+            if (!string.IsNullOrEmpty(text))
+            {
+                //regex that matches disallowed text
+                if (!regex.IsMatch(text))
+                    e.Handled = true;
+            }
+
         }
 
-        void App_refresh(object sender, EventArgs e)
+        void ClassementCtl_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.classProvider = new Provider(dg);
+            // this.albumProvider = new Provider(dgAlbum); 
+            this.model = new DetailClassementViewModel();
+            App.DetailClassementViewModel = model; 
+            model.PropertyChanged += new System.ComponentModel.PropertyChangedEventHandler(model_PropertyChanged);
+            TrackListViewModel.CurrentSelectedChanged += new EventHandler(TrackListViewModel_CurrentSelectedChanged);
+            model.Classement = "";
+            btRecord.IsDefault = true; 
+            init();
+        }
+
+        void TrackListViewModel_CurrentSelectedChanged(object sender, EventArgs e)
+        {
+           // init(); 
+        }
+
+        void model_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             init();
         }
 
-        void AlbumCtl_Loaded(object sender, RoutedEventArgs e)
+        private class CPieceComparerByQualityAndLength2 : IComparer<TrackListViewModel>
         {
-            this.model = new DetailAlbumViewModel();
-            init();
-            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentHumanSelectedChanged);
-
+            int IComparer<TrackListViewModel>.Compare(TrackListViewModel x, TrackListViewModel y)
+            {
+                return -x.Track.Piece.Rank.Twice.CompareTo(y.Track.Piece.Rank.Twice);
+            }
         }
 
-
-        void TrackListViewModel_CurrentHumanSelectedChanged(object sender, EventArgs e)
-        {
-            init();
-        }
-
-        public void init()
+        private void init()
         {
             if (!CheckAccess())
             {
                 Dispatcher.BeginInvoke(new Action(this.init), DispatcherPriority.DataBind);
                 return;
             }
-
             SortDescriptionCollection sort = null;
             ICollectionView view = null;
-            //   currentSelected = dg.SelectedItem as TrackListViewModel;
-
+          
             view = CollectionViewSource.GetDefaultView(dg.ItemsSource);
             if (view != null)
                 sort = view.SortDescriptions;
@@ -643,94 +233,193 @@ namespace pdb.player.Vue
             List<SortDescription> _sort = null;
             if (sort != null)
                 _sort = new List<SortDescription>(sort);
+
+
+
             base.DataContext = null;
-
-            dg.ItemsSource = null;
-
-            var alb = model.Album;
-            dg.ItemsSource = alb;
-            base.DataContext = model;
-
-            view = CollectionViewSource.GetDefaultView(dg.ItemsSource);
-
-            if (_sort != null && _sort.Count > 0)
+            try
             {
-                view.SortDescriptions.Clear();
-                foreach (var _s in _sort)
-                {
-                    view.SortDescriptions.Add(_s);
-                    foreach (DataGridColumn _c in dg.Columns)
-                    {
-                        if (_s.PropertyName == _c.SortMemberPath)
-                        {
-                            _c.SortDirection = _s.Direction;
-                            break;
-                        }
-                    }
-                    break;
 
+                dg.ItemsSource = null;
+                var tracks = model.Tracks;
+
+                if (tracks == null)
+                    return;
+                tracks.Sort(new CPieceComparerByQualityAndLength2());
+                dg.ItemsSource = tracks;
+
+                //ICollectionView source = CollectionViewSource.GetDefaultView(dg.ItemsSource);
+                //if (source != null)
+                //{
+                //    if (source.SortDescriptions != null)
+                //        source.SortDescriptions.Clear();
+                //    source.SortDescriptions.Add(new SortDescription("Classement", ListSortDirection.Descending));
+                //}
+                tracks.init();
+                //dgAlbum.ItemsSource = null;
+                //object sel; 
+                //if (dgAlbum.Items.Count > 0)
+                //{
+                //    sel = dgAlbum.SelectedItem; 
+                //}
+                //dgAlbum.ItemsSource = model.Album;
+                //dgStat.ItemsSource = null;
+
+                //var stats = model.Stats;
+                //dgStat.DataContext = null; 
+                //dgStat.DataContext = stats.DefaultView;
+                //dgStat.ItemsSource = stats.DefaultView; 
+
+                var stats = model.getStats();
+                if (stats == null)
+                    return;
+
+                //for (int c = -DynamicStatLigne.SEMI_COLS; c <= DynamicStatLigne.SEMI_COLS; c++)
+                //{
+                //    var tb = tbs[0, c + DynamicStatLigne.SEMI_COLS];
+                //    tb.Background = Brushes.LightGray;
+                //    tb.Text = (c - DynamicStatLigne.SEMI_COLS).ToString();
+                //    tb.InvalidateVisual();
+                //}
+
+                for (int r = 1; r <= DynamicStat.ROWS; r++)
+                {
+                    int max = 0;
+                    for (int c = -DynamicStatLigne.SEMI_COLS; c <= DynamicStatLigne.SEMI_COLS; c++)
+                    {
+                        int nb = stats[r - 1][c];
+                        if (nb > max)
+                            max = nb;
+                    }
+                    for (int c = -DynamicStatLigne.SEMI_COLS; c <= DynamicStatLigne.SEMI_COLS; c++)
+                    {
+                        try
+                        {
+                            //  var row = stats.Rows[r-1][c.ToString()]; 
+                            int nb = stats[r - 1][c];
+                            var tb = tbs[r, c + DynamicStatLigne.SEMI_COLS];
+                            if (nb > 0)
+                                tb.Text = nb.ToString();
+                            else
+                                tb.Text = "";
+                            tb.setValue(nb, max);
+                            tb.InvalidateVisual();
+                            //var b = borders[r, c + DynamicStatLigne.SEMI_COLS];
+                            //var layer = AdornerLayer.GetAdornerLayer(b);
+                            //try { layer.Remove((layer.GetAdorners(b))[0]); }
+                            //catch { }
+                            //layer.Add(new BarAdorner(b, nb, max));
+
+
+                        }
+                        catch (Exception ex)
+                        {
+                            App.log.log(ex.ToString());
+                        }
+
+
+                        // tbs[r, c + DynamicStatLigne.SEMI_COLS].Text = stats.Rows[r - 1][c.ToString()].ToString(); 
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                App.log.log(ex.ToString());
+            }
+            finally
+            {
+                base.DataContext = model;
+                view = CollectionViewSource.GetDefaultView(dg.ItemsSource);
 
-        //    var selected = model.SelectedTrackInAlbumView;
+                if (_sort != null && _sort.Count > 0)
+                {
+                    view.SortDescriptions.Clear();
+                    foreach (var _s in _sort)
+                    {
+                        view.SortDescriptions.Add(_s);
+                        foreach (DataGridColumn _c in dg.Columns)
+                        {
+                            if (_s.PropertyName == _c.SortMemberPath)
+                            {
+                                _c.SortDirection = _s.Direction;
+                                break;
+                            }
+                        }
+                        break;
 
+                    }
+                }
+            }
+        }
 
-            //try
-            //{
-            //    //   int index = view.CurrentPosition;
-            //    DataGridRow row = dg.ItemContainerGenerator.ContainerFromItem(selected) as DataGridRow;
-            //    if (row == null)
-            //        row = currentSelected;
-            //    if (row != null)
-            //    {
-            //        row.IsSelected = true;
-            //        row.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));  
-            //    }
-            //}
-            //catch
-            //{
-
-            //}
-            
-
-            //if (currentSelected != null)
-            //    currentSelected.IsSelected = true;
-            //dgStat.ItemsSource = null;
-
-            //var stats = model.Stats;
-            //dgStat.DataContext = null;
-            //dgStat.DataContext = stats.DefaultView;
-            //dgStat.ItemsSource = stats.DefaultView;
-
-
-            //base.DataContext = model;
+        private void btRecord_Click(object sender, RoutedEventArgs e)
+        {
+            model.record();
 
         }
 
+        private ItrackProvider classProvider;
+        private ItrackProvider albumProvider;
 
-
-
-        private void dgAlbum_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void dgMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var r = sender as DataGridRow;
             var t = r.Item as TrackListViewModel;
-            PlayerViewModel.reset(this, t);
+            PlayerViewModel.reset(classProvider, t);
         }
 
-        private void dg_MouseClick(object sender, MouseButtonEventArgs e)
+        //private void dgAlbum_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        //{
+        //    var r = sender as DataGridRow;
+        //    var t = r.Item as TrackListViewModel;
+        //    PlayerViewModel.reset(albumProvider, t);
+        //}
+
+        private class Provider : ItrackProvider
         {
-          var  currentSelected = sender as DataGridRow;
-            var t = currentSelected.Item as TrackListViewModel;
-            currentSelected.IsSelected = true;
+            private DataGrid dt;
+            public Provider(DataGrid dt)
+            {
+                this.dt = dt;
+            }
 
-          //  currentSelected.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));  
-            TrackListViewModel.HumanSelected = t;
+            public System.ComponentModel.ICollectionView PresentationTracks
+            {
+                get { return CollectionViewSource.GetDefaultView(dt.ItemsSource); }
+            }
+
+            public PlayListViewModel PlayList
+            {
+                get { return null; }
+            }
+
+            public void Focus(int index)
+            {
+
+            }
+
+
+            public void doFilter(string filter)
+            {
+
+            }
+
+            public List<TrackListViewModel> SelectedTracks
+            {
+                get
+                {
+                    var list = new List<TrackListViewModel>();
+                    foreach (TrackListViewModel track in PresentationTracks)
+                        list.Add(track);
+                    return list;
+                }
+            }
         }
 
-        public System.ComponentModel.ICollectionView PresentationTracks
-        {
-            get { return CollectionViewSource.GetDefaultView(dg.ItemsSource); }
-        }
+        //public System.ComponentModel.ICollectionView PresentationTracks
+        //{
+        //    get { return CollectionViewSource.GetDefaultView(dgAlbum.ItemsSource); }
+        //}
 
         public PlayListViewModel PlayList
         {
@@ -741,22 +430,310 @@ namespace pdb.player.Vue
         {
 
         }
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\ConfAlbumSortW.xaml">
+    <content><![CDATA[<Window x:Class="pdb.player.Vue.ConfAlbumSortW"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ConfAlbumSortW" Height="194" Width="978" Loaded="Window_Loaded">
+    <Grid Height="116" Width="861">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="182*" />
+            <ColumnDefinition Width="201*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="7*" />
+        </Grid.RowDefinitions>
+        <Grid Grid.ColumnSpan="2" Margin="0,0,-172,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
 
-        public void doFilter(string filter)
+            </Grid.ColumnDefinitions>
+            <CheckBox Grid.Row="0" Grid.Column="0" Name="cb_enabled" ToolTip="utilisé" Margin="5" Padding="4" />
+            <ComboBox Grid.Row="0" Grid.Column="1" Name="cbxSort" Height="22" Padding="4" >
+                <ComboBoxItem ToolTip="pas de conf" Name="none"></ComboBoxItem>
+                <ComboBoxItem ToolTip="tri sur moyenne quand aucun des albums n'a défini sa médianne" Name="strict">strict</ComboBoxItem>
+                <ComboBoxItem ToolTip="calcul Médianne moins strict" Name="light" >light</ComboBoxItem>
+                <ComboBoxItem ToolTip="tri uniquement sur la moyenne" Name="moy" >moy</ComboBoxItem>
+            </ComboBox>
+
+            <TextBox  Grid.Row="0" Grid.Column="2" Name="tb_medianne" Width="30" ToolTip="medianne" Margin="5" />
+            <CheckBox  Grid.Row="0" Grid.Column="3" Name="cb_quasi" ToolTip="quasi" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="4" Name="cb_lissage" ToolTip="lissage" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="5" Name="cb_removeEpsilon" ToolTip="removeEpsilon" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="6" Name="cb_reSort" ToolTip="reSort" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="0" Grid.Column="7" Name="tb_safe" Width="30" ToolTip="safe" Margin="5" />
+            <TextBox  Grid.Row="0" Grid.Column="8" Name="tb_coeff" Width="30" ToolTip="coeff des morceaux virtuels" Margin="5" />
+            <CheckBox  Grid.Row="0" Grid.Column="9" Name="cb_removeFirst" ToolTip="mise à zero des premiers" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="10" Name="cb_deleteFirst" ToolTip="suppression des premiers" Margin="5" Padding="4" />
+            <ComboBox ToolTip="removelast" Grid.Row="0" Grid.Column="11" Name="cbx1_removeLast" Height="22" Padding="4" >
+                <ComboBoxItem>non</ComboBoxItem>
+                <ComboBoxItem>unselected</ComboBoxItem>
+                <ComboBoxItem>virtuels</ComboBoxItem>
+                <ComboBoxItem>tous</ComboBoxItem>
+            </ComboBox>
+            <CheckBox  Grid.Row="0" Grid.Column="12" Name="cb_cumul" ToolTip="cumul" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="13" Name="cb_noAdd" ToolTip="pas d'ajout" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="0" Grid.Column="14" Name="tb_exp" Width="30" ToolTip="exposant proportion des morceaux gérés" Margin="5" />
+            <CheckBox  Grid.Row="0" Grid.Column="15" Name="cb_removeEnabled" ToolTip="remove enabled" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="16" Name="cb_virtOnlyDisabled" ToolTip="virtuel: seulement les décochés" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="17" Name="cb_forceCoeffVirt" ToolTip="virtuel: coeff forcé" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="18" Name="cb_virtAlignSelected" ToolTip="virtuel: aligné sur le coché" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="0" Grid.Column="19" Name="cb_virtAlignPrec" ToolTip="virtuel: aligné sur le précédent" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="0" Grid.Column="20" Name="tb_zero" Width="120" ToolTip="zéro" Margin="5" />
+
+            <CheckBox Grid.Row="1" Grid.Column="0"  Name="cb2_enabled" ToolTip="utilisé" Margin="5" Padding="4" />
+            <ComboBox Grid.Row="1" Grid.Column="1" Name="cbx2Sort" Height="22" Padding="4" >
+                <ComboBoxItem ToolTip="pas de conf" Name="none2"></ComboBoxItem>
+                <ComboBoxItem ToolTip="tri sur moyenne quand aucun des albums n'a défini sa médianne" Name="strict2">strict</ComboBoxItem>
+                <ComboBoxItem ToolTip="calcul Médianne moins strict" Name="light2" >light</ComboBoxItem>
+                <ComboBoxItem ToolTip="tri uniquement sur la moyenne" Name="moy2" >moy</ComboBoxItem>
+            </ComboBox>
+
+            <TextBox Grid.Row="1" Grid.Column="2"  Name="tb2_medianne" Width="30" ToolTip="medianne" Margin="5" />
+            <CheckBox Grid.Row="1" Grid.Column="3" Name="cb2_quasi" ToolTip="quasi" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="4" Name="cb2_lissage" ToolTip="lissage" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="5" Name="cb2_removeEpsilon" ToolTip="removeEpsilon" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="6" Name="cb2_reSort" ToolTip="reSort" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="1" Grid.Column="7" Name="tb2_safe" Width="30" ToolTip="safe" Margin="5" />
+            <TextBox  Grid.Row="1" Grid.Column="8" Name="tb2_coeff" Width="30" ToolTip="coeff des morceaux virtuels" Margin="5" />
+            <CheckBox  Grid.Row="1" Grid.Column="9" Name="cb2_removeFirst" ToolTip="removeFirst" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="10" Name="cb2_deleteFirst" ToolTip="deleteFirst" Margin="5" Padding="4" />
+            <ComboBox ToolTip="removelast" Grid.Row="1" Grid.Column="11" Name="cbx2_removeLast" Height="22" Padding="4" >
+                <ComboBoxItem>non</ComboBoxItem>
+                <ComboBoxItem>unselected</ComboBoxItem>
+                <ComboBoxItem>virtuels</ComboBoxItem>
+                <ComboBoxItem>tous</ComboBoxItem>
+            </ComboBox>
+            <CheckBox  Grid.Row="1" Grid.Column="12" Name="cb2_cumul" ToolTip="cumul" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="13" Name="cb2_noAdd" ToolTip="pas d'ajout" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="1" Grid.Column="14" Name="tb2_exp" Width="30" ToolTip="exposant proportion des morceaux gérés" Margin="5" />
+            <CheckBox  Grid.Row="1" Grid.Column="15" Name="cb2_removeEnabled" ToolTip="remove enabled" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="16" Name="cb2_virtOnlyDisabled" ToolTip="virtuel: seulement les décochés" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="17" Name="cb2_forceCoeffVirt" ToolTip="virtuel: coeff forcé" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="18" Name="cb2_virtAlignSelected" ToolTip="virtuel: aligné sur le coché" Margin="5" Padding="4" />
+            <CheckBox  Grid.Row="1" Grid.Column="19" Name="cb2_virtAlignPrec" ToolTip="virtuel: aligné sur le précédent" Margin="5" Padding="4" />
+            <TextBox  Grid.Row="1" Grid.Column="20" Name="tb2_zero" Width="120" ToolTip="zéro" Margin="5" />
+        </Grid>
+        
+        <StackPanel Grid.Row="2"  Orientation="Horizontal"  HorizontalAlignment="Right" Margin="0,5" Grid.Column="1" Width="160">
+            <TextBox Grid.Row="2" Name="tb_coeffEnabled" Width="60"  VerticalAlignment="Center" Text="1" ToolTip="Coeff des morceaux cochés" />
+            <Button Grid.Row="2" Name="bt_cancel" Height="25" HorizontalAlignment="Right" Content="Cancel" Click="bt_cancel_Click"   Margin="5" />
+            <Button Grid.Row="2" Name="bt_ok" Height="25" HorizontalAlignment="Right" Content="Ok" Click="bt_ok_Click"   Margin="5" />
+        </StackPanel>
+    </Grid>
+
+</Window>
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\ConfAlbumSortW.xaml.cs">
+    <content><![CDATA[using System;
+using System.Windows;
+using pdb.gen.Tuning;
+using pdb.gen;
+using pdb.db.piece.type;
+
+namespace pdb.player.Vue
+{
+    /// <summary>
+    /// Interaction logic for ConfAlbumSortW.xaml
+    /// </summary>
+    public partial class ConfAlbumSortW : Window
+    {
+        private ConfAlbumSort conf;
+        public ConfAlbumSortW()
         {
-
+            InitializeComponent();
+            this.Loaded += new RoutedEventHandler(ConfAlbumSortW_Loaded);
         }
 
-
-        public List<TrackListViewModel> SelectedTracks
+        void ConfAlbumSortW_Loaded(object sender, RoutedEventArgs e)
         {
-            get
+            display();
+        }
+
+        public ConfAlbumSortW(ConfAlbumSort conf)
+            : this()
+        {
+            this.conf = conf;
+        }
+
+        void display()
+        {
+            tb_coeffEnabled.Text = conf.coeffEnabled.ToString(); 
+            var list = conf.Composants;
+            var item1 = list[0];
+            cb_enabled.IsChecked = item1.enabled;
+            cbxSort.SelectedIndex = (int)item1.type;
+            tb_medianne.Text = item1.medianne.ToString();
+            cb_quasi.IsChecked = item1.quasi;
+            cb_lissage.IsChecked = item1.lissage;
+            cb_removeEpsilon.IsChecked = item1.removeEpsilon;
+            cb_reSort.IsChecked = item1.reSort;
+            cb_removeFirst.IsChecked = item1.removeFirst;
+            cb_deleteFirst.IsChecked = item1.deleteFirst;
+            cbx1_removeLast.SelectedIndex = (int)item1.removeLast;
+            cb_cumul.IsChecked = item1.cumul;
+            cb_noAdd.IsChecked = item1.noAdd;
+            tb_safe.Text = item1.safe.ToString();
+            tb_coeff.Text = item1.coeffVirt.ToString();
+            tb_exp.Text = item1.expEnabled.ToString();
+            tb_zero.Text = Piece.getClassementEquiv(item1.zero);
+            cb_removeEnabled.IsChecked = item1.removeEnabled;
+            cb_virtOnlyDisabled.IsChecked = item1.virtOnlyDisabled;
+            cb_forceCoeffVirt.IsChecked = item1.forceCoeffVirt;
+            cb_virtAlignPrec.IsChecked = item1.virtAlignPrec;
+            cb_virtAlignSelected.IsChecked = item1.virtAlignSelected;
+         
+            
+
+            if (list.Count > 1)
             {
-                var list = new List<TrackListViewModel>();
-                foreach (TrackListViewModel track in PresentationTracks)
-                    list.Add(track);
-                return list;
+                item1 = list[1];
+                cb2_enabled.IsChecked = item1.enabled;
+                cbx2Sort.SelectedIndex = (int)item1.type;
+                tb2_medianne.Text = item1.medianne.ToString();
+                cb2_quasi.IsChecked = item1.quasi;
+                cb2_lissage.IsChecked = item1.lissage;
+                cb2_removeEpsilon.IsChecked = item1.removeEpsilon;
+                cb2_reSort.IsChecked = item1.reSort;
+                cb2_removeFirst.IsChecked = item1.removeFirst;
+                cb2_deleteFirst.IsChecked = item1.deleteFirst;
+                cbx2_removeLast.SelectedIndex = (int)item1.removeLast;
+                cb2_cumul.IsChecked = item1.cumul;
+                cb2_noAdd.IsChecked = item1.noAdd;
+                tb2_safe.Text = item1.safe.ToString();
+                tb2_coeff.Text = item1.coeffVirt.ToString();
+                tb2_exp.Text = item1.expEnabled.ToString();
+                tb2_zero.Text = Piece.getClassementEquiv(item1.zero);
+                cb2_removeEnabled.IsChecked = item1.removeEnabled;
+                cb2_virtOnlyDisabled.IsChecked = item1.virtOnlyDisabled;
+                cb2_forceCoeffVirt.IsChecked = item1.forceCoeffVirt;
+                cb2_virtAlignPrec.IsChecked = item1.virtAlignPrec;
+                cb2_virtAlignSelected.IsChecked = item1.virtAlignSelected;
             }
+        }
+        void record()
+        {
+            conf.coeffEnabled = Convert.ToDecimal(tb_coeffEnabled.Text); 
+            var list = conf.Composants;
+            var item1 = list[0];
+            item1.enabled = cb_enabled.IsChecked.Value;
+            item1.type = (util.medianneMode)cbxSort.SelectedIndex;
+            item1.medianne = Convert.ToDecimal(tb_medianne.Text);
+            item1.quasi = cb_quasi.IsChecked.Value;
+            item1.lissage = cb_lissage.IsChecked.Value;
+            item1.removeEpsilon = cb_removeEpsilon.IsChecked.Value;
+            item1.reSort = cb_reSort.IsChecked.Value;
+            item1.removeFirst = cb_removeFirst.IsChecked.Value;
+            item1.deleteFirst = cb_deleteFirst.IsChecked.Value;
+            item1.removeLast = (util.removeLast)cbx1_removeLast.SelectedIndex;
+            item1.cumul = cb_cumul.IsChecked.Value;
+            item1.noAdd = cb_noAdd.IsChecked.Value;
+            item1.safe = Convert.ToInt32(tb_safe.Text);
+            item1.coeffVirt = Convert.ToDecimal(tb_coeff.Text);
+            item1.expEnabled = Convert.ToDecimal(tb_exp.Text);
+            var cl = Classement.create(tb_zero.Text);
+            item1.zero = cl.RapportClassement;
+            item1.removeEnabled = cb_removeEnabled.IsChecked.Value;
+            item1.virtOnlyDisabled = cb_virtOnlyDisabled.IsChecked.Value;
+            item1.forceCoeffVirt = cb_forceCoeffVirt.IsChecked.Value;
+            item1.virtAlignPrec = cb_virtAlignPrec.IsChecked.Value;
+            item1.virtAlignSelected = cb_virtAlignSelected.IsChecked.Value; 
+
+            if (list.Count > 1)
+            {
+                if (cbx2Sort.SelectedIndex == 0)
+                {
+                    list.RemoveAt(1);
+                    return;
+                }
+            }
+            else
+            {
+                if (cbx2Sort.SelectedIndex > 0)
+                {
+                    item1 = new util.ConfMedianne();
+                    list.Add(item1);
+                }
+            }
+
+            if (list.Count > 1)
+            {
+                item1 = list[1];
+
+                item1.enabled = cb2_enabled.IsChecked.Value;
+                item1.type = (util.medianneMode)cbx2Sort.SelectedIndex;
+                item1.medianne = Convert.ToDecimal(tb2_medianne.Text);
+                item1.quasi = cb2_quasi.IsChecked.Value;
+                item1.lissage = cb2_lissage.IsChecked.Value;
+                item1.removeEpsilon = cb2_removeEpsilon.IsChecked.Value;
+                item1.reSort = cb2_reSort.IsChecked.Value;
+                item1.removeFirst = cb2_removeFirst.IsChecked.Value;
+                item1.deleteFirst = cb2_deleteFirst.IsChecked.Value;
+                item1.removeLast = (util.removeLast)cbx2_removeLast.SelectedIndex;
+                item1.cumul = cb2_cumul.IsChecked.Value;
+                item1.noAdd = cb2_noAdd.IsChecked.Value;
+                item1.safe = Convert.ToInt32(tb2_safe.Text);
+                item1.coeffVirt = Convert.ToDecimal(tb2_coeff.Text);
+                item1.expEnabled = Convert.ToDecimal(tb2_exp.Text);
+                item1.zero = Convert.ToDecimal(tb2_zero.Text);
+
+                cl = Classement.create(tb2_zero.Text);
+                item1.zero = cl.RapportClassement;
+                item1.removeEnabled = cb2_removeEnabled.IsChecked.Value;
+                item1.virtOnlyDisabled = cb2_virtOnlyDisabled.IsChecked.Value;
+                item1.forceCoeffVirt = cb2_forceCoeffVirt.IsChecked.Value;
+                item1.virtAlignPrec = cb2_virtAlignPrec.IsChecked.Value;
+                item1.virtAlignSelected = cb2_virtAlignSelected.IsChecked.Value; 
+            }
+        }
+
+        private void bt_cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void bt_ok_Click(object sender, RoutedEventArgs e)
+        {
+            record();
+            Close();
+            conf.Calcul();
+            App.go();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
@@ -887,13 +864,16 @@ namespace pdb.player.Vue
                 <Style TargetType="DataGridCell">
                     <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
                     <Setter Property="Foreground" Value="{Binding TV, Converter={StaticResource foreColor},  UpdateSourceTrigger=PropertyChanged}" />
-                    
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+
                 </Style>
             </DataGrid.CellStyle>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <EventSetter Event="MouseDoubleClick" Handler="dg_MouseDoubleClick" />
-                   
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
+                    <!--<EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />-->
                     <Setter Property="BorderThickness" Value="0" />
                     <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
                     
@@ -928,6 +908,7 @@ using System.Windows.Media;
 
 namespace pdb.player.Vue
 {
+    
     public partial class DataGridPlayList : UserControl, ItrackProvider, IRedraw, IExportTracks
     {
         private static int nb;
@@ -992,20 +973,24 @@ namespace pdb.player.Vue
             }
         }
 
-        bool? nav; 
+        Key key; 
         void dg_preview(object sender, KeyEventArgs e)
         {
-          
-            switch (e.Key)
+            e.Handled = false; 
+            key = e.Key;
+            bool nav = false; 
+
+            switch (key)
             {
                 case Key.Up: nav = true; break;
-                case Key.Down: nav = false; break;
-                default: nav = null; break;
+                case Key.Down: nav = true; break;
+                //case Key.LeftCtrl: case Key.RightCtrl : // TODO ajouter un élément
             }
 
-            if (nav == null)
-                return;
 
+
+            if (!nav)
+                return; 
             TrackListViewModel.HumanSelected = TrackListViewModel.CurrentSelected; 
         }
    
@@ -1133,11 +1118,23 @@ namespace pdb.player.Vue
 
         private void dg_MouseClick(object sender, MouseButtonEventArgs e)
         {
+            e.Handled = true; 
             var r = sender as DataGridRow;
             var t = r.Item as TrackListViewModel;
             var l = new List<TrackListViewModel>();
+
+            foreach (TrackListViewModel track in selectedTracks)
+            {
+                track.IsSelected = false;
+                track.refresh(); 
+            }
+
             foreach (TrackListViewModel track in dg.SelectedItems)
+            {
                 l.Add(track);
+                track.IsSelected = true;
+                track.refresh(); 
+            }
             lock (this)
                 selectedTracks = l;
             TrackListViewModel.HumanSelected = t;
@@ -1447,332 +1444,1638 @@ namespace pdb.player.Vue
 }
 ]]></content>
   </file>
-  <file path="\pdb.player\Vue\Util\StringFormatConverter.cs">
+  <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
-using System.Windows.Data;
-using pdb.util;
-using pdb.player.ViewModel;
-using System.Windows.Media;
-using pdb.gen;
-using pdb.gen.albums;
+using System.Collections;
+using System.Collections.Generic;
+using System.Xml;
 
-namespace pdb.player.Vue.Util
+namespace pdb.util
 {
-    [ValueConversion(typeof(object), typeof(string))]
-    public class StringFormatConverter : BaseConverter, IValueConverter
+    public enum medianneMode
     {
-        public object Convert(object value, Type targetType, object parameter,
-                          System.Globalization.CultureInfo culture)
+        none = 0,
+        strict = 1,
+        light = 2,
+        moy = 3
+
+    }
+    public enum removeLast
+    {
+        non = 0,
+        unselected=1,
+        virtuel = 2,
+        tous = 3
+    }
+    public class ConfMedianne : TuningBase
+    {
+        public medianneMode type;
+        public decimal medianne = 0.5m;
+        public bool quasi;
+        public int safe;
+        public decimal coeffVirt = 10m;
+        public bool enabled;
+        public bool lissage;
+        public bool removeEpsilon;
+        public bool reSort;
+        public bool removeFirst;
+        public bool deleteFirst;
+        public removeLast removeLast; 
+        public bool cumul;
+        public decimal expEnabled = 0m;
+        public bool noAdd;
+        public decimal zero = 0m;
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool removeEnabled;
+        public bool virtOnlyDisabled;
+        public bool forceCoeffVirt;
+        public bool virtAlignSelected;
+        public bool virtAlignPrec; 
+        public ConfMedianne()
         {
-            string format = parameter as string;
-            if (!string.IsNullOrEmpty(format))
-            {
-                return string.Format(culture, format, value);
-            }
-            else
-            {
-                return value.ToString();
-            }
+        }
+        public ConfMedianne(ConfMedianne o)
+        {
+            type = o.type;
+            medianne = o.medianne;
+            quasi = o.quasi;
+            safe = o.safe;
+            coeffVirt = o.coeffVirt;
+            enabled = o.enabled;
+            lissage = o.lissage;
+            removeEpsilon = o.removeEpsilon;
+            reSort = o.reSort;
+            removeFirst = o.removeFirst;
+            deleteFirst = o.deleteFirst;
+            removeLast = o.removeLast;
+            cumul = o.cumul;
+            expEnabled = o.expEnabled;
+            noAdd = o.noAdd;
+            zero = o.zero;
+            removeEnabled = o.removeEnabled;
+            virtOnlyDisabled = o.virtOnlyDisabled;
+            forceCoeffVirt = o.forceCoeffVirt;
+            virtAlignSelected = o.virtAlignSelected;
+            virtAlignPrec = o.virtAlignPrec; 
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                        System.Globalization.CultureInfo culture)
+        public ConfMedianne(XmlElement parent, XmlElement child)
+            : base(parent, child)
         {
-            return null;
+            var strType = "";
+            builds("type", v => strType = v);
+            type = (medianneMode)Enum.Parse(typeof(medianneMode), strType, true);
+            builddec("medianne", v => medianne = v);
+            builddec("coeffVirt", v => coeffVirt = v);
+            buildb("quasi", v => quasi = v);
+            buildi("safe", v => safe = v);
+            buildb("enabled", v => enabled = v);
+            buildb("lissage", v => lissage = v);
+            buildb("removeEpsilon", v => removeEpsilon = v);
+            buildb("reSort", v => reSort = v);
+            buildb("removeFirst", v => removeFirst = v);
+            buildb("deleteFirst", v => deleteFirst = v);
+            buildb("cumul", v => cumul = v);
+            buildb("noAdd", v => noAdd = v); 
+         
+            builddec("expEnabled", v => expEnabled = v);
+            builddec("zero", v => zero = v);
+            buildb("removeEnabled", v => removeEnabled = v);
+            buildb("virtOnlyDisabled", v => virtOnlyDisabled = v);
+            buildb("forceCoeffVirt", v => forceCoeffVirt = v);
+            buildb("virtAlignSelected", v => virtAlignSelected = v);
+            buildb("virtAlignPrec", v=> virtAlignPrec = v); 
+
+
+            string _removeLast = null;
+            builds("removeLast", v => _removeLast = v);
+            removeLast = (removeLast)Enum.Parse(typeof(removeLast), _removeLast, true);
         }
     }
-
-
-    [ValueConversion(typeof(TimeSpan), typeof(string))]
-    public class TimeFormatConverter : BaseConverter, IValueConverter
+    public class CalcMedianne
     {
-        public object Convert(object value, Type targetType, object parameter,
-                          System.Globalization.CultureInfo culture)
+        const decimal PRECISION = 0.0000001m;
+        private static int index;
+        public static int Index { get { return index; } }
+
+
+        public static DecimalIndex getMedianne(IEnumerable list, decimal coeffMedianne)
         {
-            if (value is TimeSpan)
+            var _list = new List<decimal>();
+            foreach (object o in list)
             {
-                TimeSpan ts = (TimeSpan)value;
-                return String.Format("{0}:{1}{2}", ts.Minutes, ts.Seconds >= 10 ? "" : "0", ts.Seconds);
+                _list.Add(Convert.ToDecimal(o));
             }
-            return value.ToString();
-
+            return getMedianne(_list, coeffMedianne);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                        System.Globalization.CultureInfo culture)
+        public static DecimalIndex getMedianne(IList<decimal> list, decimal coeffMedianne)
         {
-            return null;
+            return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
         }
-    }
 
-    [ValueConversion(typeof(string), typeof(string))]
-    public class ClFormatConverter : BaseConverter, IValueConverter
-    {
-        static int NB_DEC = 4; 
-        public object Convert(object value, Type targetType, object parameter,
-                          System.Globalization.CultureInfo culture)
+        public static DecimalIndex getMedianneLight(IList<decimal> list, ConfMedianne mode)
         {
-            if (value == null)
-                return "";
-            var str = value.ToString();
-            int count = str.Length;
-            return Piece.getReadableCl(str); 
-            if (count < 4)
-                return str;
 
-            var tab = str.ToCharArray();
-            var sb = new StringBuilder();
-            bool second = false;
-            //if (str.StartsWith("0"))
-                second = true; 
-            int i = 0;
+            DecimalIndex ret = new DecimalIndex();
+            var medianne = getMedianne_(list, mode.medianne);
+            ret.d = medianne;
+            ret.index = index;
+            if (list.Count == 1)
+                return ret;
 
-            bool pt = false;
-            for (int ii = 0; ii < count; ii++)
+            int indexV = 0;
+
+            int count = list.Count;
+
+            if (mode.safe > 0)
             {
-                var c = tab[ii];
-                if (c == '.')
-                    pt = true;
 
-                if (!pt)
+                int i0 = count - 1;
+
+                for (int i = 0; i < count; i++)
                 {
-                    if (c != ' ')
+                    if (list[i] == 0m)
                     {
-
-                        if (i > NB_DEC || (i >= NB_DEC && second))
-                        {
-                            if (!second)
-                            {
-                                second = true;
-                                i = 1;
-                            }
-                            else
-                                i = 0;
-                            sb.Append(" ");
-                        }
-                        i++;
+                        i0 = i;
+                        break;
                     }
                 }
-                sb.Append(c);
+                if (i0 == 0)
+                    return ret;
+
+                //for (int i00 = 1; i00 <= i0; i00++)
+                //{
+                //    decimal coeff = (decimal)i00 / (decimal)i0;
+                List<decimal> _list = new List<decimal>(list);
+                //for (int i = i00; i < count; i++)
+                //    _list[i] = 0m;
+                //liste partielle originale
+                //  List<decimal> _list0 = new List<decimal>(_list);
+                int _count = Math.Min(count, i0 + mode.safe);
+                decimal[] virt = new decimal[_count];
+                for (int i = 0; i < i0; i++)
+                {
+                    decimal _coeff = 1m;
+                    decimal _base = _list[i];
+                    for (int j = i + 1; j < _count; j++)
+                    {
+                        _coeff /= mode.coeffVirt;
+                        virt[j] += _base * _coeff;
+                    }
+                }
+
+                decimal value = int.MaxValue;
+                int ii = 0;
+                for (ii = 1; ii < count && ii < _count; ii++)
+                {
+                    value = _list[ii];
+                    var calc = virt[ii];
+                    if (value < calc)
+                    {
+                        if (mode.lissage || value == 0m)
+                        {
+                            value = calc;
+                            _list[ii] = value;
+                        }
+
+                    }
+                    else
+                        indexV = ii;
+                }
+                if (mode.removeEpsilon)
+                {
+                    // j'ai 5 virtuel alors que j'ai deux safe
+                    ///xx---
+                    int nb = 0;
+                    for (int i = indexV + 1; i < _count; i++)
+                    {
+                        nb++;
+                        if (nb <= mode.safe)
+                            continue;
+                        _list[i] = 0m;
+                    }
+
+                }
+
+                if (mode.reSort)
+                {
+                    _list.Sort();
+                    _list.Reverse();
+                }
+
+                //for (int i = 0; i < nbAdd; i++)
+                //    _list.RemoveAt(0); 
+
+
+                var retAux = calcmedianneVirt(_list, mode.medianne, mode.quasi);
+                //retAux.d *= coeff;
+                if (retAux > ret)
+                {
+                    ret = retAux;
+                    //  ret.index += nbAdd; 
+                }
+                //}
+
+
             }
+            else
+                ret = calcmedianneVirt(list, mode.medianne, mode.quasi);
 
-            return sb.ToString();
+            //  ret = getRapport(ret);
 
 
+            return ret;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                        System.Globalization.CultureInfo culture)
+
+        public static DecimalIndex getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi, int nbVirt)
         {
-            if (value == null) return "";
-            return value.ToString().Replace(" ", "");
-        }
-    }
+            DecimalIndex ret = new DecimalIndex();
+            var medianne = getMedianne_(list, coeffMedianne);
+            ret.d = medianne;
+            ret.index = index;
+            if (list.Count == 1)
+                return ret;
+
+            int count = list.Count;
 
 
-    [ValueConversion(typeof(int), typeof(string))]
-    public class IntFormatConverter : BaseConverter, IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter,
-                          System.Globalization.CultureInfo culture)
-        {
-            if (value is int)
+            // decimal ret = medianne; //int.MinValue;
+
+            if (nbVirt > 0)
             {
-                int ivalue = (int)value;
-                if (ivalue <= 0) return "";
+
+                int i0 = count - 1;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (list[i] == 0m)
+                    {
+                        i0 = i;
+                        break;
+                    }
+                }
+                if (i0 == 0)
+                    return ret;
+
+                for (int i00 = 1; i00 <= i0; i00++)
+                {
+                    decimal coeff = (decimal)i00 / (decimal)i0;
+                    List<decimal> _list = new List<decimal>(list);
+                    for (int i = i00; i < count; i++)
+                        _list[i] = 0m;
+                    int _count = Math.Min(count, i00 + nbVirt);
+                    decimal[] virt = new decimal[_count];
+                    for (int i = 0; i < i00; i++)
+                    {
+                        decimal _coeff = 1m;
+                        decimal _base = _list[i];
+                        for (int j = i + 1; j < _count; j++)
+                        {
+                            _coeff /= 10m;
+                            virt[j] += _base * _coeff;
+                        }
+                    }
+                    // decimal prec = -1m;  
+                    int _nbVirt = 0;
+                    decimal value = int.MaxValue;
+                    int ii = 0;
+                    for (ii = 1; ii < count && ii < _count; ii++)
+                    {
+                        //   prec = value;
+                        value = _list[ii];
+                        var calc = virt[ii];
+                        if (value < calc)
+                        {
+                            if (_nbVirt >= nbVirt)
+                                break;
+                            _nbVirt++;
+                            value = calc;  //Math.Min(prec, calc);
+                            _list[ii] = value;
+
+                        }
+                        else
+                            _nbVirt = 0;
+                    }
+                    for (int i = ii; i < count && i < _count; i++)
+                    {
+                        _list[i] = 0m;
+                    }
+                    //_list.Sort();
+                    //_list.Reverse(); 
+
+
+
+                    var retAux = calcmedianneVirt(_list, coeffMedianne, quasi);
+                    retAux.d *= coeff;
+                    if (retAux > ret)
+                        ret = retAux;
+                }
+
+
             }
-            return value.ToString();
+            else
+                ret = calcmedianneVirt(list, coeffMedianne, quasi);
 
+            //  ret = getRapport(ret);
+
+            //if (ret < medianne)
+            //    ret = medianne;
+            return ret;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter,
-                        System.Globalization.CultureInfo culture)
+        private static decimal getLn(decimal rapport)
         {
-            int result;
-            if (int.TryParse(value.ToString(), out result))
-            {
-                return result;
-            }
-            return null;
+            if (rapport <= 0)
+                return 0m;
+            return Convert.ToDecimal(10 + Math.Log10((double)rapport));
         }
-    }
-    [ValueConversion(typeof(TrackListViewModel), typeof(Brush))]
-    public class BgColorFormatConverter : BaseConverter, IValueConverter
-    {
-        private static SolidColorBrush brSelected;
-        static BgColorFormatConverter()
+        private static decimal getRapport(decimal ln)
         {
-            Color color = (Color)ColorConverter.ConvertFromString("#008ae6");
-           // #007acc
-           // #008ae6
-            //#88a9db
-            //#547dab
-            brSelected = new SolidColorBrush(color); 
+            return Convert.ToDecimal(Math.Pow(10, (double)ln - 10));
         }
-        public SolidColorBrush getColor(TrackListViewModel tv)
+
+        private static DecimalIndex calcmedianneVirt(IList<decimal> _list, decimal coeffMedianne, bool quasi)
         {
-            if (tv.IsSelected) return brSelected; 
-            exportState es = tv.ExportStatus;
-            if (!tv.Exists)
-                es = exportState.miss;
-            switch (es)
+
+            int count = _list.Count;
+
+            DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
+            for (int i = 0; i < count; i++)
             {
-                case exportState.none: return Brushes.White;
-                case exportState.miss: return Brushes.LightGray;
-                case exportState.present: return Brushes.White;
-                case exportState.copy: return Brushes.LightGreen;
-                case exportState.delete: return Brushes.DarkGray;
-                default:
+                if (i > 0)
+                {
+
+                    _list.RemoveAt(count - i);
+                }
+
+                var aux = getMedianne_(_list, coeffMedianne);
+                if (aux == 0m)
+                    continue;
+                // aux = getLn(aux);
+                //decimal coeff = 1; 
+                //if (count >2)
+                //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
+                decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
+                if (quasi)
+                    coeff *= coeff;
+                aux = aux * coeff;
+                if (aux > ret.d)
+                {
+                    ret.d = aux;
+                    ret.index = index;
+                }
+
+                if (_list[count - i - 1] > 0m)
                     break;
+
+
             }
-           
-            return Brushes.White; 
+
+            //     if (ret == int.MinValue)
+            //         return 0m;
+            return ret;
         }
 
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+
+        public static decimal getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi)
+        {
+            if (list.Count == 1)
+                return getMedianne_(list, coeffMedianne);
+            decimal ret = 0m;
+            int count = list.Count;
+
+            List<decimal> _list = new List<decimal>(list);
+            // ret = getMedianne_(_list, coeffMedianne);
+            decimal nb = 0m;
+            for (int i = 0; i < count - 1; i++)
+            {
+                if (i > 0)
+                    _list.RemoveAt(count - i);
+                var aux = getMedianne_(_list, coeffMedianne);
+                decimal coeff = count - 1 - i;
+                if (quasi)
+                    coeff *= coeff;
+                ret += aux * coeff;
+                nb += coeff;
+
+
+            }
+            ret /= nb;
+
+
+            return ret;
+        }
+        private static decimal getMedianne_(IList<decimal> list, decimal coeffMedianne)
+        {
+            index = 0;
+            if (list == null)
+                throw new ArgumentException("liste nulle");
+            int count = list.Count;
+            if (count == 0)
+                throw new ArgumentException("liste vide");
+            if (coeffMedianne < 0 || coeffMedianne > 1)
+                throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
+            if (count == 1)
+                return list[0];
+            if (coeffMedianne == 0)
+                return list[0];
+            if (coeffMedianne == 1)
+            {
+                index = count - 1;
+                return list[count - 1];
+            }
+
+            var medianne = coeffMedianne * (count - 1);
+
+            index = (int)medianne;
+            int i1 = index + 1;
+            var val0 = list[index];
+            var val1 = list[i1];
+            if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
+                return val0;
+            if (Math.Abs(medianne - i1) < PRECISION)
+            {
+                index = i1;
+                return val1;
+            }
+
+            var pente = (val1 - val0);
+            var dx = medianne - index;
+            var dy = pente * dx;
+            return val0 + dy;
+
+        }
+
+        //public static int getEquiv(IList<double> listRef, double target, int i0, int i1)
+        //{
+        //    var val0 = listRef[i0]; 
+        //     var val1 = listRef[i1]; 
+        //    if (i1 - i0 == 1)
+        //    {
+        //        // on prend le plus proche
+        //        var delta0 = target - val0;
+        //        var delta1 = val1 - target; 
+
+        //        if (delta0 <= delta1)
+        //            return i0;
+        //        return i1; 
+        //    }
+
+        //    int imiddle = (i0 + i1) / 2;
+        //    if (imiddle == i0)
+        //        imiddle++; 
+        //    var vmiddle = listRef[imiddle];
+
+        //    if (vmiddle == target)
+        //        return imiddle;
+        //    if (Math.Abs(vmiddle - target) < PRECISION)
+        //        return imiddle;
+
+        //    if (vmiddle < target)
+        //        return getEquiv(listRef, target, imiddle, i1);
+        //    return getEquiv(listRef, target, i0, imiddle); 
+
+
+        //}
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\Album.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using pdb.util;
+using System;
+using System.Globalization;
+using pdb.gen.Tuning;
+using pdb.gen.conf;
+
+namespace pdb.gen.albums
+{
+    public class Album
+    {
+
+        private string name;
+        private static decimal medianne = 0.5m;
+        private static decimal medianneRest = 0.5m;
+        // public static decimal Medianne { get { return medianne; } set { medianne = value; } }
+        private decimal classementValue;
+        private decimal classementValueLight;
+        private decimal classMoy; public decimal ClassementMoy { get { return classMoy; } }
+        public decimal ClassementValue { get { return classementValue; } }
+        public decimal ClassementValueLight { get { return classementValueLight; } }
+        private decimal durationValue = 0;
+        public decimal DurationValue { get { return durationValue; } }
+        private static ConfGen conf = CConf.ConfGen;
+        private bool _virtual;
+        public bool Virtual { get { return _virtual; } set { _virtual = value; } }
+
+
+        private List<Piece> list = new List<Piece>();
+        private static int _sID = 0;
+        private int _dID;
+
+
+        public Album(string name)
+        {
+            _sID++;
+            _dID = _sID;
+            this.name = name;
+            m_rank.init();
+        }
+
+        public string Name { get { return name; } }
+
+        public override string ToString()
+        {
+            return name;
+        }
+
+        private string equiv = "";
+        public string Equiv { get { return equiv; } }
+
+        private string equivLight = "";
+        public string EquivLight { get { return equivLight; } }
+
+        private string equivLight0 = "";
+        public string EquivLight0 { get { return equivLight0; } }
+
+        private string moyenne = "";
+        public string Moyenne { get { return moyenne; } }
+
+        //private Piece equiv;
+
+
+
+        public bool add(Piece piece)
+        {
+            if (list.Contains(piece))
+                return false;
+            if (piece.Enabled)
+                atLeastOneEnabled = true;
+            list.Add(piece);
+            piece.PieceAlbum = this;
+            return true;
+        }
+
+        public List<Piece> Tracks
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceClassementDisplayComparer());
+                return l;
+            }
+        }
+
+
+        public List<Piece> TrackByNumber
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceTrackNumberComparer());
+                return l;
+            }
+        }
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        private bool classed;
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        public bool Classed { get { return classed; } }
+
+        private bool atLeastOneEnabled;
+        public bool AtLeastOneEnabled { get { return atLeastOneEnabled; } }
+
+        public void makeSort(decimal coeffEnabled, ConfMedianne mode, ConfMedianne mode0) //IList<double> reference, IList<Piece> pieces)
         {
             try
             {
+                //if (name == "The College Dropout")
+                //{
+                //}
+                decimal offset = conf.AlbumMoyOffset;
+                int count = list.Count;
+                list.Sort(new PieceSortComparer());
+                var listSortedValues = new List<decimal>();
+                for (int i = 0; i < count; i++)
+                {
+                    listSortedValues.Add(list[i].Rank.SortValue);
+                    if (!classed && list[i].isClassListNumeric)
+                        classed = true;
+                }
 
-                TrackListViewModel tv = value as TrackListViewModel;
-                return getColor(tv); 
-          
+                m_rank.SortValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+
+                listSortedValues = new List<decimal>();
+                list.Sort(new PieceDurationValueComparer());
+                for (int i = 0; i < count; i++)
+                    listSortedValues.Add(list[i].Duration.TotalMilliseconds());
+                durationValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+                decimal moy = 0m;
+                #region calcul brut
+                #region init
+                for (int i = 0; i < count; i++)
+                {
+                    var p = list[i];
+                    var rapportClassement = p.RapportClassement;
+                    //if (coeffEnabled != 1m && p.Enabled)
+                    //{
+                    //    rapportClassement /= coeffEnabled;
+                    //}
+                    p.setClassementVirtuel(list[i].RapportClassement);
+
+                    list[i].eraseInfoMedianne();
+
+                    moy += rapportClassement;
+                    if (offset > 0m && rapportClassement > 0.0m)
+                        moy += offset;
+                }
+
+                list.Sort(new PieceClassementComparer());
+                listSortedValues = new List<decimal>();
+                for (int i = 0; i < count; i++)
+                    listSortedValues.Add(list[i].VirtualClassement);
+
+                #endregion
+
+                if (count > 0)
+                    moy /= count;
+                classMoy = moy;
+
+
+
+                var med = CalcMedianne.getMedianne(listSortedValues, medianne);
+                classementValue = med.d;
+                if (classementValue > 0m)
+                    list[med.index].Medianne = true;
+
+                var _med = AlbumMedianne.getMedianneLight(new List<Piece>(list),coeffEnabled, mode0, false);
+                equivLight0 = Piece.getClassementEquiv(_med.d);
+
+                #endregion
+                #region calcul virtuel
+                #region init (prise en compte coeff des enabled)
+                for (int i = 0; i < count; i++)
+                {
+                    var p = list[i];
+                    var rapportClassement = p.RapportClassement;
+                    if (coeffEnabled != 1m && p.Enabled)
+                    {
+                        rapportClassement /= coeffEnabled;
+                    }
+                    p.setClassementVirtuel(rapportClassement);
+                }
+                list.Sort(new PieceClassementComparer());
+                #endregion
+
+                med = AlbumMedianne.getMedianneLight(new List<Piece>(list), coeffEnabled, mode, true);
+                classementValueLight = med.d;
+
+                #endregion
+
+                equiv = Piece.getClassementEquiv(classementValue); // (10000 * m_rank.SortValue).ToString("00000.0", cu); 
+                equivLight = Piece.getClassementEquiv(classementValueLight);
+
+                moyenne = Piece.getClassementEquiv(classMoy);
             }
-            catch
+            catch (Exception ex)
             {
-               
+                misc.log("impossible de faire le makeSort de l'album " + name + " " + ex.ToString());
             }
-            return Brushes.White; 
+
+
+
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+
+
+        public decimal getTrackSortValue(int index)
         {
-            return null;
+            if (index < 0 || index >= list.Count)
+                return 0;
+            return list[index].RapportClassement;
+        }
+
+        decimal firstTrackSortValue = -1;
+        public decimal getFirstTrackSortValue()
+        {
+            if (firstTrackSortValue == -1)
+            {
+                int count = list.Count;
+                if (count == 0)
+                    return -1;
+                var _list = new List<Piece>(list);
+                _list.Sort(new PieceSortComparer());
+                firstTrackSortValue = _list[count - 1].Rank.SortValue;
+            }
+            return firstTrackSortValue;
+        }
+
+        public void makeSelection()
+        {
+            list.Sort(new PieceRestComparer());
+            var listSortedValues = new List<decimal>();
+            for (int i = 0; i < list.Count; i++)
+                listSortedValues.Add(list[i].Rank.TimeRest);
+            m_rank.TimeRest = CalcMedianne.getMedianne(listSortedValues, medianneRest).d;
+        }
+
+        public List<Piece> Sort()
+        {
+            var _list = new List<Piece>(list);
+            _list.Sort(new PieceInAlbumComparer());
+            return _list;
+        }
+
+        public TimeSpan Duration
+        {
+            get
+            {
+                TimeSpan d = new TimeSpan();
+                foreach (Piece piece in list)
+                    d += piece.Duration;
+                return d;
+            }
+        }
+
+
+        #region Rank
+        private CRank m_rank = new CRank();
+
+        public CRank Rank { get { return m_rank; } }
+
+        private void initRank()
+        {
+            m_rank.init();
+        }
+
+        public int QRank
+        {
+            get { return m_rank.Quality; }
+            set { m_rank.Quality = value; }
+        }
+
+        public int LRank
+        {
+            get { return m_rank.Lenght; }
+            set { m_rank.Lenght = value; }
+        }
+
+        public int QLRank
+        {
+            get { return m_rank.Twice; }
+            set { m_rank.Twice = value; }
+        }
+
+
+        #endregion
+
+        #region tri
+
+
+
+        #endregion
+
+        public void sortVirtual()
+        {
+            list.Sort(new PieceInVirtualAlbumComparer());
+            int nb = 0;
+            foreach (var piece in list)
+            {
+                nb++;
+                piece.TrackNumber = nb;
+            }
         }
     }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\AlbumMedianne.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using pdb.util;
+using System.Collections;
 
-
-    [ValueConversion(typeof(TrackListViewModel), typeof(Brush))]
-    public class ForeColorFormatConverter : BaseConverter, IValueConverter
+namespace pdb.gen.albums
+{
+    class AlbumMedianne
     {
-        public SolidColorBrush getColor(TrackListViewModel tv)
+        const decimal PRECISION = 0.0000001m;
+        private static int index;
+        public static int Index { get { return index; } }
+
+
+        public static DecimalIndex getMedianne(IEnumerable list, decimal coeffMedianne)
         {
-            if (tv.IsSelected) return Brushes.White;
-            return Brushes.Black; 
+            var _list = new List<decimal>();
+            foreach (object o in list)
+            {
+                _list.Add(Convert.ToDecimal(o));
+            }
+            return getMedianne(_list, coeffMedianne);
         }
 
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public static DecimalIndex getMedianne(List<decimal> list, decimal coeffMedianne)
         {
+            return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
+        }
+
+        public static DecimalIndex getMedianneLight(List<decimal> list, List<Piece> pieces, ConfMedianne mode, bool signal)
+        {
+            DecimalIndex ret0 = new DecimalIndex();
+            DecimalIndex ret = ret0;
             try
             {
 
-                TrackListViewModel tv = value as TrackListViewModel;
-                return getColor(tv);
+
+                var _zero = mode.zero;
+                var medianne = getMedianne_(list, mode.medianne);
+                ret0.d = medianne;
+                ret0.index = index;
+
+                if (list.Count == 1)
+                    return ret0;
+
+                if (mode.safe == 0)
+                {
+                    return calcmedianneVirt(list, mode, 0, 0);
+                }
+
+                int indexV = 0;
+                int nbAdd = 0;
+
+                int count = list.Count;
+
+                if (mode.safe > 0)
+                {
+
+                    int i0 = count - 1;
+                    int _nbNoAdd = 0;
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (list[i] <= _zero)
+                        {
+                            i0 = i;
+                            _nbNoAdd = count - i0;
+                            break;
+                        }
+                    }
+                    if (i0 == 0)
+                        return ret0;
+
+                    //for (int i00 = 1; i00 <= i0; i00++)
+                    //{
+                    //    decimal coeff = (decimal)i00 / (decimal)i0;
+                    List<decimal> _list = new List<decimal>(list);
+                    //for (int i = i00; i < count; i++)
+                    //    _list[i] = 0m;
+                    //liste partielle originale
+                    //  List<decimal> _list0 = new List<decimal>(_list);
+                    int _count = System.Math.Min(count, i0 + mode.safe);
+                    decimal[] virt = new decimal[_count];
+                    _nbNoAdd = System.Math.Min(mode.safe, _nbNoAdd);
+                    if (mode.noAdd)
+                    {
+
+                        decimal _coeff = 1m;
+                        for (int j = _nbNoAdd - 1; j >= 0; j--)
+                        {
+                            if (j < count)
+                            {
+                                _coeff /= mode.coeffVirt;
+                                _list[j] = _list[j] * _coeff;
+                            }
+                        }
+                    }
+                    else if (mode.lissage || mode.removeEpsilon || mode.cumul)
+                    {
+                        for (int i = 0; i < i0; i++)
+                        {
+                            decimal _coeff = 1m;
+                            decimal _base = _list[i];
+                            for (int j = i + 1; j < _count; j++)
+                            {
+                                _coeff /= mode.coeffVirt;
+                                virt[j] = System.Math.Max(virt[j], _base * _coeff); //     += _base * _coeff;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        decimal courant = _list[0];
+                        for (int i = 1; i < _count; i++)
+                        {
+                            if (_list[i] <= _zero)
+                            {
+                                courant /= mode.coeffVirt;
+                                virt[i] = courant;
+                            }
+                            else
+                                courant = _list[i];
+                        }
+                    }
+
+                    decimal value = int.MaxValue;
+                    int ii = 0;
+                    if (mode.noAdd)
+                    {
+                        //for (ii = 1; ii < count && ii < _count; ii++)
+                        //{
+                        //    var calc = virt[ii];
+                        //    if (calc > 0m)
+                        //        list[ii] = calc;
+                        //}
+                    }
+                    else
+                    {
+                        for (ii = 1; ii < count && ii < _count; ii++)
+                        {
+                            value = _list[ii];
+                            var calc = virt[ii];
+                            if (value < calc)
+                            {
+                                if (mode.lissage || value <= _zero)
+                                {
+                                    if (value <= _zero)
+                                        nbAdd++;
+                                    value = calc;
+                                    _list[ii] = value;
+                                }
+
+                            }
+                            else
+                                indexV = ii;
+                        }
+                        if (mode.removeEpsilon)
+                        {
+                            // j'ai 5 virtuel alors que j'ai deux safe
+                            ///xx---
+                            int nb = 0;
+                            for (int i = indexV + 1; i < _count; i++)
+                            {
+                                nb++;
+                                if (nb <= mode.safe)
+                                    continue;
+                                _list[i] = 0m;
+                            }
+
+                        }
+                        if (mode.removeFirst)
+                        {
+                            for (int i = 0; i < nbAdd; i++)
+                            {
+                                _list[i] = 0m;
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < _list.Count && i < pieces.Count; i++)
+                        pieces[i].setClassementVirtuel(_list[i]);
+
+                    if (mode.deleteFirst)
+                    {
+                        for (int i = 0; i < nbAdd; i++)
+                        {
+                            _list.RemoveAt(0);
+                        }
+                    }
+
+                    if (mode.reSort || mode.removeFirst || mode.noAdd)
+                    {
+                        _list.Sort();
+                        _list.Reverse();
+                        pieces.Sort(new PieceCmp());
+                    }
+
+
+
+                    if (mode.noAdd)
+                        nbAdd = _nbNoAdd;
+
+                    ret = calcmedianneVirt(_list, mode, nbAdd, System.Math.Min(i0, mode.safe));
+                    if (mode.expEnabled != 0)
+                    {
+                        int _nb = pieces.Count<Piece>(p => !p.Enabled);
+                        decimal _c = (decimal)_nb / (decimal)count;
+                        _c = Math.Pow(_c, mode.expEnabled);
+                        ret.d *= _c;
+                    }
+
+
+                }
+                else
+                    ret = calcmedianneVirt(list, mode, 0, 0);
+
+                //if (ret < ret0)
+                //    ret = ret0; 
+
+
 
             }
-            catch
+            finally
             {
+                if (signal)
+                {
+                    try
+                    {
+                        pieces[ret.index].MedianneLight = true;
+                        pieces[ret.indexBorder].Border = true;
+                        pieces[ret.indexBorderEffect].BorderEffect = true;
+                        pieces[ret.indexBorderMin].BorderMin = true;
 
+                    }
+                    catch { }
+                }
             }
-            return Brushes.White;
+
+            return ret;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public static DecimalIndex getMedianneLight(List<Piece> pieces, decimal coeffEnabled, ConfMedianne mode, bool signal)
         {
-            return null;
-        }
-    }
 
-
-    [ValueConversion(typeof(ihmInDispo), typeof(Brush))]
-    public class ColorDispoConverter : BaseConverter, IValueConverter
-    {
-        private SolidColorBrush getColor(ihmInDispo info)
-        {
-          
-            switch (info)
-            {
-                case ihmInDispo.none: return Brushes.Transparent;
-                case ihmInDispo.rot: return Brushes.Gainsboro;
-                case ihmInDispo.stat: return Brushes.LightSlateGray;               
-                default:
-                    break;
-            }
-            return Brushes.White;
-        }
-
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
+            DecimalIndex ret0 = new DecimalIndex();
+            DecimalIndex ret = ret0;
             try
             {
+                var _zero = mode.zero;
+                var medianne = getMedianne_(pieces, mode.medianne);
+                ret0.d = medianne;
+                ret0.index = index;
+                ret = ret0;
+                if (pieces.Count == 1)
+                    return ret0;
 
-                ihmInDispo info = (ihmInDispo)value; 
-                return getColor(info);
+                if (mode.safe == 0)
+                {
+                    return calcmedianneVirt(pieces, mode, 0, 0);
+                }
+
+                int indexV = 0;
+                int nbAdd = 0;
+
+                int count = pieces.Count;
+                List<Piece> _pieces = pieces;
+                //if (mode.virtOnlyDisabled)
+                //{
+                //    _pieces = pieces.FindAll(p => !p.Enabled && p.VirtualClassement > 0m);
+                //    _pieces.Sort(new PieceCmp());
+                //}
+
+
+                if (mode.safe > 0)
+                {
+                    int i0 = count - 1;
+                    int _nbNoAdd = 0;
+                    //if (mode.virtOnlyDisabled)
+                    //{
+                    //    _nbNoAdd = pieces.Count<Piece>(p => p.Enabled);
+                    //}
+                    //else
+                    //{
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        var pp = pieces[i];
+                        if (pp.VirtualClassement == 0m)
+                        {
+                            i0 = i;
+                            _nbNoAdd = count - i0;
+                            break;
+                        }
+                    }
+
+                    if (mode.virtOnlyDisabled)
+                        _nbNoAdd = pieces.Count<Piece>(p => p.Enabled || p.VirtualClassement == 0m);
+                    if (i0 == 0)
+                        return ret0;
+                    //}
+
+                    //for (int i00 = 1; i00 <= i0; i00++)
+                    //{
+                    //    decimal coeff = (decimal)i00 / (decimal)i0;
+                    List<decimal> _list = new List<decimal>();
+                    for (int i = 0; i < _pieces.Count; i++)
+                        _list.Add(_pieces[i].VirtualClassement);
+                    //for (int i = i00; i < count; i++)
+                    //    _list[i] = 0m;
+                    //liste partielle originale
+                    //  List<decimal> _list0 = new List<decimal>(_list);
+                    int _count = System.Math.Min(count, i0 + mode.safe);
+                    decimal[] virt = new decimal[_count];
+                    _nbNoAdd = System.Math.Min(mode.safe, _nbNoAdd);
+                    if (mode.noAdd)
+                    {
+
+                        decimal _coeff = 1m;
+                        decimal prec = 0m;
+                        if (mode.virtAlignPrec)
+                        {
+                            if (_nbNoAdd < _list.Count)
+                                prec = _list[_nbNoAdd]; 
+                        }
+
+                        for (int j = _nbNoAdd - 1; j >= 0; j--)
+                        {
+                            if (j < _pieces.Count)
+                            {
+
+                                if (!mode.virtOnlyDisabled || !_pieces[j].Enabled)
+                                {
+                                    _coeff /= mode.coeffVirt;
+                                    var cand = _list[j] * _coeff;
+                                    if (mode.virtAlignPrec)
+                                    {
+                                        if (cand < prec)
+                                            cand = prec; 
+                                    }
+
+                                    if (mode.virtAlignSelected && mode.virtOnlyDisabled)
+                                    {
+                                        // quel serait le score s'il était coché
+                                        var vu = _list[j] / coeffEnabled;
+                                        // en plus une petite marge
+                                      //  vu *= mode.coeffVirt; 
+                                        if (cand < vu)
+                                            cand = vu; 
+                                    }
+                                    _list[j] = cand; 
+                                }
+                                else if (mode.forceCoeffVirt)
+                                    _coeff /= mode.coeffVirt;
+                                prec = _list[j]; 
+                            }
+                        }
+
+                    }
+                    else if (mode.lissage || mode.removeEpsilon || mode.cumul)
+                    {
+                        for (int i = 0; i < i0; i++)
+                        {
+                            decimal _coeff = 1m;
+                            decimal _base = _list[i];
+                            for (int j = i + 1; j < _count; j++)
+                            {
+                                _coeff /= mode.coeffVirt;
+                                virt[j] = System.Math.Max(virt[j], _base * _coeff); //     += _base * _coeff;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        decimal courant = _list[0];
+                        for (int i = 1; i < _count; i++)
+                        {
+                            if (_list[i] <= _zero)
+                            {
+                                courant /= mode.coeffVirt;
+                                virt[i] = courant;
+                            }
+                            else
+                                courant = _list[i];
+                        }
+                    }
+
+                    decimal value = int.MaxValue;
+                    int ii = 0;
+                    if (mode.noAdd)
+                    {
+                        //for (ii = 1; ii < count && ii < _count; ii++)
+                        //{
+                        //    var calc = virt[ii];
+                        //    if (calc > 0m)
+                        //        list[ii] = calc;
+                        //}
+                    }
+                    else
+                    {
+                        for (ii = 1; ii < count && ii < _count; ii++)
+                        {
+                            value = _list[ii];
+                            var calc = virt[ii];
+                            if (value < calc)
+                            {
+                                if (mode.lissage || value <= _zero)
+                                {
+                                    if (value <= _zero)
+                                        nbAdd++;
+                                    value = calc;
+                                    _list[ii] = value;
+                                }
+
+                            }
+                            else
+                                indexV = ii;
+                        }
+                        if (mode.removeEpsilon)
+                        {
+                            // j'ai 5 virtuel alors que j'ai deux safe
+                            ///xx---
+                            int nb = 0;
+                            for (int i = indexV + 1; i < _count; i++)
+                            {
+                                nb++;
+                                if (nb <= mode.safe)
+                                    continue;
+                                _list[i] = 0m;
+                            }
+
+                        }
+                        if (mode.removeFirst)
+                        {
+                            for (int i = 0; i < nbAdd; i++)
+                            {
+                                _list[i] = 0m;
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < _list.Count && i < _pieces.Count; i++)
+                        _pieces[i].setClassementVirtuel(_list[i]);
+
+                    if (mode.deleteFirst)
+                    {
+                        for (int i = 0; i < nbAdd; i++)
+                        {
+                            pieces.RemoveAt(0);
+                        }
+                    }
+
+                    if (mode.reSort || mode.removeFirst || mode.noAdd)
+                    {
+                        //_list.Sort();
+                        //_list.Reverse();
+                        pieces.Sort(new PieceCmp());
+                    }
+
+
+
+                    if (mode.noAdd)
+                        nbAdd = _nbNoAdd;
+
+                    ret = calcmedianneVirt(pieces, mode, nbAdd, System.Math.Min(i0, mode.safe));
+                    if (mode.expEnabled != 0)
+                    {
+                        int _nb = pieces.Count<Piece>(p => !p.Enabled);
+                        decimal _c = (decimal)_nb / (decimal)count;
+                        _c = Math.Pow(_c, mode.expEnabled);
+                        ret.d *= _c;
+                    }
+
+
+                }
+                else
+                    ret = calcmedianneVirt(pieces, mode, 0, 0);
+
+                //if (ret < ret0)
+                //    ret = ret0; 
 
             }
-            catch
+            finally
             {
 
+                if (signal)
+                {
+                    try
+                    {
+                        pieces[ret.index].MedianneLight = true;
+                        pieces[ret.indexBorder].Border = true;
+                        pieces[ret.indexBorderEffect].BorderEffect = true;
+                        pieces[ret.indexBorderMin].BorderMin = true;
+
+                    }
+                    catch { }
+                }
             }
-            return Brushes.White;
+
+            return ret;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+
+
+
+        private class PieceCmp : IComparer<Piece>
         {
-            return null;
+            private static PieceTrackNumberComparer tn = new PieceTrackNumberComparer();
+            public int Compare(Piece x, Piece y)
+            {
+                int cmp = x.VirtualClassement.CompareTo(y.VirtualClassement);
+                if (cmp != 0)
+                    return -cmp;
+                return tn.Compare(x, y);
+            }
         }
+
+
+
+
+        private static DecimalIndex calcmedianneVirt(IList<decimal> list, ConfMedianne conf, int nbAdd, int nbDel)
+        {
+            var _list = new List<decimal>(list);
+            int count = _list.Count;
+
+            DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
+            int _nbSupp = 0;
+            bool beginBorder = false;
+            for (int i = 0; i < count; i++)
+            {
+
+                if (i > 0)
+                {
+
+                    _list.RemoveAt(count - i);
+
+                }
+
+                var aux = getMedianne_(_list, conf.medianne);
+                if (aux == 0m)
+                    continue;
+                if (!beginBorder)
+                {
+                    beginBorder = true;
+                    ret.indexBorder = count - i - 1;
+                }
+                // aux = getLn(aux);
+                //decimal coeff = 1; 
+                //if (count >2)
+                //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
+                decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
+                if (conf.removeFirst && !conf.deleteFirst && i > nbDel)
+                {
+                    coeff = 1 - (decimal)(i - nbDel) / (decimal)count;
+                }
+                if (conf.quasi)
+                    coeff *= coeff;
+                aux = aux * coeff;
+                if (aux > ret.d)
+                {
+                    ret.d = aux;
+                    ret.index = index;
+                    ret.indexBorderEffect = count - i - 1;
+                }
+
+                if (_list[count - i - 1] > conf.zero)
+                {
+
+                    if (conf.removeLast == removeLast.non)
+                        break;
+                    _nbSupp++;
+                    if (conf.removeLast == removeLast.virtuel && _nbSupp >= nbAdd)
+                        break;
+                }
+
+
+            }
+
+            //     if (ret == int.MinValue)
+            //         return 0m;
+            return ret;
+        }
+
+
+
+        private static DecimalIndex calcmedianneVirt(IList<Piece> list, ConfMedianne conf, int nbAdd, int nbDel)
+        {
+            var _list = new List<Piece>(list);
+            int count = _list.Count;
+
+            int nbEnabled = _list.Count<Piece>(p => p.Enabled);
+            int nbDisabled = count - nbEnabled;
+
+
+            DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
+            int _nbSupp = 0;
+            int _nbDisabled = 0;
+            bool beginBorder = false;
+            for (int i = 0; i < count; i++)
+            {
+
+                if (i > 0)
+                {
+                    var d = _list[count - i];
+                    if (d.Enabled)
+                        nbEnabled--;
+                    else
+                        nbDisabled--;
+                    _list.RemoveAt(count - i);
+
+                }
+
+                var aux = getMedianne_(_list, conf.medianne);
+                if (aux == 0m)
+                    continue;
+                if (!beginBorder)
+                {
+                    beginBorder = true;
+                    ret.indexBorder = count - i - 1;
+                }
+                // aux = getLn(aux);
+                //decimal coeff = 1; 
+                //if (count >2)
+                //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
+                decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
+                if (conf.removeFirst && !conf.deleteFirst && i > nbDel)
+                {
+                    coeff = 1 - (decimal)(i - nbDel) / (decimal)count;
+                }
+                if (conf.quasi)
+                    coeff *= coeff;
+                aux = aux * coeff;
+                if (aux > ret.d)
+                {
+                    ret.d = aux;
+                    ret.index = index;
+                    ret.indexBorderEffect = count - i - 1;
+                }
+
+                ret.indexBorderMin = count - i - 1;
+                var p = _list[count - i - 1];
+
+                if (p.VirtualClassement > conf.zero)
+                {
+                    // je regarde si le morceau est désactivé
+                    // si c'est coché, je ne regarde pas quand je considèere qu'on peut supprimmer les morceaux activé
+
+
+                    if (!p.Enabled || !conf.removeEnabled || conf.removeLast == removeLast.unselected)
+                    {
+                        bool priseEncompte = nbEnabled <= 0 || !conf.removeEnabled || conf.removeLast == removeLast.unselected;
+                        if (priseEncompte)
+                        {
+                            if (conf.removeLast == removeLast.non && nbEnabled <= 0)
+                                break;
+                            _nbDisabled++;
+                            if (conf.removeLast == removeLast.unselected && (nbEnabled <= 0 || _nbDisabled > nbDisabled))
+                                break;
+                            _nbSupp++;
+                            if (conf.removeLast == removeLast.virtuel && _nbSupp >= nbAdd)
+                                break;
+                        }
+
+
+                    }
+                }
+
+
+            }
+
+            //     if (ret == int.MinValue)
+            //         return 0m;
+            return ret;
+        }
+
+        public static decimal getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi)
+        {
+            if (list.Count == 1)
+                return getMedianne_(list, coeffMedianne);
+            decimal ret = 0m;
+            int count = list.Count;
+
+            List<decimal> _list = new List<decimal>(list);
+            // ret = getMedianne_(_list, coeffMedianne);
+            decimal nb = 0m;
+            for (int i = 0; i < count - 1; i++)
+            {
+                if (i > 0)
+                    _list.RemoveAt(count - i);
+                var aux = getMedianne_(_list, coeffMedianne);
+                decimal coeff = count - 1 - i;
+                if (quasi)
+                    coeff *= coeff;
+                ret += aux * coeff;
+                nb += coeff;
+
+
+            }
+            ret /= nb;
+
+
+            return ret;
+        }
+        private static decimal getMedianne_(IList<decimal> list, decimal coeffMedianne)
+        {
+            index = 0;
+            if (list == null)
+                throw new ArgumentException("liste nulle");
+            int count = list.Count;
+            if (count == 0)
+                throw new ArgumentException("liste vide");
+            if (coeffMedianne < 0 || coeffMedianne > 1)
+                throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
+            if (count == 1)
+                return list[0];
+            if (coeffMedianne == 0)
+                return list[0];
+            if (coeffMedianne == 1)
+            {
+                index = count - 1;
+                return list[count - 1];
+            }
+
+            var medianne = coeffMedianne * (count - 1);
+
+            index = (int)medianne;
+            int i1 = index + 1;
+            var val0 = list[index];
+            var val1 = list[i1];
+            if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
+                return val0;
+            if (Math.Abs(medianne - i1) < PRECISION)
+            {
+                index = i1;
+                return val1;
+            }
+
+            var pente = (val1 - val0);
+            var dx = medianne - index;
+            var dy = pente * dx;
+            return val0 + dy;
+
+        }
+
+        private static decimal getMedianne_(IList<Piece> list, decimal coeffMedianne)
+        {
+            index = 0;
+            if (list == null)
+                throw new ArgumentException("liste nulle");
+            int count = list.Count;
+            if (count == 0)
+                throw new ArgumentException("liste vide");
+            if (coeffMedianne < 0 || coeffMedianne > 1)
+                throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
+            if (count == 1)
+                return list[0].VirtualClassement;
+            if (coeffMedianne == 0)
+                return list[0].VirtualClassement;
+            if (coeffMedianne == 1)
+            {
+                index = count - 1;
+                return list[count - 1].VirtualClassement;
+            }
+
+            var medianne = coeffMedianne * (count - 1);
+
+            index = (int)medianne;
+            int i1 = index + 1;
+            var val0 = list[index].VirtualClassement;
+            var val1 = list[i1].VirtualClassement;
+            if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
+                return val0;
+            if (Math.Abs(medianne - i1) < PRECISION)
+            {
+                index = i1;
+                return val1;
+            }
+
+            var pente = (val1 - val0);
+            var dx = medianne - index;
+            var dy = pente * dx;
+            return val0 + dy;
+
+        }
+
+        //public static int getEquiv(IList<double> listRef, double target, int i0, int i1)
+        //{
+        //    var val0 = listRef[i0]; 
+        //     var val1 = listRef[i1]; 
+        //    if (i1 - i0 == 1)
+        //    {
+        //        // on prend le plus proche
+        //        var delta0 = target - val0;
+        //        var delta1 = val1 - target; 
+
+        //        if (delta0 <= delta1)
+        //            return i0;
+        //        return i1; 
+        //    }
+
+        //    int imiddle = (i0 + i1) / 2;
+        //    if (imiddle == i0)
+        //        imiddle++; 
+        //    var vmiddle = listRef[imiddle];
+
+        //    if (vmiddle == target)
+        //        return imiddle;
+        //    if (Math.Abs(vmiddle - target) < PRECISION)
+        //        return imiddle;
+
+        //    if (vmiddle < target)
+        //        return getEquiv(listRef, target, imiddle, i1);
+        //    return getEquiv(listRef, target, i0, imiddle); 
+
+
+        //}
     }
-
-
-    [ValueConversion(typeof(bool), typeof(System.Windows.Visibility))]
-    public class BoolToVis : BaseConverter, IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter,
-                          System.Globalization.CultureInfo culture)
-        {
-            if (value is bool)
-            {
-                return (bool)value ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed; 
-            }
-            return null; 
-
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter,
-                        System.Globalization.CultureInfo culture)
-        {
-            if (System.Windows.Visibility.Visible.Equals(value)) return true;
-            if (System.Windows.Visibility.Collapsed.Equals(value)) return false;
-            return null; 
-
-        }
-    }
-    [ValueConversion(typeof(medianneMode), typeof(int))]
-    public class SortModeConverter : BaseConverter, IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            if (value is medianneMode)
-            {
-                return (int)value; 
-            }
-            return null;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            if (value is int)
-            {
-                return (medianneMode)(int)(value); 
-            }
-            return null; 
-        }
-    }
-
-
-
-
-
 }
 ]]></content>
   </file>
