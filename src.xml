@@ -1,4 +1,392 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
+  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using pdb.player.ViewModel.Commande.Link;
+using pdb.player.ViewModel.Commande.PlayList;
+using pdb.player.ViewModel.Commande;
+
+namespace pdb.player.ViewModel
+{
+    public enum listDisplay
+    {
+        all,
+        onlyDisabled,
+        onlyEnabled
+    }
+
+    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
+    {
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
+        //   private List<TrackListViewModel> tracks;
+        private Dictionary<int, TrackListViewModel> dict;
+        private object _lock = new object();
+        private PlayListViewModel parent;
+        private DispatcherOperation ope;
+
+
+        private bool onlyDisabled;
+        private bool onlyFathers;
+        public AllTracksViewModel(PlayListViewModel parent, bool onlyDisabled, bool onlyFathers)
+        {
+            this.parent = parent;
+            this.onlyDisabled = onlyDisabled;
+            this.onlyFathers = onlyFathers;
+            //   this.mode = mode; 
+            build();
+            PlayerViewModel.Instance.resumeChange += playerResumeChange;
+        }
+
+
+        void playerResumeChange(object sender, EventArgs e)
+        {
+            OnPropertyChanged("Resume");
+        }
+
+        public string Resume
+        {
+            get
+            {
+                return PlayerViewModel.Instance.Resume;
+            }
+            set
+            {
+
+            }
+        }
+
+        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
+        {
+            // Be nice - use BlockReentrancy like MSDN said
+
+            //var dispatcher = Dispatcher.CurrentDispatcher;
+            //if (dispatcher.CheckAccess())
+            //{
+            //    if (CollectionChanged == null)
+            //    {
+            //    }
+            //    else
+            //    {
+            //        CollectionChanged(this, e); 
+            //    }
+            //    return; 
+            //}
+
+            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
+
+
+
+            var eventHandler = CollectionChanged;
+            if (eventHandler != null)
+            {
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (NotifyCollectionChangedEventHandler handler in delegates)
+                {
+                    try
+                    {
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                        // Invoke handler in the target dispatcher's thread
+                        {
+                            ope =
+                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                            handler, this, e);
+                            ope.Completed += ope_Completed;
+
+
+                        }
+                        else // Execute handler as is
+                            handler(this, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+            else
+            {
+            }
+
+            // PlayerViewModel.Instance.makeResume();
+
+        }
+
+        void ope_Completed(object sender, EventArgs e)
+        {
+            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
+            PlayerViewModel.Instance.makeResume();
+        }
+
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            var eventHandler = PropertyChanged;
+            if (eventHandler == null)
+            {
+                //   int toto = 0;
+            }
+            else
+            {
+                //var dispatcher = Dispatcher.CurrentDispatcher;
+                //if (dispatcher.CheckAccess())
+                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                //else
+                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
+
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (PropertyChangedEventHandler handler in delegates)
+                {
+                    try
+                    {
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                            // Invoke handler in the target dispatcher's thread
+                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                          handler, this, new PropertyChangedEventArgs(propertyName));
+                        else // Execute handler as is
+                            handler(this, new PropertyChangedEventArgs(propertyName));
+                    }
+                    catch (Exception ex)
+                    {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+        }
+
+        public void refresh()
+        {
+            build();
+            foreach (TrackListViewModel track in this)
+                track.refresh();
+
+        }
+
+        public void init()
+        {
+            refresh();
+            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+
+
+        public void build()
+        {
+            lock (_lock)
+            {
+                var list = new List<TrackListViewModel>();
+                var dict = new Dictionary<int, TrackListViewModel>();
+                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
+                if (this.dict == null)
+                {
+                    this.dict = new Dictionary<int, TrackListViewModel>();
+                    foreach (TrackListViewModel track in list)
+                    {
+                        Add(track);
+                        this.dict.Add(track.PieceId, track);
+                        track.PropertyChanged += track_PropertyChanged;
+                    }
+
+                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                }
+                else
+                {
+
+                    foreach (TrackListViewModel newTrack in list)
+                    {
+                        if (!this.dict.ContainsKey(newTrack.PieceId))
+                        {
+                            Add(newTrack);
+                            this.dict.Add(newTrack.PieceId, newTrack);
+                            newTrack.PropertyChanged += track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
+                        }
+                    }
+
+                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
+                    {
+                        if (!dict.ContainsKey(track.PieceId))
+                        {
+                            Remove(track);
+                            this.dict.Remove(track.PieceId);
+                            track.PropertyChanged -= track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
+                        }
+                    }
+                }
+            }
+
+            //Clear(); 
+            //foreach (TrackListViewModel track in parent.Tracks)
+            //    Add(track); 
+        }
+
+        void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "Duration":
+                case "Enabled":
+                    PlayerViewModel.Instance.makeResume();
+                    break;
+            }
+        }
+
+        public List<TrackListViewModel> AllTracks
+        {
+            get
+            {
+                build();
+                return this;
+            }
+        }
+
+        public List<TrackListViewModel> Tracks
+        {
+            get
+            {
+                return parent.Tracks;
+            }
+        }
+
+        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool onlyDisabled, bool onlyFathers)
+        {
+            foreach (TrackListViewModel t in parent.Tracks)
+            {
+                if (!t.Enabled || !onlyDisabled)
+                {
+                    if (t.PieceParentId < 0 || !onlyFathers)
+                    {
+                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
+                        {
+                            if (!dict.ContainsKey(t.PieceId))
+                            {
+                                dict.Add(t.PieceId, t);
+                                container.Add(t);
+                                //  t.Index = container.Count; 
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (PlayListViewModel pl in parent)
+            {
+                AllTracksViewModel other = null;
+                if (onlyDisabled)
+                    other = pl.AlltracksVmd;
+                else
+                    other = pl.AlltracksVm;
+                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
+            }
+        }
+
+        #region cmd
+
+        private ICommand _contextCmdCheck;
+        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
+
+        private ICommand _contextCmdUnCheck;
+        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
+
+
+        private ICommand _contextLinkFather;
+        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
+
+        private ICommand _contextLinkChild;
+        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
+
+        private ICommand _contextLinkFusion;
+        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
+
+        private ICommand _contextUnLink;
+        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
+
+        private ICommand _contextExport;
+        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
+
+        private ICommand _contextExportCompress;
+        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
+
+        private ICommand _contextDelete;
+        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
+
+        public TrackListViewModel HumanSelected
+        {
+            get
+            {
+                return TrackListViewModel.HumanSelected;
+            }
+        }
+
+        private ICommand _ContextCmdAddToList;
+        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
+
+        #endregion
+
+        #region from Ihm
+        private TrackListViewModel selectedTrack;
+        public TrackListViewModel SelectedTrack
+        {
+            get
+            {
+                return selectedTrack;
+            }
+            set
+            {
+                selectedTrack = value;
+                TrackListViewModel.setHumanSelected(parent, value); //  .HumanSelected = value;
+                if (selectedTrack != null)
+                    selectedTrack.IsSelected = true;
+            }
+        }
+        #endregion
+
+        private int nbAlbumMoved;
+
+        public int NbAlbumMoved
+        {
+            get { return nbAlbumMoved; }
+        }
+        public string NbAlbumMovedDesc
+        {
+            get
+            {
+                if (nbAlbumMoved < 0)
+                    return "";
+                if (nbAlbumMoved == 0)
+                    return "pas d'album en quarantaine";
+                return string.Format("{0} albums en quarantaine", nbAlbumMoved); 
+            }
+        }
+
+        public void setNbAlbumMoved(int nb)
+        {
+            if (nb != nbAlbumMoved)
+            {
+                nbAlbumMoved = nb;
+                OnPropertyChanged("NbAlbumMoved");
+                OnPropertyChanged("NbAlbumMovedDesc");
+            }
+
+        }
+    }
+
+
+}
+]]></content>
+  </file>
   <file path="\pdb.player\ViewModel\PlayerViewModel.cs">
     <content><![CDATA[using pdb.player.model;
 using pdb.player.ViewModel.Commande;
@@ -283,45 +671,45 @@ namespace pdb.player.ViewModel
                 movetoNext();
             else
             {
-                var pl = PlayListViewModel.SelectedPlayList; 
+                var pl = PlayListViewModel.SelectedPlayList;
                 if (pl == null)
                 {
-                    movetoNext(); 
-                    return; 
+                    movetoNext();
+                    return;
                 }
-             
+
                 string _album = "";
                 if (currentTrack != null)
-                    _album = currentTrack.Album; 
+                    _album = currentTrack.Album;
                 movetoNext();
                 if (currentTrack != null && currentTrack.Album == _album)
                 {
-                    return; 
+                    return;
                 }
                 var album = App.gen.Albums.getAlbum(CurrentTrack.Track);
                 var tracks = album.Tracks;
                 tracks.Sort(new PieceClassementComparer());
-                decimal val = int.MaxValue;
-                int i=0; 
-                TrackListViewModel choose = null; 
-                for ( i = 0; i < tracks.Count; i++)
+                //  decimal val = int.MaxValue;
+                int i = 0;
+                TrackListViewModel choose = null;
+                for (i = 0; i < tracks.Count; i++)
                 {
                     var item = tracks[i];
                     if (item != null && (!onlyEnabled || item.Enabled))
                     {
-                        var tl = pl.FindTrack(item.PieceId); 
+                        var tl = pl.FindTrack(item.PieceId);
                         if (!tl.Exists)
-                            continue; 
+                            continue;
                         decimal v = tracks[i].VirtualClassement;
-                        if (v >= val)
+                        if (v == 0)
                             break;
-                        val = v;
-                        choose = tl; 
+                        //val = v;
+                        choose = tl;
                     }
                 }
 
-             
-                reset(provider, choose); 
+                if (choose != null)
+                    reset(provider, choose);
 
             }
         }
@@ -1405,6 +1793,7 @@ using pdb.gen.conf;
 using pdb.obj;
 using pdb.util;
 
+
 namespace pdb.player.ViewModel
 {
     public class PlayListViewModel : BibViewModelBase, INotifyCollectionChanged, IEnumerable<PlayListViewModel>
@@ -1888,7 +2277,7 @@ namespace pdb.player.ViewModel
 
         public void mergeList(ICollection<IFile> newElements_, IAbortTask writer)
         {
-            bool isMe = PlayListViewModel.SelectedPlayList == this;
+            // bool isMe = PlayListViewModel.SelectedPlayList == this;
             bool isAlbum = this.isSubList("album");
             bool isGen = this.isSubList("gen");
             int _indexAlbumRead = -1;
@@ -1913,11 +2302,11 @@ namespace pdb.player.ViewModel
             int indexAlbumOrg = -1;
             int indexTrackOrg = -1;
             var tracks = _tracks;
-            if (isMe)
-            {
-                tracks = new List<TrackListViewModel>(_tracks);
-                tracks.Sort((x, y) => x.Index.CompareTo(y.Index));
-            }
+            //if (isMe)
+            //{
+            tracks = new List<TrackListViewModel>(_tracks);
+            tracks.Sort((x, y) => x.Index.CompareTo(y.Index));
+            // }
 
             foreach (TrackListViewModel tl in tracks)
             {
@@ -1931,19 +2320,19 @@ namespace pdb.player.ViewModel
                     _indexTrackRead++;
                 var found = newElt[tl.PieceId] != null;
                 bool keep = false;
-                if (isMe)
+                //if (isMe)
+                //{
+                if (isAlbum && currentAlbum.Equals(tl.Album))
                 {
-                    if (isAlbum && currentAlbum.Equals(tl.Album))
-                    {
-                        keep = true;
-                    }
-                    else if (current != null && current.PieceId == tl.PieceId)
-                    {
-                        keep = true;
-                        indexAlbumOrg = _indexAlbumRead;
-                        indexTrackOrg = _indexTrackRead;
-                    }
+                    keep = true;
                 }
+                else if (current != null && current.PieceId == tl.PieceId)
+                {
+                    keep = true;
+                    indexAlbumOrg = _indexAlbumRead;
+                    indexTrackOrg = _indexTrackRead;
+                }
+                //}
 
                 newElt[tl.PieceId] = keep;
 
@@ -1998,8 +2387,9 @@ namespace pdb.player.ViewModel
 
             var newElements3 = newElements;
 
-            if (isGen & isMe)
+            if (isGen)
             {
+                HashSet<string> moved = new HashSet<string>();
                 newElements3 = new List<IFile>();
                 // chercher le premier album non quarantaine
                 int ifirst = 0;
@@ -2009,7 +2399,10 @@ namespace pdb.player.ViewModel
                     if (t.StackValue == 0)
                         break;
                     else
+                    {
+                        moved.Add(t.Album);
                         t.Moved = true;
+                    }
                 }
 
                 if (ifirst < newElements.Count)
@@ -2025,6 +2418,7 @@ namespace pdb.player.ViewModel
                         var t = newElements[i] as Piece;
                         if (t.StackValue > 0)
                         {
+                            moved.Add(t.Album);
                             t.Moved = true;
                         }
                         else
@@ -2056,7 +2450,11 @@ namespace pdb.player.ViewModel
                 else
                     newElements3 = newElements;
 
+                allTracks.setNbAlbumMoved(moved.Count);
+
             }
+            else
+                allTracks.setNbAlbumMoved(-1); 
 
 
 
@@ -2208,6 +2606,8 @@ namespace pdb.player.ViewModel
                 index++;
             }
 
+        
+
 
 
             //if (toAdd.Count > 0 || toDelete.Count > 0)
@@ -2237,6 +2637,168 @@ namespace pdb.player.ViewModel
         public SortDescriptionCollection Sort { get { return sort; } set { sort = value; } }
     }
 }
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\DataGridPlayList.xaml">
+    <content><![CDATA[<UserControl x:Class="pdb.player.Vue.DataGridPlayList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0" Name="dg" AutoGenerateColumns="False" IsSynchronizedWithCurrentItem="False" 
+                  
+                  SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"               
+                  >
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="{Binding LinkFather.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding LinkFather}" />
+                    <MenuItem Header="{Binding LinkChild.Header, UpdateSourceTrigger=LostFocus}"  Command="{Binding LinkChild}" />
+                    <MenuItem Header="{Binding LinkFusion.Header, UpdateSourceTrigger=LostFocus}"  Command="{Binding LinkFusion}" />
+                    <MenuItem Header="!!!Supprimer!!!"  Command="{Binding DeleteTrack}" />
+                    <MenuItem Header="Ressaisir le premier"   Command="{Binding LinkReset}" />
+                    <MenuItem Header="Cocher la sélection"  Command="{Binding ContextCmdCheck}" />
+                    <MenuItem Header="Décocher la sélection"  Command="{Binding ContextCmdUnCheck}" />
+                    <MenuItem Header="{Binding Export.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding Export}" />
+                    <MenuItem Header="{Binding ExportCompress.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding ExportCompress}" />
+                    <MenuItem Header="Ajouter à la liste"  Command="{Binding ContextCmdAddToList}" />
+
+
+
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            
+          
+            <DataGrid.Columns>
+                
+
+                <DataGridTextColumn Binding="{Binding Index,Mode=OneWay}"/>
+                <DataGridTextColumn Binding="{Binding StrPlaying, Mode=OneWay}"/>
+                <DataGridCheckBoxColumn Header="" Binding="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}"  />
+                  
+                <DataGridCheckBoxColumn Header="" Binding="{Binding Exists,Mode=OneWay}" />
+                <DataGridTextColumn Header="Nom" Binding="{Binding Name}"/>
+                <DataGridTextColumn Header="Piste"  Binding="{Binding TrackNumber,Converter={StaticResource Int}}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Durée" Binding="{Binding Duration,Mode=OneWay,Converter={StaticResource TimeSpan}}"   >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Classement" Binding="{Binding Classement, Converter={StaticResource cl} }"/>
+                <DataGridTextColumn Header="Comment" Binding="{Binding Comment,Mode=OneWay}"/>
+                <DataGridTextColumn Header="Album" Binding="{Binding Album}"/>
+                <DataGridTextColumn Header="Artiste"  Binding="{Binding Artist}"/>
+                <DataGridTextColumn Header="Année" Binding="{Binding Year,Converter={StaticResource Int}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                
+               
+                <DataGridTextColumn Header="Grouping" Binding="{Binding Grouping, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Export" Binding="{Binding ExportStatus, Mode=OneWay}">
+                    <!--<DataGridTextColumn.ElementStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Background" Value="{Binding ExportStatus, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>-->
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="StackIndex" Binding="{Binding StackIndex, Mode=OneWay}" />
+                <DataGridTextColumn Header="StackValue" Binding="{Binding StackValue, Mode=OneWay}"  >
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" >
+                            <Setter Property="ToolTip" Value="{Binding NbAlbumMoved, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                         </Style>
+                    </DataGridTextColumn.CellStyle>
+                  
+                </DataGridTextColumn>
+
+
+
+
+
+
+
+            </DataGrid.Columns>
+           
+            <DataGrid.ItemContainerStyle>
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <EventSetter Event="MouseDoubleClick" Handler="dg_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseMove" Handler="dg_PreviewMouseMove" />
+                 
+                    
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <!--<Setter Property="IsEnabled" Value="{Binding Exists}" />-->
+                    <Setter Property="FontWeight" Value="Normal" />
+                    <!--<Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />-->
+                    <!--<Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="Brown" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Exists}" Value="False">
+                            <Setter Property="Background" Value="LightGray" />
+                        </DataTrigger>
+                     
+                    </Style.Triggers>-->                    
+                </Style>
+            </DataGrid.ItemContainerStyle>
+            <!--<DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}">
+                    <Setter Property="Background" Value="{Binding ExportStatus, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}"/>
+                </Style>
+            </DataGrid.RowStyle>-->
+            <DataGrid.CellStyle>               
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="Foreground" Value="{Binding TV, Converter={StaticResource foreColor},  UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="MouseDoubleClick" Handler="dg_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="dg_MouseClick" />
+                    <!--<EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />-->
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
+                    
+                </Style>
+            </DataGrid.RowStyle>
+
+        </DataGrid>
+        <DockPanel Grid.Row="1" >
+            <!--<TextBlock DockPanel.Dock="Bottom" Text="{Binding NbAlbumMovedDesc}" />-->
+            <TextBlock DockPanel.Dock="Left" Text="{Binding NbAlbumMoved,UpdateSourceTrigger=PropertyChanged}"  Margin="0,0,10,0"/>
+            
+            <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resume}"></TextBlock>
+        </DockPanel>
+    </Grid>
+
+</UserControl>
 ]]></content>
   </file>
   <file path="\pdb.player\Vue\PlayerControler.xaml">
@@ -2581,6 +3143,7 @@ namespace pdb.player.Vue.Util
     public class BgColorFormatConverter : BaseConverter, IValueConverter
     {
         private static SolidColorBrush brSelected;
+        private static SolidColorBrush brMoved; 
         static BgColorFormatConverter()
         {
             Color color = (Color)ColorConverter.ConvertFromString("#008ae6");
@@ -2589,11 +3152,14 @@ namespace pdb.player.Vue.Util
             //#88a9db
             //#547dab
             brSelected = new SolidColorBrush(color);
+            color = (Color)ColorConverter.ConvertFromString("#93c8ce");
+            brMoved = new SolidColorBrush(color);
+
         }
         public SolidColorBrush getColor(TrackListViewModel tv)
         {
             if (tv.IsSelected) return brSelected;
-            if (tv.PieceGen.Moved) return Brushes.Gainsboro; 
+            if (tv.PieceGen.Moved) return brMoved; 
             exportState es = tv.ExportStatus;
             if (!tv.Exists)
                 es = exportState.miss;
@@ -2954,17 +3520,28 @@ namespace pdb.gen.albums
         {
             int i = list.Count - 1;
             int nb = 0;
-            for (; i >= 0 && nb < capacity; i--)
-            {
-                nb++;
-                list[i].StackValue = nb;
-                list[i].StackIndex = i + 1;
-            }
+            int ii = list.Count;
+
             for (; i >= 0; i--)
             {
-                list[i].StackValue = 0;
-                list[i].StackIndex = i;
+                nb++;
+                if (nb <= capacity)
+                    list[i].StackValue = nb;
+                else
+                    list[i].StackValue = 0;
+                list[i].StackIndex = nb;
             }
+            //for (; i >= 0 && nb < capacity; i--)
+            //{
+            //    nb++;
+            //    list[i].StackValue = nb;
+            //    list[i].StackIndex = i + 1;
+            //}
+            //for (; i >= 0; i--)
+            //{
+            //    list[i].StackValue = 0;
+            //    list[i].StackIndex = i+1;
+            //}
 
             var sb = new StringBuilder(); 
             foreach (var album in list)
