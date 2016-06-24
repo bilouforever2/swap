@@ -21,6 +21,418 @@
 </Application>
 ]]></content>
   </file>
+  <file path="\pdb.player\pdb.player.csproj">
+    <content><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4166FA60-B33F-4496-9352-EDD8F3214021}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>pdb.player</RootNamespace>
+    <AssemblyName>pdb.player</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;NONI</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\pdb.player.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\pdb.player.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>pdb.player.App</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Interop.AXVLC, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>bin\Interop.AXVLC.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="model\Equalization.cs" />
+    <Compile Include="ViewModel\AllTracksViewModel.cs" />
+    <Compile Include="ViewModel\BibViewModel.cs" />
+    <Compile Include="ViewModel\BibViewModelBase.cs" />
+    <Compile Include="ViewModel\Commande\CommandeBase.cs" />
+    <Compile Include="ViewModel\Commande\CreateListCmd.cs" />
+    <Compile Include="ViewModel\Commande\DeleteCmd.cs" />
+    <Compile Include="ViewModel\Commande\ImportCmd.cs" />
+    <Compile Include="ViewModel\Commande\InfoCmd.cs" />
+    <Compile Include="ViewModel\Commande\Link\LinkRegister.cs" />
+    <Compile Include="ViewModel\Commande\Link\RecordFather.cs" />
+    <Compile Include="ViewModel\Commande\Play.cs" />
+    <Compile Include="ViewModel\Commande\PlayList\AddToList.cs" />
+    <Compile Include="ViewModel\Commande\PlayList\CheckCmd.cs" />
+    <Compile Include="ViewModel\Commande\PlayList\ExportCmd.cs" />
+    <Compile Include="ViewModel\Commande\PlayList\ExportCompress.cs" />
+    <Compile Include="ViewModel\Commande\PlayList\PlayListCommande.cs" />
+    <Compile Include="ViewModel\Commande\RecordClassement.cs" />
+    <Compile Include="ViewModel\DetailAlbumViewModel.cs" />
+    <Compile Include="ViewModel\DetailClassementViewModel.cs" />
+    <Compile Include="ViewModel\gen\ListWriter.cs" />
+    <Compile Include="ViewModel\InfoViewModel.cs" />
+    <Compile Include="ViewModel\Interfaces.cs" />
+    <Compile Include="ViewModel\PieceViewModel.cs" />
+    <Compile Include="ViewModel\PlayerViewModel.cs" />
+    <Compile Include="ViewModel\StatItemViewModel.cs" />
+    <Compile Include="ViewModel\TrackListViewModel.cs" />
+    <Compile Include="ViewModel\PlayListViewModel.cs" />
+    <Compile Include="ViewModel\ViewModelBase.cs" />
+    <Compile Include="Vue\Adorn\AdornedControl.cs" />
+    <Compile Include="Vue\Adorn\AdornerPlacement.cs" />
+    <Compile Include="Vue\Adorn\FrameworkElementAdorner.cs" />
+    <Compile Include="Vue\AlbumCtl.xaml.cs">
+      <DependentUpon>AlbumCtl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\BarAdorner.cs" />
+    <Compile Include="Vue\BibCtl.xaml.cs">
+      <DependentUpon>BibCtl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\BrowsePlayList.xaml.cs">
+      <DependentUpon>BrowsePlayList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\ClassementCtl.xaml.cs">
+      <DependentUpon>ClassementCtl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\ConfAlbumSortW.xaml.cs">
+      <DependentUpon>ConfAlbumSortW.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\ConfExport.xaml.cs">
+      <DependentUpon>ConfExport.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\ConfImport.xaml.cs">
+      <DependentUpon>ConfImport.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\Conf\ConfMedianneW.xaml.cs">
+      <DependentUpon>ConfMedianneW.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\Conf\ConfVirt.xaml.cs">
+      <DependentUpon>ConfVirt.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\DataGridPlayList.xaml.cs">
+      <DependentUpon>DataGridPlayList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\EnhancedDataGrid.cs" />
+    <Compile Include="Vue\FolderBrowserDialog.xaml.cs">
+      <DependentUpon>FolderBrowserDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\FolderBrowserDialogW.xaml.cs">
+      <DependentUpon>FolderBrowserDialogW.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\getNb.xaml.cs">
+      <DependentUpon>getNb.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\Info.xaml.cs">
+      <DependentUpon>Info.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\PlayerControler.xaml.cs">
+      <DependentUpon>PlayerControler.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\RoutedCommandWrapper.cs" />
+    <Compile Include="Vue\StatCtl.xaml.cs">
+      <DependentUpon>StatCtl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\StateBar.xaml.cs">
+      <DependentUpon>StateBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\StringDialog.xaml.cs">
+      <DependentUpon>StringDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Vue\Util\BaseConverter.cs" />
+    <Compile Include="Vue\Util\StringFormatConverter.cs" />
+    <Compile Include="Vue\Util\Utils.cs" />
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Player.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Player.xaml.cs">
+      <DependentUpon>Player.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Vue\AlbumCtl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\BibCtl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\BrowsePlayList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\ClassementCtl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\ConfAlbumSortW.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\ConfExport.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\ConfImport.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\Conf\ConfMedianneW.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\Conf\ConfVirt.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\DataGridPlayList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\FolderBrowserDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\FolderBrowserDialogW.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\getNb.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Vue\Info.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\PlayerControler.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\StatCtl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\StateBar.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Vue\StringDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="app.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\engine\pdb.player.engine.build\pdb.player.engine.build.csproj">
+      <Project>{0F3BC2CF-E69D-4019-B6EA-A4B50A7FEB54}</Project>
+      <Name>pdb.player.engine.build</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\engine\pdb.player.engine\pdb.player.engine.csproj">
+      <Project>{778B94A9-80ED-4440-9AC3-7E6E6F4AD49D}</Project>
+      <Name>pdb.player.engine</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\pdb.ordo\pdb.ordo.csproj">
+      <Project>{30823d1d-851c-456b-ac4c-b0beec173361}</Project>
+      <Name>pdb.ordo</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\pdb.util\pdb.util.csproj">
+      <Project>{c2b34ca9-3bb2-464f-8691-5f5b7cb2b997}</Project>
+      <Name>pdb.util</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PieceDb.Consolid\pdb.gen.csproj">
+      <Project>{DFC524F3-50BB-40E3-BAC0-CA56950BBB5A}</Project>
+      <Name>pdb.gen</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PieceDb.Db\pdb.db.csproj">
+      <Project>{43D27B47-E615-451D-AD25-67C5B8447C4A}</Project>
+      <Name>pdb.db</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PieceDb.obj\pdb.obj.csproj">
+      <Project>{9B849072-2B8E-4CE4-8AD7-D173724A9644}</Project>
+      <Name>pdb.obj</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Vue\images\Toolbar-MP3-Forward-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Vue\images\Toolbar-MP3-Pause-icon.png" />
+    <Resource Include="Vue\images\Toolbar-MP3-Play-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Vue\images\Toolbar-MP3-Rewind-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Vue\images\Toolbar-MP3-Stop-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>]]></content>
+  </file>
+  <file path="\pdb.player\Player.xaml">
+    <content><![CDATA[<Window x:Class="pdb.player.Player"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:userCtl="clr-namespace:pdb.player.Vue"
+       
+        Title="Player" >
+    <Window.InputBindings>
+        <KeyBinding Key="Right" Command="{Binding RightC}" />
+        <KeyBinding Key="Left" Command="{Binding LeftC}" />
+        <KeyBinding Key="Space" Command="{Binding SpaceC}" />
+    </Window.InputBindings>
+
+    <Grid Margin="0,0,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <userCtl:PlayerControler Grid.Row="0" />
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="cdBib" x:Uid="cdBib" Width="100"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition x:Name="cdMain" x:Uid="cdMain" Width="40*"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition x:Name="cdAlbum" x:Uid="cdAlbum" Width="12*"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition x:Name="cdClassment" x:Uid="cdClassement"  Width="18*"/>
+            </Grid.ColumnDefinitions>
+            <userCtl:BibCtl x:Name="BibCtle" Grid.Column="0" Background="AliceBlue" />
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
+            <userCtl:DataGridPlayList x:Name="dg_pl" Grid.Column="2" />
+            <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" />
+            <DockPanel Grid.Column="4" HorizontalAlignment="Stretch" >
+                <userCtl:AlbumCtl DockPanel.Dock="Right" />
+            </DockPanel>
+            <GridSplitter Grid.Column="5" HorizontalAlignment="Stretch" />
+            <DockPanel Grid.Column="6" HorizontalAlignment="Stretch" >
+                <userCtl:ClassementCtl DockPanel.Dock="Right" />
+            </DockPanel>
+
+        </Grid>
+        <userCtl:StateBar Grid.Row="2" />
+    </Grid>
+</Window>
+]]></content>
+  </file>
   <file path="\pdb.player\ViewModel\TrackListViewModel.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -689,10 +1101,11 @@ namespace pdb.player.ViewModel
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
+             xmlns:l="clr-namespace:pdb.player.Vue"
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <DataGrid  Grid.Column="0" DockPanel.Dock="Bottom" 
-                       Name="dg" 
+        <l:EnhancedDataGrid  Grid.Column="0" DockPanel.Dock="Bottom" 
+                       x:Name="dg" x:Uid="93A5ABB5-8716-49B8-B2CF-25D5B852114D"
                        AutoGenerateColumns="False" 
                         IsSynchronizedWithCurrentItem="false" 
                                         
@@ -722,7 +1135,7 @@ namespace pdb.player.ViewModel
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
                 <DataGridTextColumn Header="" Binding="{Binding MedianneStatus,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
                 <DataGridTextColumn Header="Classement" Binding="{Binding Classement,Converter={StaticResource cl},UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="Virtuel" Binding="{Binding ClassementVirtuel,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>             
+                <DataGridTextColumn Header="Virtuel" Binding="{Binding ClassementVirtuel,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
                 <DataGridTextColumn Header="Coeff" Binding="{Binding CoeffVirtuel, Converter={StaticResource decimal},UpdateSourceTrigger=PropertyChanged}"/>
 
                 <DataGridTextColumn Header="Virtuel2" Binding="{Binding ClassementVirtuel2,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
@@ -778,23 +1191,23 @@ namespace pdb.player.ViewModel
 
                     <!--<Style.Triggers>
                         <Trigger Property="IsSelected"  Value="True">-->
-                            <!--<Setter Property="Background"  Value="SteelBlue"/>-->
-                            <!--<Setter Property="Background"  Value="SteelBlue"/>-->
-                            <!--<Setter Property="Foreground"  Value="White" />-->
-                            <!--<Setter Property="BorderThickness" Value="1" />-->
-                        <!--</Trigger>
+                    <!--<Setter Property="Background"  Value="SteelBlue"/>-->
+                    <!--<Setter Property="Background"  Value="SteelBlue"/>-->
+                    <!--<Setter Property="Foreground"  Value="White" />-->
+                    <!--<Setter Property="BorderThickness" Value="1" />-->
+                    <!--</Trigger>
                     </Style.Triggers>-->
                 </Style>
             </DataGrid.CellStyle>
-           <DataGrid.RowStyle>
+            <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <!--<Setter Property="Height"  Value="20" />-->
-                 
+
                     <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />
                     <Setter Property="Padding" Value="10,10,10,10" />
                 </Style>
             </DataGrid.RowStyle>
-        </DataGrid>
+        </l:EnhancedDataGrid>
 
     </Grid>
 </UserControl>
@@ -807,6 +1220,7 @@ namespace pdb.player.ViewModel
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
+             xmlns:l="clr-namespace:pdb.player.Vue"
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid Background="{Binding IhmInDispo, Converter={StaticResource dispo},  UpdateSourceTrigger=PropertyChanged}" >
         <!--<Grid.ColumnDefinitions>
@@ -906,7 +1320,7 @@ namespace pdb.player.ViewModel
                 </ListView.View>
             </ListView>-->
 
-            <DataGrid Grid.Row="1" AutoGenerateColumns="False"  DockPanel.Dock="Top" Name="dg"  ScrollViewer.CanContentScroll="True"  >
+            <l:EnhancedDataGrid Grid.Row="1" AutoGenerateColumns="False"  DockPanel.Dock="Top" x:Name="dg" x:Uid="7F8BDB42-09C9-4ED8-99DE-480FD72C6BDB"  ScrollViewer.CanContentScroll="True"  >
                       <!--SelectedItem="{Binding SelectedTrackInClassView}" >-->
                 <DataGrid.ContextMenu>
                     <ContextMenu>
@@ -955,7 +1369,7 @@ namespace pdb.player.ViewModel
 
                 </DataGrid.Columns>
 
-            </DataGrid>
+            </l:EnhancedDataGrid>
 
 
             <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch"   ResizeBehavior="PreviousAndNext"  IsTabStop="True" />
@@ -1037,6 +1451,7 @@ namespace pdb.player.ViewModel
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:l="clr-namespace:pdb.player.Vue"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300" >
     <Grid>
@@ -1044,9 +1459,9 @@ namespace pdb.player.ViewModel
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <DataGrid Grid.Row="0" Name="dg" AutoGenerateColumns="False" IsSynchronizedWithCurrentItem="False" 
-                  
-                  SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"               
+        <l:EnhancedDataGrid Grid.Row="0" x:Name="dg" x:Uid="2D638B20-D34A-48B9-88E8-9F00F1BAA78D" 
+                            AutoGenerateColumns="False" IsSynchronizedWithCurrentItem="False"                   
+                            SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"               
                   >
             <DataGrid.ContextMenu>
                 <ContextMenu>
@@ -1182,7 +1597,7 @@ namespace pdb.player.ViewModel
                 </Style>
             </DataGrid.RowStyle>
 
-        </DataGrid>
+        </l:EnhancedDataGrid>
         <DockPanel Grid.Row="1" >
             <!--<TextBlock DockPanel.Dock="Bottom" Text="{Binding NbAlbumMovedDesc}" />-->
             <TextBlock DockPanel.Dock="Left" Text="{Binding NbAlbumMoved,UpdateSourceTrigger=PropertyChanged}"  Margin="0,0,10,0"/>
@@ -1192,6 +1607,191 @@ namespace pdb.player.ViewModel
     </Grid>
 
 </UserControl>
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\EnhancedDataGrid.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Windows.Controls;
+using System.Windows;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
+namespace pdb.player.Vue
+{
+    public partial class EnhancedDataGrid : DataGrid
+    {
+
+        private bool inWidthChange = false;
+        private bool updatingColumnInfo = false;
+        public static readonly DependencyProperty ColumnInfoProperty = DependencyProperty.Register("ColumnInfo",
+                typeof(ObservableCollection<ColumnInfo>), typeof(EnhancedDataGrid),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, ColumnInfoChangedCallback)
+            );
+
+        private static void ColumnInfoChangedCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+        {
+            var grid = (EnhancedDataGrid)dependencyObject;
+            if (!grid.updatingColumnInfo) { grid.ColumnInfoChanged(); }
+        }
+
+      
+
+
+        protected override void OnInitialized(EventArgs e)
+        {
+            EventHandler sortDirectionChangedHandler = (sender, x) => UpdateColumnInfo();
+            EventHandler widthPropertyChangedHandler = (sender, x) => inWidthChange = true;
+            var sortDirectionPropertyDescriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.SortDirectionProperty, typeof(DataGridColumn));
+            var widthPropertyDescriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
+            var info = ColSov.get(Uid);
+            ColumnInfo = info.list;
+            ColumnInfoChanged(); 
+            Loaded += (sender, x) =>
+            {
+                foreach (var column in Columns)
+                {
+                    sortDirectionPropertyDescriptor.AddValueChanged(column, sortDirectionChangedHandler);
+                    widthPropertyDescriptor.AddValueChanged(column, widthPropertyChangedHandler);
+                }
+            };
+            Unloaded += (sender, x) =>
+            {
+                foreach (var column in Columns)
+                {
+                    sortDirectionPropertyDescriptor.RemoveValueChanged(column, sortDirectionChangedHandler);
+                    widthPropertyDescriptor.RemoveValueChanged(column, widthPropertyChangedHandler);
+                }
+            };
+
+            base.OnInitialized(e);
+        }
+        public ObservableCollection<ColumnInfo> ColumnInfo
+        {
+            get { return (ObservableCollection<ColumnInfo>)GetValue(ColumnInfoProperty); }
+            set { SetValue(ColumnInfoProperty, value); }
+        }
+        private void UpdateColumnInfo()
+        {
+            updatingColumnInfo = true;
+            ColumnInfo = new ObservableCollection<ColumnInfo>(Columns.Select((x) => new ColumnInfo(x)));
+            ColSov.sov(new ColumnInfos(ColumnInfo), Uid); 
+            updatingColumnInfo = false;
+        }
+        protected override void OnColumnReordered(DataGridColumnEventArgs e)
+        {
+            UpdateColumnInfo();
+            base.OnColumnReordered(e);
+        }
+        protected override void OnPreviewMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (inWidthChange)
+            {
+                inWidthChange = false;
+                UpdateColumnInfo();
+            }
+            base.OnPreviewMouseLeftButtonUp(e);
+        }
+        private void ColumnInfoChanged()
+        {
+            Items.SortDescriptions.Clear();
+            foreach (var column in ColumnInfo)
+            {
+                var realColumn = Columns.Where((x) => (column.Header != null && column.Header == x.Header) || column.PropertyPath == ((Binding)((DataGridBoundColumn)x).Binding).Path.Path).FirstOrDefault();
+                if (realColumn == null) { continue; }
+                column.Apply(realColumn, Columns.Count, Items.SortDescriptions);
+            }
+        }
+    }
+    [Serializable]
+    public class ColumnInfos
+    {
+        public ObservableCollection<ColumnInfo> list;
+        public ColumnInfos(ObservableCollection<ColumnInfo> list)
+        {
+            this.list = list; 
+        }
+    }
+
+    public class ColSov
+    {
+        public static void sov(ColumnInfos info, string name)
+        {
+            var formater = new BinaryFormatter();
+            using (Stream st = new FileStream(name+".dat", FileMode.Create))
+            {
+                formater.Serialize(st, info); 
+            }
+        }
+        public static ColumnInfos get(string name)
+        {
+            ColumnInfos infos = null; 
+            var formater = new BinaryFormatter();
+            try
+            {
+                using (Stream st = new FileStream(name+".dat", FileMode.Open))
+                {
+                    infos = (ColumnInfos)(formater.Deserialize(st));
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+
+            if (infos == null)
+                infos = new ColumnInfos(new ObservableCollection<ColumnInfo>());
+
+            return infos; 
+        }
+    }
+
+    [Serializable]
+    public struct ColumnInfo
+    {
+        public ColumnInfo(DataGridColumn column)
+        {
+            Header = column.Header;
+            PropertyPath = ((Binding)((DataGridBoundColumn)column).Binding).Path.Path;
+            WidthValue = column.Width.DisplayValue;
+            WidthType = column.Width.UnitType;
+            SortDirection = column.SortDirection;
+            DisplayIndex = column.DisplayIndex;
+        }
+        public void Apply(DataGridColumn column, int gridColumnCount, SortDescriptionCollection sortDescriptions)
+        {
+            column.Width = new DataGridLength(WidthValue, WidthType);
+            column.SortDirection = SortDirection;
+            if (SortDirection != null)
+            {
+                sortDescriptions.Add(new SortDescription(PropertyPath, SortDirection.Value));
+            }
+            if (column.DisplayIndex != DisplayIndex)
+            {
+                var maxIndex = (gridColumnCount == 0) ? 0 : gridColumnCount - 1;
+                column.DisplayIndex = (DisplayIndex <= maxIndex) ? DisplayIndex : maxIndex;
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} {1} {2} {3} {4}", Header, WidthType, WidthValue, DisplayIndex, PropertyPath); 
+        }
+        public object Header;
+        public string PropertyPath;
+        public ListSortDirection? SortDirection;
+        public int DisplayIndex;
+        public double WidthValue;
+        public DataGridLengthUnitType WidthType;
+    }
+}
+
+
+
 ]]></content>
   </file>
   <file path="\pdb.player\Vue\Util\StringFormatConverter.cs">
