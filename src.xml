@@ -209,7 +209,7 @@ namespace pdb.gen.albums
 
 
 
-        public void makeSort(decimal coeffEnabled, ConfMedianne mode, ConfMedianne mode0, ConfMedianne mode01) //IList<double> reference, IList<Piece> pieces)
+        public void makeSort(decimal coeffEnabled, ConfMedianne mode, ConfMedianne mode0) //IList<double> reference, IList<Piece> pieces)
         {
             try
             {
@@ -276,11 +276,7 @@ namespace pdb.gen.albums
                     list[med.index].Medianne = true;
 
                 var _med0 = AlbumMedianne.getMedianneLight(new List<Piece>(list), coeffEnabled, mode0, false);
-                var _med01 = _med0;
-
-
-                if (mode01 != null)
-                    _med01 = AlbumMedianne.getMedianneLight(new List<Piece>(list), coeffEnabled, mode01, false);
+                
 
 
 
@@ -389,7 +385,7 @@ namespace pdb.gen.albums
                         else
                         {
                             var p = list[med.index];
-                            if (_med01.d > med.d) // if (p.CoeffVirtuel > 1)
+                            if (_med0.d > med.d) // if (p.CoeffVirtuel > 1)
                                 selectedCoeff = selectedCoeff.main; // selectedByCoeff = true; 
                             Next = nextZero;
                         }
@@ -683,22 +679,12 @@ namespace pdb.gen.albums
             conf0.Main.safe = 0;
             conf0.Min.safe = 0;
 
-            ConfMedianne conf1 = null;
-         
-
-
-            if (confMedianne.Main != confMedianne.Min)
-            {
-                conf1 = new ConfMedianne(confMedianne);
-                conf1.Main.coeffVirt = 1;
-
-             
-            }
+          
 
             var list = new List<Album>(dict.Values);
             foreach (Album album in list)
             {
-                album.makeSort(confSort.coeffEnabled, confMedianne, conf0, conf1); //listRef, reference); 
+                album.makeSort(confSort.coeffEnabled, confMedianne, conf0); //listRef, reference); 
             }
 
             list.Sort(new AlbumClassComparer(consolid.SortAlbumMode));
