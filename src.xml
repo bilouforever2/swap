@@ -1,4 +1,2461 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
+  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using pdb.player.ViewModel.Commande.Link;
+using pdb.player.ViewModel.Commande.PlayList;
+using pdb.player.ViewModel.Commande;
+using pdb.util;
+using System.Globalization;
+
+namespace pdb.player.ViewModel
+{
+    public enum listDisplay
+    {
+        all,
+        onlyDisabled,
+        onlyEnabled
+    }
+
+    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
+    {
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
+        //   private List<TrackListViewModel> tracks;
+        private Dictionary<int, TrackListViewModel> dict;
+        private object _lock = new object();
+        private PlayListViewModel parent;
+        private DispatcherOperation ope;
+      
+
+
+        private bool? onlyDisabled;
+        private bool onlyFathers;
+        public AllTracksViewModel(PlayListViewModel parent, bool? onlyDisabled, bool onlyFathers)
+        {
+            this.parent = parent;
+            this.onlyDisabled = onlyDisabled;
+            this.onlyFathers = onlyFathers;
+            //   this.mode = mode; 
+            build();
+            PlayerViewModel.Instance.resumeChange += playerResumeChange;
+            PlayerViewModel.autoChange += new EventHandler(PlayerViewModel_autoChange);
+        }
+
+        void PlayerViewModel_autoChange(object sender, EventArgs e)
+        {
+            OnPropertyChanged("AutoResume");        
+        }
+
+
+        void playerResumeChange(object sender, EventArgs e)
+        {
+            OnPropertyChanged("TV"); 
+            OnPropertyChanged("Resume");          
+        }
+
+        public string Resume
+        {
+            get
+            {
+                return PlayerViewModel.Instance.Resume;
+            }
+            set
+            {
+
+            }
+        }
+
+        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
+        {
+            // Be nice - use BlockReentrancy like MSDN said
+
+            //var dispatcher = Dispatcher.CurrentDispatcher;
+            //if (dispatcher.CheckAccess())
+            //{
+            //    if (CollectionChanged == null)
+            //    {
+            //    }
+            //    else
+            //    {
+            //        CollectionChanged(this, e); 
+            //    }
+            //    return; 
+            //}
+
+            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
+
+
+
+            var eventHandler = CollectionChanged;
+            if (eventHandler != null)
+            {
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (NotifyCollectionChangedEventHandler handler in delegates)
+                {
+                    try
+                    {
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                        // Invoke handler in the target dispatcher's thread
+                        {
+                            ope =
+                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                            handler, this, e);
+                            ope.Completed += ope_Completed;
+
+
+                        }
+                        else // Execute handler as is
+                            handler(this, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+            else
+            {
+            }
+
+            // PlayerViewModel.Instance.makeResume();
+
+        }
+
+        void ope_Completed(object sender, EventArgs e)
+        {
+            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
+            PlayerViewModel.Instance.makeResume();
+        }
+
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            var eventHandler = PropertyChanged;
+            if (eventHandler == null)
+            {
+                //   int toto = 0;
+            }
+            else
+            {
+                //var dispatcher = Dispatcher.CurrentDispatcher;
+                //if (dispatcher.CheckAccess())
+                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                //else
+                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
+
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (PropertyChangedEventHandler handler in delegates)
+                {
+                    try
+                    {
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                            // Invoke handler in the target dispatcher's thread
+                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                          handler, this, new PropertyChangedEventArgs(propertyName));
+                        else // Execute handler as is
+                            handler(this, new PropertyChangedEventArgs(propertyName));
+                    }
+                    catch (Exception ex)
+                    {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+        }
+
+        public void refresh()
+        {
+            build();
+            foreach (TrackListViewModel track in this)
+                track.refresh();
+
+        }
+
+        public void init()
+        {
+            refresh();
+            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        public TrackListViewModel TV { get { return TrackListViewModel.HumanSelected; } }
+
+        public void build()
+        {
+            lock (_lock)
+            {
+                var list = new List<TrackListViewModel>();
+                var dict = new Dictionary<int, TrackListViewModel>();
+                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
+                if (this.dict == null)
+                {
+                    this.dict = new Dictionary<int, TrackListViewModel>();
+                    foreach (TrackListViewModel track in list)
+                    {
+                        Add(track);
+                        this.dict.Add(track.PieceId, track);
+                        track.PropertyChanged += track_PropertyChanged;
+                    }
+
+                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                }
+                else
+                {
+
+                    foreach (TrackListViewModel newTrack in list)
+                    {
+                        if (!this.dict.ContainsKey(newTrack.PieceId))
+                        {
+                            Add(newTrack);
+                            this.dict.Add(newTrack.PieceId, newTrack);
+                            newTrack.PropertyChanged += track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
+                        }
+                    }
+
+                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
+                    {
+                        if (!dict.ContainsKey(track.PieceId))
+                        {
+                            Remove(track);
+                            this.dict.Remove(track.PieceId);
+                            track.PropertyChanged -= track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
+                        }
+                    }
+                }
+            }
+
+            //Clear(); 
+            //foreach (TrackListViewModel track in parent.Tracks)
+            //    Add(track); 
+        }
+
+        void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "Duration":
+                case "Enabled":
+                    PlayerViewModel.Instance.makeResume();
+                    break;
+            }
+        }
+
+        public List<TrackListViewModel> AllTracks
+        {
+            get
+            {
+                build();
+                return this;
+            }
+        }
+
+        public List<TrackListViewModel> Tracks
+        {
+            get
+            {
+                return parent.Tracks;
+            }
+        }
+
+        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool? onlyDisabled, bool onlyFathers)
+        {
+            foreach (TrackListViewModel t in parent.Tracks)
+            {
+                if (!t.Enabled || true !=onlyDisabled)
+                {
+                    if (onlyDisabled == null && t.Enabled)
+                    {
+                        if (!t.PieceGen.ClassementProvisoireRecent)
+                            continue; 
+                    }
+                    if (t.PieceParentId < 0 || !onlyFathers)
+                    {
+                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
+                        {
+                            
+                            if (!dict.ContainsKey(t.PieceId))
+                            {
+                                dict.Add(t.PieceId, t);
+                                container.Add(t);
+                                //  t.Index = container.Count; 
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (PlayListViewModel pl in parent)
+            {
+                AllTracksViewModel other = pl.AlltracksVm;
+                //if (true == onlyDisabled)
+                //    other = pl.AlltracksVmd;
+                //else
+                //    other = pl.AlltracksVm;
+                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
+            }
+        }
+
+        #region cmd
+
+        private ICommand _contextCmdCheck;
+        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
+
+        private ICommand _contextCmdUnCheck;
+        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
+
+
+        private ICommand _contextLinkFather;
+        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
+
+        private ICommand _contextLinkChild;
+        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
+
+        private ICommand _contextLinkFusion;
+        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
+
+        private ICommand _contextUnLink;
+        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
+
+        private ICommand _contextExport;
+        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
+
+        private ICommand _contextExportCompress;
+        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
+
+        private ICommand _contextDelete;
+        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
+
+        public TrackListViewModel HumanSelected
+        {
+            get
+            {
+                return TrackListViewModel.HumanSelected;
+            }
+        }
+
+        private ICommand _ContextCmdAddToList;
+        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
+
+        private ICommand _ContextCmdDbDeleteClassement;
+        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
+
+        private ICommand _ContextCmdDbDeleteRead;
+        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
+
+
+        #endregion
+
+        #region from Ihm
+        private TrackListViewModel selectedTrack;
+        public TrackListViewModel SelectedTrack
+        {
+            get
+            {
+                return selectedTrack;
+            }
+            set
+            {
+                selectedTrack = value;
+                TrackListViewModel.setHumanSelected(parent, value); //  .HumanSelected = value;
+                if (selectedTrack != null)
+                    selectedTrack.IsSelected = true;
+            }
+        }
+        #endregion
+
+        private int nbAlbumMoved;
+
+        public int NbAlbumMoved
+        {
+            get { return nbAlbumMoved; }
+        }
+
+        public string AutoResume
+        {
+            get
+            {
+               
+                try
+                {
+
+                    var conf = App.gen.SortAlbumMode.ComposantsUtiles[0].Main;
+                    var sb = new StringBuilder();
+                    
+                    sb.Append(conf.CoeffT.ToString("0.000", CultureInfo.InvariantCulture)); sb.Append("  ");
+                    sb.Append(conf.Serial); sb.Append("  "); 
+                    sb.Append((1000 * conf.dcoeffp).ToString("0")); sb.Append("m  ");
+                    sb.Append(conf.coeffTMin(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" - ");
+                    sb.Append(conf.coeffTMin(100).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(100).ToString("0.000", CultureInfo.InvariantCulture)); 
+                    return sb.ToString(); 
+                   
+                }
+                catch
+                {
+                    return ""; 
+                }
+            }
+        }
+        public string NbAlbumMovedDesc
+        {
+            get
+            {
+                if (nbAlbumMoved < 0)
+                    return "";
+                if (nbAlbumMoved == 0)
+                    return "pas d'album en quarantaine";
+                return string.Format("{0} albums en quarantaine", nbAlbumMoved); 
+            }
+        }
+
+        public void setNbAlbumMoved(int nb)
+        {
+            if (nb != nbAlbumMoved)
+            {
+                nbAlbumMoved = nb;
+                OnPropertyChanged("NbAlbumMoved");
+                OnPropertyChanged("NbAlbumMovedDesc");
+            }
+
+        }
+    }
+
+
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\ViewModel\PlayerViewModel.cs">
+    <content><![CDATA[using pdb.player.model;
+using pdb.player.ViewModel.Commande;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Windows.Data;
+using System.Windows.Input;
+using pdb.player.engine;
+using pdb.player.engine.build;
+using pdb.util;
+using System.Collections;
+using pdb.gen.conf;
+using pdb.gen.albums;
+using pdb.gen.Tuning;
+using pdb.gen;
+using System.Windows.Threading;
+
+namespace pdb.player.ViewModel
+{
+
+
+    enum positionstate
+    {
+        free,
+        cannotPrevious,
+        cannotForward
+    }
+
+    class HiddenPlayList : ItrackProvider
+    {
+        private ICollectionView viewOrg;
+        private PlayListViewModel pl;
+        private static List<TrackListViewModel> hiddenSelected = new List<TrackListViewModel>();
+
+        public HiddenPlayList(PlayListViewModel pl, ICollectionView viewOrg)
+        {
+            this.viewOrg = viewOrg;
+            this.pl = pl;
+        }
+        public ICollectionView PresentationTracks
+        {
+            get { return viewOrg; }
+        }
+
+        public void Focus(int index)
+        {
+
+        }
+
+        public PlayListViewModel PlayList
+        {
+            get { return pl; }
+        }
+
+
+        public void doFilter(string filter)
+        {
+            PlayerViewModel.doFilter(PresentationTracks, filter);
+        }
+
+
+        public List<TrackListViewModel> SelectedTracks
+        {
+            get { return hiddenSelected; }
+        }
+    }
+
+
+
+    class PlayerViewModel : ViewModelBase
+    {
+        private static PlayerViewModel _instance;
+        private static volatile object _lock = new object();
+        private ConfAlbumSort confAlbumSort;
+        public ConfAlbumSort ConfAlbumSort { get { return confAlbumSort; } set { confAlbumSort = value; } }
+        public static PlayerViewModel Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                            _instance = new PlayerViewModel();
+                    }
+                }
+                return _instance;
+            }
+        }
+        private IPlayerEngine player = PlayerBuilder.create("vlcplugin");
+
+        private TrackListViewModel currentTrack;
+        private PlayListViewModel currentPl;
+        public event EventHandler currentTrackChange;
+        public event EventHandler resumeChange;
+        public static event EventHandler autoChange; 
+        private playerstate state;
+        private positionstate _positionstate;
+        private bool onlyEnabled = true;
+        // private bool sortByAlbum = true;
+        private bool withVirtualAlbum = CConf.ConfGen.AlbumVirtual;
+        private bool navAuto;
+        public bool NavAuto
+        {
+            get { return navAuto; }
+            set
+            {
+                if (value != navAuto)
+                {
+                    navAuto = value;
+                    OnPropertyChanged("NavAuto");
+                }
+            }
+        }
+        ItrackProvider _real;
+        private Logger log;
+        public static IPlayerEngine Player { get { return Instance.player; } }
+
+
+        public bool OnlyEnabled
+        {
+            get
+            {
+                return onlyEnabled;
+            }
+            set
+            {
+                if (value != onlyEnabled)
+                {
+                    onlyEnabled = value;
+                    OnPropertyChanged("OnlyEnabled");
+                }
+            }
+        }
+        private bool createRot = true;
+        public bool CreateRot
+        {
+            get
+            {
+                return createRot;
+            }
+            set
+            {
+                if (value != createRot)
+                {
+                    createRot = value;
+                    OnPropertyChanged("CreateRot");
+                }
+            }
+        }
+
+        public bool SortByAlbum
+        {
+            get
+            {
+                return confAlbumSort.Enabled;
+            }
+        }
+        //private albumSortMode sortAlbumMode;
+        //public albumSortMode SortAlbumMode
+        //{
+        //    get { return sortAlbumMode; }
+        //    set
+        //    {
+        //        if (value != sortAlbumMode)
+        //        {
+        //            sortAlbumMode = value;
+        //            OnPropertyChanged("SortAlbumMode");
+        //            App.go();
+        //        }
+        //    }
+        //}
+
+        public bool WithVirtualAlbum
+        {
+            get { return withVirtualAlbum; }
+            set
+            {
+                if (value != withVirtualAlbum)
+                {
+                    withVirtualAlbum = value;
+                    OnPropertyChanged("WithVirtualAlbum");
+                    App.go();
+                }
+            }
+        }
+
+
+
+        private PlayerViewModel()
+        {
+            this.log = Logger.getLogger("PlayerViewModel");
+            player.mediaEndReached += player_mediaEndReached;
+            player.Volume = volume;
+            TrackListViewModel.CurrentHumanSelectedChanged += TrackListViewModel_CurrentHumanSelectedChanged;
+
+
+            new Thread(refreshLoop).Start();
+            this.currentPl = PlayListViewModel.SelectedPlayList;
+        }
+
+        void TrackListViewModel_CurrentHumanSelectedChanged(object sender, EventArgs e)
+        {
+            makeResume();
+        }
+
+        void player_mediaEndReached(object sender, EventArgs e)
+        {
+            var track = this.CurrentTrack;
+            if (track != null)
+                track.Piece.recordJustReadTrack();
+            next();
+            App.go();
+        }
+
+        #region commande
+        private ICommand cmdPlayPause;
+        private ICommand cmdForward;
+        private ICommand cmdStop;
+        private ICommand cmdBackWard;
+        private readonly static TimeSpan LIMIT_BACK = TimeSpan.FromSeconds(5.1);
+
+        public ICommand Play
+        {
+            get
+            {
+                if (cmdPlayPause == null)
+                    cmdPlayPause = new PlayPause();
+                return cmdPlayPause;
+            }
+        }
+
+        public ICommand Forward
+        {
+            get
+            {
+                if (cmdForward == null)
+                    cmdForward = new ForWard();
+                return cmdForward;
+            }
+        }
+
+        public ICommand BackWard
+        {
+            get
+            {
+                if (cmdBackWard == null)
+                    cmdBackWard = new BackWard();
+                return cmdBackWard;
+            }
+        }
+
+        public bool canForward()
+        {
+            return canPlay() && _positionstate != positionstate.cannotForward;
+        }
+        public bool canBackWard()
+        {
+            if (!canPlay())
+                return false;
+            if (PlayJustStarted)
+                return _positionstate != positionstate.cannotPrevious;
+            return true;
+
+        }
+
+        public void backWard()
+        {
+            if (PlayJustStarted)
+                movetoPrevious();
+            else
+                goStartTrack();
+        }
+
+
+        public void forward()
+        {
+            if (!navAuto)
+                movetoNext(true);
+            else
+            {
+                var pl = PlayListViewModel.SelectedPlayList;
+                if (pl == null)
+                {
+                    movetoNext(true);
+                    return;
+                }
+
+                string _album = "";
+                if (currentTrack != null)
+                    _album = currentTrack.Album;
+                movetoNext(true); // des fois le morceaux affiché n'est pas celui joué. Dommage...
+                if (currentTrack != null && currentTrack.Album == _album)
+                {
+                    if (state == playerstate.play)
+                        play(false, true);
+                    return;
+                }
+
+                if (currentTrack == null)
+                    return; 
+                var album = App.gen.Albums.getAlbum(CurrentTrack.Track);
+                var tracks = album.Tracks;
+                //    tracks.Sort(new PieceClassementComparer());
+                //  decimal val = int.MaxValue;
+                int i = 0;
+                TrackListViewModel choose = null;
+                if (confAlbumSort.ComposantsUtiles[0].cmpMin > modeMin.non)
+                {
+                    var next = album.Next;
+                    if (next != null)
+                        choose = pl.FindTrack(next.PieceId);
+                }
+                else
+                {
+                    for (i = 0; i < tracks.Count; i++)
+                    {
+                        var item = tracks[i];
+                        if (item != null && (!onlyEnabled || item.Enabled))
+                        {
+                            var tl = pl.FindTrack(item.PieceId);
+                            if (!tl.Exists)
+                                continue;
+                            choose = tl;
+
+                            //val = v;
+                            // choose = tl;
+                            if (item.VirtualClassement == 0m)
+                            {
+                                break;
+                                //if (confAlbumSort.ComposantsUtiles[0].cmpMin != modeMin.toujours)
+                                //    choose = tl;
+                                //break;
+                            }
+                            // choose = tl;
+                        }
+                    }
+                }
+
+                if (choose != null)
+                {
+                    //var p = choose.PieceGen;
+                    //if (p != null)
+                    //   confAlbumSort.auto(p.AutoCoeff1, p.AutoCoeff2); 
+                    reset(provider, choose, state == playerstate.play);
+
+                }
+
+            }
+        }
+
+        public bool isHidden { get { return provider is HiddenPlayList; } }
+
+        public void pause()
+        {
+            State = playerstate.pause;
+            player.pause();
+        }
+
+        private bool PlayJustStarted { get { return ElapsedTime < LIMIT_BACK; } }
+
+        #endregion
+
+        #region navigation
+        public bool canPlay()
+        {
+            //if (currentPl == null)
+            //    return false;
+            var tracks = PresentationTracks;
+            if (tracks == null)
+                return false;
+            if (tracks.IsEmpty)
+                return false;
+            return true;
+        }
+
+
+
+        private void movetoNext(bool autoPlay)
+        {
+            move(true, autoPlay);
+        }
+
+        private void goStartTrack()
+        {
+            Position = 0;
+        }
+
+        private void move(bool _toNext, bool autoPlay)
+        {
+            bool playing = state == playerstate.play;
+            TrackListViewModel item = null;
+
+
+
+            var tracks = PresentationTracks;
+
+            Func<bool> _move;
+            if (_toNext)
+                _move = tracks.MoveCurrentToNext;
+            else
+                _move = tracks.MoveCurrentToPrevious;
+            try
+            {
+
+
+                if (currentTrack != null)
+                    tracks.MoveCurrentTo(currentTrack);
+                if (!_move())
+                {
+                    return;
+                }
+
+                while (true)
+                {
+                    item = tracks.CurrentItem as TrackListViewModel;
+                    if (item != null && item.Exists && (!onlyEnabled || item.Enabled))
+                        break;
+                    if (!_move())
+                    {
+                        item = null;
+                        return;
+                    }
+
+                }
+
+
+
+            }
+            finally
+            {
+                if (item == null)
+                    _positionstate = _toNext ? positionstate.cannotForward : positionstate.cannotPrevious;
+                CurrentTrack = item;
+                tracks.MoveCurrentTo(currentTrack);
+                if (item != null)
+                {
+                    focus(tracks.CurrentPosition);
+                    if (playing && autoPlay)
+                    {
+                        player.play(item.Location, true);
+                    }
+                }
+
+            }
+        }
+
+
+        private void movetoPrevious()
+        {
+            move(false, true);
+            //bool playing = state == playerstate.play;
+            //TrackListViewModel item = null;
+
+            //var tracks = PresentationTracks;
+            //try
+            //{
+
+
+            //    if (currentTrack != null)
+            //        tracks.MoveCurrentTo(currentTrack);
+            //    if (!tracks.MoveCurrentToPrevious())
+            //    {
+            //        _positionstate = positionstate.cannotPrevious;
+            //        state = playerstate.stop;
+            //        return;
+            //    }
+
+            //    while (true)
+            //    {
+            //        item = tracks.CurrentItem as TrackListViewModel;
+            //        if (item.Enabled)
+            //            break;
+            //        if (!tracks.MoveCurrentToPrevious())
+            //        {
+            //            _positionstate = positionstate.cannotPrevious;
+            //            state = playerstate.stop;
+            //            return;
+            //        }
+
+            //    }
+
+
+
+            //}
+            //finally
+            //{
+            //    CurrentTrack = item;
+            //    tracks.MoveCurrentTo(currentTrack);
+            //    if (item != null)
+            //    {
+            //        focus(tracks.CurrentPosition);
+            //        if (playing)
+            //        {
+            //            player.play(item.Location, true);
+
+            //        }
+            //    }
+
+            //}
+        }
+
+
+        public void play(bool forceDisabled, bool reload)
+        {
+
+            TrackListViewModel item = currentTrack;
+            var tracks = PresentationTracks;
+            try
+            {
+                if (!canPlay())
+                    return;
+
+                while (true)
+                {
+                    if (item == null)
+                    {
+                        _positionstate = positionstate.cannotPrevious;
+
+                        if (!tracks.MoveCurrentToFirst())
+                        {
+                            //_positionstate = positionstate.cannotPrevious; 
+                            return;
+                        }
+
+                        while (true)
+                        {
+                            item = tracks.CurrentItem as TrackListViewModel;
+                            if (item != null && item.Exists && (!onlyEnabled || item.Enabled))
+                                break;
+                            if (!tracks.MoveCurrentToNext())
+                            {
+                                _positionstate = positionstate.cannotForward;
+                                return;
+                            }
+                            _positionstate = positionstate.free;
+                        }
+
+                        if (item == null)
+                            return;
+
+
+                    }
+                    tracks.MoveCurrentTo(item);
+                    if (tracks.CurrentPosition >= 0)
+                        break;
+                    item = null;
+                }
+
+                CurrentTrack = item;
+
+                focus(tracks.CurrentPosition);
+
+                State = playerstate.play;
+                //item.Playing = true;
+                player.play(currentTrack.Location, reload);
+            }
+            finally
+            {
+                if (!canPlay() || currentTrack == null)
+                    stop();
+            }
+        }
+
+
+
+        public void stop()
+        {
+
+            if (isHidden)
+            {
+                provider = _real;
+                tracks = provider.PresentationTracks;
+            }
+
+            State = playerstate.stop;
+            player.stop();
+
+        }
+
+        private void next()
+        {
+            if (navAuto)
+                forward();
+            else
+                movetoNext(true);
+        }
+
+
+
+        #endregion
+
+        private ItrackProvider provider;
+        //internal ItrackProvider Provider
+        //{
+        //    set
+        //    {
+
+        //        //if (state != playerstate.stop)
+        //        //{
+        //        //    if (provider != null)
+        //        //    {
+        //        //        if (provider is HiddenPlayList)
+        //        //        {
+        //        //        }
+        //        //        else
+        //        //        {
+        //        //            provider = new HiddenPlayList(provider.PresentationTracks);
+        //        //        }
+        //        //    }
+        //        //    else
+        //        //        provider = value;
+        //        //}
+        //        provider = value;
+        //    }
+        //}
+        public ICollectionView PresentationTracks
+        {
+            get
+            {
+                if (provider == null)
+                    return null;
+                return provider.PresentationTracks;
+            }
+        }
+        private void focus(int index)
+        {
+            if (provider == null)
+                return;
+            provider.Focus(index);
+        }
+
+
+
+
+
+
+        public playerstate State
+        {
+            get
+            {
+                return state;
+            }
+            set
+            {
+                if (value != state)
+                {
+                    state = value;
+                    OnPropertyChanged("State");
+                    OnPropertyChanged("SrcPlayPause");
+                }
+            }
+        }
+
+
+
+        private bool bEnd;
+        private void refreshLoop()
+        {
+            while (!bEnd)
+            {
+                Thread.Sleep(1000);
+                refresh();
+            }
+        }
+
+        private void refresh()
+        {
+            try
+            {
+
+                //  this.IndexList = infos.IndexList;
+                var _position = player.Position;
+                if (_position != position) { position = _position; OnPropertyChanged("Position"); }
+
+                this.ElapsedTime = player.Elapsed;
+                this.Length = player.Duration;
+
+                this.RemainingTime = Length - ElapsedTime;
+                if (CurrentTrack == null)
+                {
+                    CurrentName = "";
+                    CurrentAuthorAlbum = "";
+                }
+                else
+                {
+                    CurrentName = currentTrack.Name;
+                    CurrentAuthorAlbum = String.Format("{0} - {1}", currentTrack.Artist, currentTrack.Album);
+                    if (currentTrack.Exists)
+                        currentTrack.Duration = length;
+                }
+
+            }
+            catch { }
+
+        }
+
+
+        public TrackListViewModel CurrentTrack
+        {
+            get { return currentTrack; }
+            set
+            {
+                if (value != null)
+                    value.Playing = true;
+                if (value != currentTrack)
+                {
+                    if (currentTrack != null)
+                        currentTrack.Playing = false;
+                    currentTrack = value;
+                    if (currentTrack == null)
+                        stop();
+                    if (currentTrackChange != null)
+                        currentTrackChange(Instance, EventArgs.Empty);
+                }
+            }
+        }
+
+        public static void reset(ItrackProvider provider, TrackListViewModel track)
+        {
+            reset(provider, track, true);
+        }
+
+        public static void makeauto(TrackListViewModel current)
+        {
+            if (current != null)
+            {
+                var p = current.PieceGen;
+                if (p != null)
+                {
+                    Instance.confAlbumSort.auto(p);
+                    if (autoChange != null)
+                        autoChange(current, EventArgs.Empty); 
+                }
+            }
+        }
+
+        public static void reset(ItrackProvider provider, TrackListViewModel track, bool autoPlay)
+        {
+            if (provider != null)
+            {
+                Instance.provider = provider;
+                Instance.currentPl = provider.PlayList;
+                Instance.provider = provider;
+                Instance.tracks = provider.PresentationTracks;
+
+            }
+            Instance._positionstate = positionstate.free;
+
+
+
+
+
+
+            Instance.CurrentTrack = track;
+            if (autoPlay)
+                Instance.play(true, true);
+            Instance.makeResume();
+            App.go();
+        }
+
+
+        public PlayListViewModel PlayList
+        {
+            get
+            {
+                return currentPl;
+            }
+        }
+        ICollectionView tracks = null;
+        public void set(ItrackProvider provider)
+        {
+            try
+            {
+                if (provider == null)
+                {
+                    log.log("provider null");
+                    this.provider = null;
+                    this.currentPl = null;
+                    return;
+                }
+                else if (this.provider == null)
+                {
+                    log.log("init provider " + provider);
+                    this.provider = provider;
+                    this.currentPl = provider.PlayList;
+                    this.tracks = provider.PresentationTracks;
+                }
+
+                else
+                {
+
+
+                    if (provider.PlayList == currentPl || state == playerstate.stop)
+                    {
+                        if (isHidden)
+                        {
+                            log.log("retour au réel");
+                            this.provider = provider;
+                            this.currentPl = provider.PlayList;
+                            this.tracks = provider.PresentationTracks;
+                            tracks.MoveCurrentTo(TrackListViewModel.CurrentPlaying);
+                            provider.Focus(tracks.CurrentPosition);
+                        }
+                        else
+                        {
+                            log.log("détection standart");
+                            this.provider = provider;
+                            this.currentPl = provider.PlayList;
+                            this.tracks = provider.PresentationTracks;
+                        }
+                    }
+
+                    else
+                    {
+                        if (isHidden)
+                        {
+                            log.log("toujours virtuel");
+                        }
+                        else
+                        {
+
+
+                            log.log("passage en virtuel");
+                            this.provider = new HiddenPlayList(currentPl, tracks);
+                            this._real = provider;
+                            // this.currentPl = provider.PlayList;
+                            //this.tracks = provider.PresentationTracks; 
+                        }
+                    }
+                }
+
+                _positionstate = positionstate.free;
+                if (currentPl == null)
+                {
+                    CurrentTrack = null;
+                    stop();
+                    return;
+                }
+
+            }
+            finally
+            {
+                OnPropertyChanged("State");
+                OnPropertyChanged("SrcPlayPause");
+                makeResume();
+            }
+        }
+        //  private class filterTask
+        //  {
+        //      public filterTask()
+        //      {
+        //      }
+        //      public string filter;
+        //      //public string waitingFilter; 
+        //      //private bool cancel; 
+        //      //private Thread th;
+        //      public Predicate<object> Filter;
+        //      //public ICollectionView coll;
+        //      //private bool busy;
+
+        //      public void go()
+        //      {
+
+        //          if (!string.IsNullOrEmpty(filter))
+        //              filter = filter.Trim().ToLower().removeAccent();
+
+        //          var tab = filter.Split(' ');
+        //          // var coll = CollectionViewSource.GetDefaultView(dg.ItemsSource); 
+        //          lock (this)
+        //              busy = true;
+        //          coll.Filter = item =>
+        //          {
+        //              TrackListViewModel vitem = item as TrackListViewModel;
+        //              if (vitem == null) return false;
+
+        //              //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
+        //              //    return vitem.Classement.StartsWith(filter);
+        //              bool ok = true;
+        //              var name = vitem.Name.Trim().ToLower().removeAccent();
+        //              var artist = vitem.Artist.Trim().ToLower().removeAccent();
+        //              var album = vitem.Album.Trim().ToLower().removeAccent();
+        //              var classement = vitem.Classement;
+        //              foreach (string str in tab)
+        //              {
+        //                  if (!ok)
+        //                      return false;
+        //                  if (string.IsNullOrEmpty(str))
+        //                      continue;
+        //                  var str_ = str.Trim();
+        //                  if (str_ == string.Empty)
+        //                      continue;
+
+        //                  ok = name.Contains(str_)
+        //                      || artist.Contains(str_)
+        //                      || album.Contains(str_)
+        //                      || classement.StartsWith(str_);
+
+        //              }
+
+        //              return ok;
+
+        //          };
+
+        //          lock (this)
+        //              busy = true;
+
+        //      }
+        //      private void getItems()
+        //      {
+        //          try
+        //          {
+        //              if (!string.IsNullOrEmpty(filter))
+        //                  filter = filter.Trim().ToLower().removeAccent();
+        //              if (cancel)
+        //                  return;
+        //              var tab = filter.Split(' ');
+        //              if (cancel)
+        //                  return;
+        //              Filter = item =>
+        //              {
+        //                  TrackListViewModel vitem = item as TrackListViewModel;
+        //                  if (vitem == null) return false;
+
+        //                  //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
+        //                  //    return vitem.Classement.StartsWith(filter);
+        //                  bool ok = true;
+        //                  var name = vitem.Name.Trim().ToLower().removeAccent();
+        //                  var artist = vitem.Artist.Trim().ToLower().removeAccent();
+        //                  var album = vitem.Album.Trim().ToLower().removeAccent();
+        //                  var classement = vitem.Classement;
+        //                  foreach (string str in tab)
+        //                  {
+        //                      if (!ok)
+        //                          return false;
+        //                      if (string.IsNullOrEmpty(str))
+        //                          continue;
+        //                      var str_ = str.Trim();
+        //                      if (str_ == string.Empty)
+        //                          continue;
+
+        //                      ok = name.Contains(str_)
+        //                          || artist.Contains(str_)
+        //                          || album.Contains(str_)
+        //                          || classement.StartsWith(str_);
+
+        //                  }
+
+        //                  return ok;
+
+        //              };
+        //          }
+        //          catch (Exception ex)
+        //          {
+        //              App.log.log(ex.ToString()); 
+        //          }
+        //      }
+        //  }
+        ////  private static filterTask filtertask = new filterTask(); 
+        private static IDisposable work;
+        private static FilterTask filterTask = null;
+
+        private static bool cancel;
+        public static void doFilter0(ICollectionView coll, string filter)
+        {
+
+            ILogger log = App.log;
+            log.log("filter=>{0}", filter);
+            lock (_lock)
+            {
+                if (work == null)
+                {
+                    log.log("filter=>{0} verrou libre", filter);
+                    work = coll.DeferRefresh();
+                }
+                else
+                {
+                    log.log("filter=>{0} verrou pris, abandon tâche en cours", filter);
+                    cancel = true;
+                }
+            }
+
+            var _cancel = cancel;
+            if (_cancel)
+                log.log("filter=>{0} verrou pris, attente fin tâche en cours", filter);
+            while (cancel)
+                Thread.Sleep(30);
+
+            if (_cancel)
+                log.log("filter=>{0} verrou pris, fin d'attente fin tâche en cours", filter);
+
+            if (!string.IsNullOrEmpty(filter))
+                filter = filter.Trim().ToLower().removeAccent();
+
+            var tab = filter.Split(' ');
+            // var coll = CollectionViewSource.GetDefaultView(dg.ItemsSource); 
+
+
+            _cancel = cancel;
+            if (!_cancel)
+            {
+                lock (_lock)
+                    _cancel = cancel;
+            }
+
+            if (!_cancel)
+            {
+                log.log("filter=>{0} lancement filtre", filter);
+                coll.Filter = item =>
+                {
+                    if (cancel)
+                        return false;
+                    TrackListViewModel vitem = item as TrackListViewModel;
+                    if (vitem == null) return false;
+
+
+
+                    //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
+                    //    return vitem.Classement.StartsWith(filter);
+                    bool ok = true;
+                    var name = vitem.Name.Trim().ToLower().removeAccent();
+                    var artist = vitem.Artist.Trim().ToLower().removeAccent();
+                    var album = vitem.Album.Trim().ToLower().removeAccent();
+                    var classement = vitem.Classement;
+                    foreach (string str in tab)
+                    {
+                        if (!ok)
+                            return false;
+                        if (string.IsNullOrEmpty(str))
+                            continue;
+                        var str_ = str.Trim();
+                        if (str_ == string.Empty)
+                            continue;
+
+                        ok = name.Contains(str_)
+                            || artist.Contains(str_)
+                            || album.Contains(str_)
+                            || classement.StartsWith(str_);
+
+                    }
+
+                    return ok;
+
+                };
+
+                if (cancel)
+                    log.log("filter=>{0} la tâche a été interrompue", filter);
+            }
+            else
+            {
+                log.log("filter=>{0} finalement pas de lancement", filter);
+            }
+            lock (_lock)
+            {
+                if (!cancel)
+                {
+                    if (work != null)
+                    {
+                        log.log("filter=>{0} application du filtre", filter);
+                        work.Dispose();
+                    }
+                    else
+                    {
+                        log.log("filter=>{0} ben pourquoa le work était null ????", filter);
+                    }
+                    work = null;
+
+                }
+            }
+
+            lock (_lock)
+                cancel = false;
+
+            log.log("filter=>{0} fin", filter);
+        }
+
+
+
+
+        private class FilterTask
+        {
+            private ICollectionView coll;
+            public readonly string filter0;
+            private string filter;
+            private bool _cancel;
+            private bool end;
+            private Thread th;
+            SimpleChrono log;
+            public string step;
+            private Dictionary<int, bool> l = new Dictionary<int, bool>(); 
+            public FilterTask(string filter, ICollectionView coll, SimpleChrono log)
+            {
+                this.filter0 = filter;
+                this.filter = filter;
+                this.coll = coll;
+                this.log = log;
+                step = "ini";
+                th = new Thread(calc);
+                th.Start();
+            }
+
+            public void cancel()
+            {
+                lock (_lock)
+                    _cancel = true;
+            }
+
+            public bool End { get { return end; } }
+            public bool Cancel { get { return _cancel; } }
+
+            private void calc()
+            {
+                step = "calc";
+                try
+                {
+                    if (!string.IsNullOrEmpty(filter))
+                        filter = filter.Trim().ToLower().removeAccent();
+                    if (string.IsNullOrWhiteSpace(filter))
+                    {
+                        apply();
+                        return; 
+                    }
+
+                    var tab = filter.Split(' ');
+
+                    int nb = 0;
+                    int nbOk = 0;
+
+                    foreach (TrackListViewModel vitem in coll.SourceCollection)
+                    {
+                        if (_cancel)
+                            return;
+
+                        bool ok = true;
+                        var name = vitem.Name.Trim().ToLower().removeAccent();
+                        var artist = vitem.Artist.Trim().ToLower().removeAccent();
+                        var album = vitem.Album.Trim().ToLower().removeAccent();
+                        var classement = vitem.Classement;
+                        foreach (string str in tab)
+                        {
+                            if (ok)
+                            {
+                                if (string.IsNullOrEmpty(str))
+                                    continue;
+                                var str_ = str.Trim();
+                                if (str_ == string.Empty)
+                                    continue;
+
+                                ok = name.Contains(str_)
+                                    || artist.Contains(str_)
+                                    || album.Contains(str_)
+                                    || classement.StartsWith(str_);
+                            }
+                            else
+                                break;
+
+                        }
+
+                        l.Add(vitem.PieceId, ok);
+                        nb++;
+                        if (ok)
+                            nbOk++;
+                    }
+
+                    log.log(string.Format("{0}/{1}", nbOk, nb));
+                    // log.log(string.Format("calc:{0} item{1} {2} sélectionné{3}", nb, (nb > 1 ? "s" : ""), nbOk, (nbOk > 1 ? "s" : "")));   
+
+                    lock (_lock)
+                    {
+                        if (_cancel)
+                            return;
+                    }
+
+
+                    apply();
+
+
+                }
+                finally
+                {
+                    if (_cancel)
+                    {
+                        lock (_lock)
+                            end = true;
+                        log.log("tache terminée par cancel");
+                    }
+                }
+
+
+
+
+
+            }
+
+            public void apply()
+            {
+                step = "apply";
+
+                bool __cancel = _cancel;
+
+                if (!__cancel)
+                {
+                    lock (_lock)
+                        __cancel = _cancel;
+                }
+                if (Dispatcher.CurrentDispatcher == App.Current.Dispatcher)
+                {
+                    if (string.IsNullOrWhiteSpace(filter))
+                    {
+                        coll.Filter = null;
+                        return; 
+                    }
+
+                    if (__cancel)
+                        return;
+                    step = "applyAppDispatcher";
+                    try
+                    {
+                      
+                      
+
+                        if (work == null)
+                        {
+                            log.log("creation du tempo");
+                            work = coll.DeferRefresh();
+                        }
+                        else
+                        {
+                            log.log("tempo déjà créé ");
+
+                        }
+
+
+                        coll.Filter = item =>
+                        {
+                            if (_cancel)
+                                return false;
+
+                            var t = item as TrackListViewModel;
+                            if (t == null)
+                                return false;
+                            if (!l.ContainsKey(t.PieceId))
+                                return false;
+                            return l[t.PieceId]; 
+                        };
+                     
+
+
+
+                        if (!__cancel)
+                        {
+                            log.log("application");
+                            work.Dispose();
+                            work = null;
+                            log.log("fin application");
+                        }
+                        else
+                        {
+                            log.log("abandon application");
+                        }
+                    }
+                    finally
+                    {
+                        lock (_lock)
+                            end = true;
+                        log.log("tache terminée par application");
+                    }
+                }
+                else
+                {
+                    App.Current.Dispatcher.BeginInvoke(new Action(apply), DispatcherPriority.Background);
+                }
+            }
+
+            public override string ToString()
+            {
+                return string.Format("en cours:{0} step:{1} end:{2} cancel:{3}", filter0, step, End, Cancel);
+            }
+
+        }
+
+
+        public static void doFilter(ICollectionView coll, string filter)
+        {
+            SimpleChrono log = new SimpleChrono(string.Format("\tfilter=>{0}\t", filter), App.log);
+
+            log.log("");
+            lock (_lock)
+            {
+                bool _cancelCurrent = false;
+                bool _same = false;
+
+                if (filterTask != null)
+                {
+                    log.log(filterTask.ToString());
+                }
+
+                _cancelCurrent = filterTask != null && !filterTask.End;
+                _same = _cancelCurrent && filterTask.filter0.Equals(filter);
+                if (_same)
+                {
+                    log.log("identique");
+                    return;
+                }
+                else if (_cancelCurrent)
+                {
+                    log.log("abandon tâche en cours");
+                    filterTask.cancel();
+                }
+
+                else
+                {
+                    log.log("verrou libre");
+                }
+
+                filterTask = new FilterTask(filter, coll, log);
+
+            }
+
+
+
+
+
+        }
+
+
+
+        //public void set(ItrackProvider provider)
+        //{
+        //    try
+        //    {
+        //        if (provider == null)
+        //        {
+        //            this.provider = null;
+        //            this.currentPl = null;
+        //            return;
+        //        }
+        //        else if (this.provider == null)
+        //        {
+        //            this.provider = provider;
+        //            this.currentPl = provider.PlayList;
+        //            this.tracks = provider.PresentationTracks;
+        //        }
+
+        //        else
+        //        {
+        //            if (provider.PlayList == currentPl || state == playerstate.stop)
+        //            {
+        //                this.provider = provider;
+        //                this.currentPl = provider.PlayList;
+        //                this.tracks = provider.PresentationTracks;
+        //            }
+
+        //            else
+        //            {
+        //                if (_real == null || _real.PlayList != provider.PlayList)
+        //                {
+        //                    this.provider = new HiddenPlayList(currentPl, tracks);
+        //                    this._real = provider;
+        //                }
+        //                else
+        //                {
+        //                    this.provider = _real;
+        //                }
+        //            }
+        //        }
+
+        //        _positionstate = positionstate.free;
+        //        if (currentPl == null)
+        //        {
+        //            CurrentTrack = null;
+        //            stop();
+        //            return;
+        //        }
+
+        //    }
+        //    finally
+        //    {
+        //        OnPropertyChanged("State");
+        //        OnPropertyChanged("SrcPlayPause");
+        //    }
+        //}
+
+
+        public void doFilter(String filter)
+        {
+            var provider = DisplayProvider;
+
+            if (provider == null)
+                return;
+            provider.doFilter(filter);
+            makeResume();
+        }
+
+        private ItrackProvider DisplayProvider
+        {
+            get
+            {
+                if (provider == null)
+                    return null;
+                if (isHidden && _real != null)
+                {
+                    return _real;
+                }
+                return provider;
+            }
+        }
+
+        private string resume;
+
+        public void makeResume()
+        {
+            string newResume = resume;
+            try
+            {
+
+                IEnumerable items = null;
+                var provider = DisplayProvider;
+                if (provider == null)
+                    return;
+                var tracks = provider.PresentationTracks;
+                int nbOrg = -1;
+                items = tracks;
+                if (items == null)
+                    return;
+
+                var selected = provider.SelectedTracks;
+                if (selected.Count > 1)
+                {
+                    items = selected;
+                    nbOrg = 0;
+                    foreach (TrackListViewModel t in tracks)
+                        nbOrg++;
+                }
+                int nb = 0, nbSelected = 0, nbPresent = 0;
+                TimeSpan duration = new TimeSpan(), durationSelected = new TimeSpan(), durationPresent = new TimeSpan();
+
+                foreach (TrackListViewModel track in items)
+                {
+                    nb++;
+                    duration += track.Duration;
+                    if (track.Enabled)
+                    {
+                        nbSelected++;
+                        durationSelected += track.Duration;
+                    }
+                    if (track.Exists)
+                    {
+                        nbPresent++;
+                        durationPresent += track.Duration;
+                    }
+                }
+
+                ITextWriter sb = new pdb.util.StringBuilder();
+                sb.Append(nb);
+                sb.Append(" ");
+                sb.Append("elt");
+                if (nb > 1)
+                    sb.Append("s");
+                if (nbOrg >= 0)
+                {
+                    sb.Append(" sur ");
+                    sb.Append(nbOrg);
+                    sb.Append(",");
+                }
+                sb.Append(" ");
+                humanDuration(sb, duration);
+                sb.Append(" ( ");
+                sb.Append(nbSelected);
+                sb.Append(" ");
+                sb.Append("elt");
+                if (nbSelected > 1)
+                    sb.Append("s");
+                sb.Append(" ");
+                humanDuration(sb, durationSelected);
+
+                sb.Append(" )");
+
+                if (nbPresent > 0)
+                {
+                    sb.Append(" presents: ");
+                    sb.Append(nbPresent);
+                    sb.Append(" ");
+                    sb.Append("elt");
+                    if (nb > 1)
+                        sb.Append("s");
+                    sb.Append(" ");
+                    humanDuration(sb, durationPresent);
+                }
+                sb.Append("\t");
+
+                var currentTrack = TrackListViewModel.HumanSelected;
+                if (currentTrack != null)
+                {
+                    humanSize(sb, currentTrack.Size);
+                    sb.Append(" ");
+                    sb.Append(currentTrack.Location);
+                }
+
+                newResume = sb.ToString();
+            }
+            catch (Exception e0)
+            {
+                App.log.log(e0.ToString());
+            }
+            finally
+            {
+                if (newResume != resume)
+                {
+                    resume = newResume;
+                    if (resumeChange != null)
+                    {
+                        try
+                        {
+                            resumeChange(this, EventArgs.Empty);
+                        }
+                        catch (Exception ex)
+                        {
+                            App.log.log(ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+
+        public string Resume
+        {
+            get
+            {
+                //if (resume == null)
+                //    makeResume();
+                return resume;
+            }
+        }
+
+        private void humanSize(ITextWriter sb, long size)
+        {
+            sb.Append(size.HumanReadableSize(-1));
+        }
+
+        private void humanDuration(ITextWriter sb, TimeSpan duration)
+        {
+            TimeSpan courant = duration;
+            TimeSpan reste = new TimeSpan();
+            TimeSpan ts = new TimeSpan();
+            double days = duration.TotalDays;
+            int idays = (int)days;
+
+            double hours = duration.TotalHours;
+            int ihours = (int)hours;
+
+
+            if (days >= 1)
+            {
+                ts = new TimeSpan(idays, 0, 0, 0);
+                reste = courant.Subtract(ts);
+                sb.Append(idays);
+                sb.Append("j");
+                //if (idays > 1)
+                //    sb.Append("s");
+
+                hours = reste.TotalHours;
+                ihours = (int)hours;
+
+                if (ihours == 0)
+                    return;
+                sb.Append(" ");
+                sb.Append(ihours);
+                sb.Append("h");
+                //if (ihours > 1)
+                //    sb.Append("s");
+                return;
+            }
+
+            double mins = duration.TotalMinutes;
+            int imins = (int)mins;
+
+            if (hours > 1)
+            {
+                ts = new TimeSpan(ihours, 0, 0);
+                reste = courant.Subtract(ts);
+                sb.Append(ihours);
+                sb.Append("h");
+                //if (ihours > 1)
+                //    sb.Append("s");
+
+                mins = reste.TotalMinutes;
+                imins = (int)mins;
+
+                if (imins == 0)
+                    return;
+                sb.Append(" ");
+                sb.Append(imins);
+                sb.Append("m");
+                //if (imins > 1)
+                //    sb.Append("s");
+                return;
+
+            }
+
+            ts = new TimeSpan(0, imins, 0);
+            reste = courant.Subtract(ts);
+            sb.Append(imins);
+            sb.Append("m");
+            //if (imins > 1)
+            //    sb.Append("s");
+
+            double secs = reste.TotalSeconds;
+            int isec = (int)secs;
+
+
+            if (isec == 0)
+                return;
+            sb.Append(" ");
+            sb.Append(isec);
+            sb.Append("s");
+            //if (imins > 1)
+            //    sb.Append("s");
+            return;
+
+
+
+        }
+
+        # region infos
+
+        private bool transitionState = false;
+        public bool TransitionState { set { transitionState = value; OnPropertyChanged("SrcPlayPause"); } }
+
+        public String SrcPlayPause
+        {
+            get
+            {
+                if (isHidden)
+                    return @"images\Toolbar-MP3-Stop-icon.png";
+                if (state != playerstate.play)
+                    return @"images\Toolbar-MP3-Play-icon.png";
+                return @"images\Toolbar-MP3-Pause-icon.png";
+            }
+        }
+
+
+        //private int indexList = -1;
+        //public int IndexList
+        //{
+        //    get { return indexList; }
+        //    set
+        //    {
+        //        if (value != indexList)
+        //        {
+        //            indexList = value;
+        //            this.OnPropertyChanged("IndexList");
+        //        }
+        //    }
+        //}
+
+        private double position = 0;
+        public double Position
+        {
+            get
+            {
+
+                return position;
+            }
+            set
+            {
+                if (value != position)
+                {
+                    position = value;
+                    player.Position = value;
+                    this.OnPropertyChanged("Position");
+                }
+            }
+        }
+
+        private String currentName;
+        public String CurrentName
+        {
+            get { return currentName; }
+            set
+            {
+                if (value != currentName)
+                {
+                    currentName = value;
+                    this.OnPropertyChanged("CurrentName");
+                }
+            }
+        }
+
+        private double volume = 0.5;
+        public double Volume
+        {
+            get { return volume; }
+            set
+            {
+                if (value != volume)
+                {
+                    volume = value;
+                    player.Volume = value;
+                    OnPropertyChanged("Volume");
+                }
+            }
+        }
+
+
+        private String currentAuthorAlbum;
+        public String CurrentAuthorAlbum
+        {
+            get { return currentAuthorAlbum; }
+            set
+            {
+                if (value != currentAuthorAlbum)
+                {
+                    currentAuthorAlbum = value;
+                    this.OnPropertyChanged("CurrentAuthorAlbum");
+                }
+            }
+        }
+
+        private TimeSpan sinceBeginReadTrack;
+        public TimeSpan ElapsedTime
+        {
+            get { return sinceBeginReadTrack; }
+            set
+            {
+                if (value != sinceBeginReadTrack)
+                {
+                    sinceBeginReadTrack = value;
+                    this.OnPropertyChanged("ElapsedTime");
+                }
+            }
+        }
+
+        private TimeSpan remainingTime;
+        public TimeSpan RemainingTime
+        {
+            get { return remainingTime; }
+            set
+            {
+                if (value != remainingTime)
+                {
+                    remainingTime = value;
+                    this.OnPropertyChanged("RemainingTime");
+                }
+            }
+        }
+
+        private TimeSpan length;
+        public TimeSpan Length
+        {
+            get { return length; }
+            set
+            {
+                if (value != length && value > TimeSpan.FromMilliseconds(100))
+                {
+                    length = value;
+                    this.OnPropertyChanged("Length");
+                }
+            }
+        }
+        #endregion
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\DataGridPlayList.xaml">
+    <content><![CDATA[<UserControl x:Class="pdb.player.Vue.DataGridPlayList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:l="clr-namespace:pdb.player.Vue"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <l:EnhancedDataGrid Grid.Row="0" x:Name="dg" x:Uid="2D638B20-D34A-48B9-88E8-9F00F1BAA78D" ConfCouleur="main"
+                            AutoGenerateColumns="False" IsSynchronizedWithCurrentItem="False"                   
+                            SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"               
+                  >
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="{Binding LinkFather.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding LinkFather}" />
+                    <MenuItem Header="{Binding LinkChild.Header, UpdateSourceTrigger=LostFocus}"  Command="{Binding LinkChild}" />
+                    <MenuItem Header="{Binding LinkFusion.Header, UpdateSourceTrigger=LostFocus}"  Command="{Binding LinkFusion}" />
+                    <MenuItem Header="!!!Supprimer!!!"  Command="{Binding DeleteTrack}" />
+                    <MenuItem Header="Ressaisir le premier"   Command="{Binding LinkReset}" />
+                    <MenuItem Header="Cocher la sélection"  Command="{Binding ContextCmdCheck}" />
+                    <MenuItem Header="Décocher la sélection"  Command="{Binding ContextCmdUnCheck}" />
+                    <MenuItem Header="Invalider dernier classement"  Command="{Binding ContextCmdDbDeleteClassement}" />
+                    <MenuItem Header="Invalider dernière lecture"  Command="{Binding ContextCmdDbDeleteRead}" />
+                    <MenuItem Header="{Binding Export.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding Export}" />
+                    <MenuItem Header="{Binding ExportCompress.Header, UpdateSourceTrigger=LostFocus}"   Command="{Binding ExportCompress}" />
+                    <MenuItem Header="Ajouter à la liste"  Command="{Binding ContextCmdAddToList}" />
+
+
+
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            
+          
+            <DataGrid.Columns>
+                
+
+                <DataGridTextColumn Binding="{Binding Index,Mode=OneWay}">
+                    <!--<DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport0}, ConverterParameter=main,  UpdateSourceTrigger=PropertyChanged}" />
+                            <Setter Property="Foreground" Value="Black" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>-->
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding StrPlaying, Mode=OneWay}">
+                    <!--<DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport0}, ConverterParameter=main,  UpdateSourceTrigger=PropertyChanged}" />
+                            <Setter Property="Foreground" Value="Black" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>-->
+                </DataGridTextColumn>
+
+                <DataGridTemplateColumn Header="" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                      
+                    </DataGridTemplateColumn.CellTemplate>
+                    
+                    
+                </DataGridTemplateColumn>
+
+                <!--<DataGridCheckBoxColumn Header="" Binding="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}"  />-->
+                  
+                <DataGridCheckBoxColumn Header="" Binding="{Binding Exists,Mode=OneWay}" />
+                <DataGridTextColumn Header="Nom" Binding="{Binding Name}"/>
+                <DataGridTextColumn Header="Piste"  Binding="{Binding TrackNumber,Converter={StaticResource Int}}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Durée" Binding="{Binding Duration,Mode=OneWay,Converter={StaticResource TimeSpan}}"   >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Classement" Binding="{Binding Classement, Converter={StaticResource cl} }"/>
+                <DataGridTextColumn Header="Comment" Binding="{Binding Comment,Mode=OneWay}"/>
+                <DataGridTextColumn Header="Album" Binding="{Binding Album}"/>
+                <DataGridTextColumn Header="Artiste"  Binding="{Binding Artist}"/>
+                <DataGridTextColumn Header="Année" Binding="{Binding Year,Converter={StaticResource Int}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                
+               
+                <DataGridTextColumn Header="Grouping" Binding="{Binding Grouping, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Export" Binding="{Binding ExportStatus, Mode=OneWay}">
+                    <!--<DataGridTextColumn.ElementStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Background" Value="{Binding ExportStatus, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>-->
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="StackIndex" Binding="{Binding StackIndex, Mode=OneWay}" />
+                <DataGridTextColumn Header="StackValue" Binding="{Binding StackValue, Mode=OneWay}"  >
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" >
+                            <Setter Property="ToolTip" Value="{Binding NbAlbumMoved, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                         </Style>
+                    </DataGridTextColumn.CellStyle>
+                  
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Maj"  Binding="{Binding UpdateClassement, Mode=OneWay,Converter={StaticResource date}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="MajAlbum"  Binding="{Binding AlbumUpdateClassement, Mode=OneWay, Converter={StaticResource date}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="Delai"  Binding="{Binding UpdateClassement, Mode=OneWay,Converter={StaticResource delai}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="DelaiAlbum"  Binding="{Binding AlbumUpdateClassement, Mode=OneWay, Converter={StaticResource delai}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="Lecture"  Binding="{Binding LastRead, Mode=OneWay,Converter={StaticResource date}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Lecture Album"  Binding="{Binding AlbumLastRead, Mode=OneWay, Converter={StaticResource date}}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="Motif" Binding="{Binding SelectedMotif,  Mode=OneWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource motif}}"/>
+                
+
+
+
+
+
+
+            </DataGrid.Columns>
+           
+            <DataGrid.ItemContainerStyle>
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <EventSetter Event="MouseDoubleClick" Handler="dg_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseMove" Handler="dg_PreviewMouseMove" />
+                 
+                    
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <!--<Setter Property="IsEnabled" Value="{Binding Exists}" />-->
+                    <Setter Property="FontWeight" Value="Normal" />
+                    <!--<Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}" />-->
+                    <!--<Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="Brown" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Exists}" Value="False">
+                            <Setter Property="Background" Value="LightGray" />
+                        </DataTrigger>
+                     
+                    </Style.Triggers>-->                    
+                </Style>
+            </DataGrid.ItemContainerStyle>
+            <!--<DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}">
+                    <Setter Property="Background" Value="{Binding ExportStatus, Converter={StaticResource colorExport},  UpdateSourceTrigger=PropertyChanged}"/>
+                </Style>
+            </DataGrid.RowStyle>-->
+            <DataGrid.CellStyle>               
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport}, ConverterParameter=main,  UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="Foreground" Value="{Binding TV, Converter={StaticResource foreColor}, ConverterParameter=main, UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                   
+                   
+
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="MouseDoubleClick" Handler="dg_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="dg_MouseClick" />
+                    <!--<EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />-->
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport}, ConverterParameter=main,  UpdateSourceTrigger=PropertyChanged}" />
+                    
+                </Style>
+            </DataGrid.RowStyle>
+
+        </l:EnhancedDataGrid>
+        <DockPanel Grid.Row="1" >
+            <!--<TextBlock DockPanel.Dock="Bottom" Text="{Binding NbAlbumMovedDesc}" />-->
+            <TextBlock DockPanel.Dock="Left" Text="{Binding NbAlbumMoved,UpdateSourceTrigger=PropertyChanged}"  Margin="0,0,10,0" FontSize="11"/>
+            <TextBlock DockPanel.Dock="Left"  Text="{Binding AutoResume,UpdateSourceTrigger=PropertyChanged}" FontWeight="DemiBold" FontSize="11" Margin="0,0,10,0"/>
+
+
+
+            <TextBlock DockPanel.Dock="Bottom" FontSize="11" Text="{Binding Resume}" Background="{Binding TV, Converter={StaticResource colorExport00}, ConverterParameter=main,  UpdateSourceTrigger=PropertyChanged}" />
+        </DockPanel>
+    </Grid>
+
+</UserControl>
+]]></content>
+  </file>
   <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
 using System.Collections;
@@ -234,6 +2691,7 @@ namespace pdb.util
     public class ConfMedianneVirt : TuningBase
     {
         const decimal EPSILON = 0.001m;
+        const int NB_HISTO = 100;
         public int safe;
         public decimal coeffVirt = 1m;
 
@@ -277,6 +2735,7 @@ namespace pdb.util
         public decimal danticonvdeltam = 1m;
         private bool _linkconv;
         private decimal linkProduct;
+        private List<decimal> histo = new List<decimal>(NB_HISTO);
         public bool linkconv { get { return _linkconv; } set { _linkconv = value; calcProduct(); } }
 
         private void calcProduct()
@@ -371,6 +2830,7 @@ namespace pdb.util
             serialp = o.serialp;
             serialm = o.serialm;
             _nbSameDirection = o._nbSameDirection;
+            histo = new List<decimal>(o.histo);
         }
         public ConfMedianneVirt(XmlElement parent, XmlElement child)
             : base(parent, child)
@@ -408,6 +2868,14 @@ namespace pdb.util
             buildi("serialm", v => serialm = v);
             buildi("serial", v => _nbSameDirection = v);
 
+            var xhisto = XMLTool.NodeLookUp(child, "histo");
+            if (xhisto != null)
+            {
+                foreach (XmlElement sub in xhisto.ChildNodes)
+                {
+                    histo.Add(Convert.ToDecimal(sub.InnerText));
+                }
+            }
 
         }
 
@@ -446,6 +2914,15 @@ namespace pdb.util
             write("serialp", serialp);
             write("serialm", serialm);
             write("serial", _nbSameDirection);
+            writeStart("histo");
+            foreach (decimal h in histo)
+            {
+                w.WriteStartElement("h");
+                w.WriteString(h.ToString("0.###"));
+                w.WriteEndElement();
+            }
+            writeEnd();
+
             writeEnd();
         }
 
@@ -459,7 +2936,7 @@ namespace pdb.util
             lastAutoDirection = selectedByCoeff;
 
             if (last != selectedByCoeff)
-                _nbSameDirection = 0; 
+                _nbSameDirection = 0;
 
             if (selectedByCoeff)
                 _nbSameDirection--;
@@ -481,7 +2958,7 @@ namespace pdb.util
                 {
                     if (selectedByCoeff)
                     {
-                        
+
                         //dcoeffp *= dconvergence;
                         //dcoeffm *= dconvergence;
                         //if (dcoeffp < EPSILON) dcoeffp = EPSILON;
@@ -498,8 +2975,8 @@ namespace pdb.util
                         { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
 
 
-                     //   _nbSameDirection = 0;
-                      //  lastAutoDirection = null;
+                        //   _nbSameDirection = 0;
+                        //  lastAutoDirection = null;
 
 
 
@@ -541,12 +3018,12 @@ namespace pdb.util
 
                         if (danticonvergence > 0 && limit > dcoeffp)
                         {
-                            dcoeffp = limit;                          
+                            dcoeffp = limit;
                         }
                         dcoeffm *= danticonvergence;
                         if (rr > 0)
-                            dcoeffm = rr * dcoeffp; 
-                        
+                            dcoeffm = rr * dcoeffp;
+
                     }
                     if (_linkconv)
                         calcConv();
@@ -557,12 +3034,12 @@ namespace pdb.util
                         var delta = 1 - dconvergence; //0.1 -> 0.9  0.5->0.5
                         delta /= dconvdeltap; // 0.81 0.25
                         dconvergence = 1 - delta;  // 0.18 0.75
-                       // dconvergence *= dconvdeltap; // 0.11 // 0.99
+                        // dconvergence *= dconvdeltap; // 0.11 // 0.99
                         //    dconvergence = 1 - delta; // 0.9 -> 0.89 // 0.01
-                        if (dconvergence > 1-EPSILON)
-                            dconvergence = 1-EPSILON;
+                        if (dconvergence > 1 - EPSILON)
+                            dconvergence = 1 - EPSILON;
                         if (dconvergence < EPSILON)
-                            dconvergence = EPSILON; 
+                            dconvergence = EPSILON;
                     }
 
 
@@ -583,11 +3060,17 @@ namespace pdb.util
 
         }
 
+        public decimal CoeffT { get { return (decimal)Math.Pow((double)coeffVirt, safe); } }
+
         private void makeDelta(bool sens, decimal delta, int nb)
         {
             try
             {
-                decimal coeffT = (decimal)Math.Pow((double)coeffVirt, safe);
+                decimal coeffT = CoeffT;
+                while (histo.Count >= NB_HISTO)
+                    histo.RemoveAt(0);
+                histo.Add(coeffT);
+
                 string montee = sens ? "up" : "down";
                 var c0 = coeffT;
                 if (sens)
@@ -606,6 +3089,7 @@ namespace pdb.util
                 var coeff = (decimal)Math.Pow((double)coeffT, (1.0 / (double)safe));
 
                 misc.log("{0} {1:0.######} {2:0.######}->{3:0.######}", montee, delta, c0, coeffT);
+
                 coeffVirt = coeff;
             }
             catch
@@ -614,6 +3098,38 @@ namespace pdb.util
 
 
         }
+
+        private decimal calcMin(int nb, bool sens)
+        {
+            decimal min = CoeffT;
+            int _nb = 0;
+            for (int i = histo.Count - 1; i >= 0; i--)
+            {
+                var h = histo[i];
+
+                if ((sens && h > min )|| (!sens && h<min))
+                {
+                    min = h;
+                }
+               
+                _nb++;
+                if (_nb >= nb)
+                    break;
+            }
+            return min;
+        }
+
+        public decimal coeffTMin(int nb)
+        {
+            return calcMin(nb, false); 
+        }
+
+        public decimal coeffTMax(int nb)
+        {
+            return calcMin(nb, true); 
+        }
+
+
 
     }
     public class CalcMedianne
@@ -1005,5 +3521,115 @@ namespace pdb.util
         //}
     }
 }]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\Tuning\ConfAlbumSort.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using System.Xml;
+using pdb.util;
+using System;
+using pdb.gen.albums;
+
+namespace pdb.gen.Tuning
+{
+    [Serializable]
+    /// <summary>
+    /// Configuration sort Albums
+    /// </summary>
+    public class ConfAlbumSort : TuningBase
+    {
+      
+        private List<ConfMedianne> composants = new List<ConfMedianne>();
+        private List<ConfMedianne> composantsUtiles = new List<ConfMedianne>();
+        public List<ConfMedianne> Composants { get { return composants; } }
+        public List<ConfMedianne> ComposantsUtiles { get { return composantsUtiles; } }
+        public decimal coeffEnabled = 1m;
+        public int stackSize = 0;
+        public DateTime lastModif;
+        public bool createCourant = true;
+        public bool createInter = true;
+        public bool createAll; 
+        public void Calcul()
+        {
+            composantsUtiles = new List<ConfMedianne>();
+            foreach (var cmp in composants)
+            {
+                if (cmp.enabled)
+                    composantsUtiles.Add(cmp);
+            }
+            if (composantsUtiles.Count == 0)
+                composantsUtiles.Add(composants[0]);
+        }
+        public ConfAlbumSort()
+        {
+        }
+
+        public ConfAlbumSort(XmlElement node)
+            : base(node)
+        {
+
+            composants.Clear();
+            foreach (XmlNode sub in node.ChildNodes)
+            {
+                if (sub is XmlElement)
+                {
+                    var cmp = new ConfMedianne(node, sub as XmlElement);
+                    composants.Add(cmp);
+                }
+            }
+
+            builddec("coeffEnabled", v => coeffEnabled = v);
+            buildi("stackSize", v => stackSize = v);
+            buildDate("lastModif", v => lastModif = v);
+            buildb("createCourant", v => createCourant = v);
+            buildb("createInter", v => createInter = v);
+            buildb("createAll", v => createAll = v);
+            Calcul();
+
+        }
+
+        public override void save(XmlWriter w)
+        {
+            base.save(w); 
+            writeStart("albumSort");
+                write("coeffEnabled", coeffEnabled);
+                write("stackSize",stackSize);
+                write("lastModif", lastModif); 
+                write("createCourant", createCourant);
+                write("createInter", createInter);
+                write("createAll", createAll);
+                foreach (var cmp in composants)
+                    cmp.save(w);
+            writeEnd(); 
+        }
+        public bool Enabled
+        {
+            get
+            {
+                foreach (var cmp in composants)
+                {
+                    if (cmp.enabled)
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        public void auto(Piece p)
+        {
+            if ( p.StackIndex >0 && p.StackIndex <= stackSize + 1)
+                return; 
+            var motif = p.SelectedMotif;
+            if (p.SelectedMotif == selectedCoeff.none)
+                return; 
+            foreach (var cmp in composants)
+            {
+                cmp.auto(motif); 
+            }
+        }
+    }
+
+
+}
+]]></content>
   </file>
 </db>
