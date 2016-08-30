@@ -1,562 +1,4 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  <file path="\pdb.player\App.xaml.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
-using pdb.db;
-using pdb.db.piece.data;
-using pdb.gen;
-using pdb.gen.conf;
-using pdb.gen.Tuning;
-using pdb.obj;
-using pdb.ordo;
-using pdb.player.ViewModel;
-using pdb.player.ViewModel.Commande.PlayList;
-using pdb.player.ViewModel.gen;
-using pdb.player.Vue;
-using pdb.util;
-using pdb.db.piece.type;
-
-
-namespace pdb.player
-{
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : Application, IIhm
-    {
-        public static Logger log;
-        public static CDb Db;
-        public static Consolid gen;
-        //  public static LegacyApp app;
-        // internal static HomeLoader loader;
-        internal static BibViewModel bib;
-        static int step = -5;
-        public const string PHASE1 = "PHASE1";
-        public const string PHASE2 = "PHASE2";
-
-        private static Export export;
-        private static Import import;
-
-
-        private static Thread thLoop;
-        private static bool __go;
-        private static bool __end;
-        private static volatile object _lock = new object();
-        private static ListWriter listWriter;
-        private static App _instance;
-        public static App Instance { get { return _instance; } }
-        private static DetailClassementViewModel detailClassementViewModel;
-        internal static DetailClassementViewModel DetailClassementViewModel { set { detailClassementViewModel = value; } }
-
-        public App()
-            : base()
-        {
-            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-            this.DispatcherUnhandledException += new DispatcherUnhandledExceptionEventHandler(App_DispatcherUnhandledException);
-            Application.Current.DispatcherUnhandledException += new DispatcherUnhandledExceptionEventHandler(Current_DispatcherUnhandledException);
-            TaskScheduler.UnobservedTaskException += new EventHandler<UnobservedTaskExceptionEventArgs>(TaskScheduler_UnobservedTaskException);
-            _instance = this;
-        }
-
-        void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
-        {
-            e.SetObserved();
-            CheckException("Task", sender, e.Exception);
-        }
-
-        void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            e.Handled = true;
-            CheckException("AppDispatcher", sender, e.Exception);
-        }
-
-        void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            e.Handled = true;
-            CheckException("Dispatcher", sender, e.Exception);
-        }
-
-        void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            CheckException("Domain", sender, e.ExceptionObject);
-        }
-
-        private bool displayMsg;
-        private void CheckException(string from, object sender, object ex)
-        {
-            string message = string.Format("Erreur:\r\n from->{0}\r\nsender ->{1}\r\n{2}", from, sender, ex.ToString());  // "Erreur->sender:" + sender +" from:" + from + " " + ex.ToString();
-            if (log != null)
-                log.log(message);
-            var msgBox = message;
-            if (msgBox.Length > 2000)
-                msgBox = msgBox.Substring(0, 1998);
-            if (!displayMsg)
-            {
-                displayMsg = true;
-                var result = MessageBox.Show(msgBox, "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                displayMsg = false;
-            }
-
-        }
-        [STAThread]
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            try
-            {
-
-                pdb.player.ViewModel.Colors.MementoColor.recover();
-
-                base.OnStartup(e);
-                Thread.CurrentThread.Name = "GUI";
-
-                //   app = new LegacyApp(); 
-                Logger.init("pdb.player");
-                log = Logger.getLogger("Program");
-                misc.init(log);
-
-                //  IPlayerEngine player = PlayerBuilder.create("vlcplugin");
-
-
-                var xmlConf = CConf.loadConf();
-                export = CConf.Export;
-                import = CConf.Import;
-
-                gen = new Consolid();
-                var mementoAlbum = Memento.Instance.confAlbum;
-                if (mementoAlbum != null && mementoAlbum.Composants.Count > 0)
-                    gen.SortAlbumMode = mementoAlbum;
-                else
-                    gen.SortAlbumMode = CConf.ConfGen.AlbumSort;
-                Memento.Instance.confAlbum = gen.SortAlbumMode; 
-
-                BackGroundTaskMgr.Conf = CConf.ConfOrdo;
-                BackGroundTaskMgr.Start();
-                DataConf dbConf = new DataConf(xmlConf);
-                CFile.DefaultFolder = dbConf.defaultFolder;
-                ZipUtil.Exe = dbConf.sZip;
-                Db = new CDb(dbConf);
-                ConfMedianneVirt.ModeDiff = Db.Mode == dbMode.diff; 
-                //  loader = new HomeLoader(Db);
-                //  app.init(loader);
-                Db.SovIni();
-                Db.loadData();
-
-                //ChronoData.refreshDate(DateTime.MinValue);
-                //ChronoData.DateAuto = false;
-                //Db.eraseClassementForEnabled();
-                //Db.WriteDB1(); 
-                //return;
-                // app.loadData(Db, CConf.Scan);
-
-                // Db.LegacyConsolid(app.LegacyList, DateTime.Now);
-
-
-
-
-                goInit();
-
-                Memento.Instance.save(); 
-                thLoop = new Thread(loop);
-                thLoop.Start();
-
-                MemUtil.Start(CConf.GcCollect);
-                //  go();
-            }
-            catch (Exception ex)
-            {
-                if (log != null)
-                    log.log(ex.ToString());
-            }
-
-
-
-        }
-
-
-
-        private static void loop()
-        {
-            Thread.CurrentThread.Name = "App";
-            while (!__end)
-            {
-                Thread.Sleep(30);
-                if (!__go)
-                    continue;
-                lock (_lock)
-                {
-                    if (!__go)
-                        continue;
-                    __go = false;
-                }
-                _go();
-
-            }
-
-        }
-        public static void go()
-        {
-            lock (_lock)
-            {
-                __go = true;
-                if (bib != null)
-                    bib.Aborted = true;
-            }
-        }
-
-        private static void goInit()
-        {
-            var root = gen.Root;
-
-            ChronoData.DateAuto = false;
-            DateTime now = DateTime.Now;
-            gen.Now = now;
-            gen.Step = -1;
-            gen.MakeConsolid(Db.List.getList());
-
-            if (CConf.ResetOneCl)
-            {
-                Classement min = Classement.create("00003.0"); decimal mind = min.ClassementValueDecimal;
-                Classement zero = Classement.create("0.0"); decimal zer0d = zero.ClassementValueDecimal;
-
-                foreach (Piece p in gen.sortByClass())
-                {
-                    decimal clValue = p.ClassementValueDecimal;
-                    if (clValue > zer0d)
-                    {
-                        if (clValue >= zer0d)
-                        {
-                            var dPiece = Db.getPiece(p.PieceId);
-                            var strNewCl = "0000" + dPiece.getClassement().ToString();
-                            var newCl = Classement.create(strNewCl);
-                            p.Enabled = true;
-
-                            p.setClassement(newCl.ClassList, newCl.Rating);
-                            dPiece.Classement.eraseClassement2(newCl);
-                        }
-                        else
-                            p.Enabled = false;
-                    }
-                }
-                /*
-                var _albums = gen.Albums;
-                foreach (var album in _albums.List)
-                {
-                    if (album.Name == "Mémos vocaux" || album.Name == "Pictures at an Exhibition")
-                    {
-                    }
-                    var l = album.Tracks;
-                    decimal pluspetitNonNull = int.MaxValue;
-                    foreach (Piece t in l)
-                    {
-                        decimal clValue = t.ClassementValueDecimal;
-                        if (clValue > zer0d)
-                        {
-                            if (clValue < pluspetitNonNull)
-                                pluspetitNonNull = clValue;
-                        }
-
-                    }
-                    foreach (Piece t in l)
-                    {
-                        if (t.Parent == null)
-                        {
-                            decimal clValue = t.ClassementValueDecimal;
-                            if (t.isClassListNumeric && clValue > zer0d)
-                            {
-                                if (clValue > pluspetitNonNull)
-                                {
-                                    var dPiece = Db.getPiece(t.PieceId);
-                                    t.Enabled = true;
-                                    t.setClassement("0", 0);
-                                    dPiece.Classement.eraseClassement2();
-                                }
-                            }
-                        }
-                    }
-                }*/
-                gen.MakeConsolid(Db.List.getList());
-            }
-
-
-            gen.buildMusique();
-            gen.buildClassTree();
-            gen.buildLists(Db.List.Listes);
-
-            bib = new BibViewModel(root);
-            ChronoData.DateAuto = true;
-            //  var classement = root.getOrCreate("classement");
-
-
-
-            ListWriterMgr.Async = false;
-            listWriter = new ListWriter(bib);
-            //   gen.createRot(CConf.ListBase, listWriter); 
-            //bib = new BibViewModel(Db.Root); 
-            //gen.createRot(CConf.ListBase, bib);
-            //   if (bgClass.IsEnd) BackGroundTaskMgr.Start();
-
-
-            gen.timeRanking();
-            gen.eraseGrouping();
-            // gen.writeComment();
-            gen.createRot(CConf.ListBase, listWriter);
-            PlayListViewModel.Log = true;
-            //   gen.builStats();
-            gen.CommentGo = true;
-            gen.GroupinGO = true;
-            //  PlayerViewModel.Instance.SortAlbumMode = gen.SortAlbumMode;
-            PlayerViewModel.Instance.WithVirtualAlbum = gen.AlbumVirtual;
-            PlayerViewModel.Instance.ConfAlbumSort = gen.SortAlbumMode;
-            Memento.Instance.confAlbum = gen.SortAlbumMode; 
-            Piece.SeuilProvisoire = gen.SortAlbumMode.lastModif;
-        }
-
-        private static void _go()
-        {
-            try
-            {
-                Memento.Instance.save(); 
-                var confSort = PlayerViewModel.Instance.ConfAlbumSort;
-                if (confSort != null)
-                    Piece.SeuilProvisoire = confSort.lastModif;
-                detailClassementViewModel.IhmInDispo = ihmInDispo.rot;
-                gen.CommentGo = false;
-                gen.GroupinGO = false;
-                bib.Aborted = true;
-                Db.saveAsync();
-                step++;
-                gen.Step = step;
-
-                ChronoData.DateAuto = false;
-                DateTime now = DateTime.Now;
-                gen.Now = now;
-                ChronoData.DateAuto = false;
-                // if (__end || __go) return;
-
-                if (PlayerViewModel.Instance.CreateRot)
-                {
-                    //  gen.SortAlbumMode = PlayerViewModel.Instance.SortAlbumMode;
-                    //    gen.AlbumVirtual = PlayerViewModel.Instance.WithVirtualAlbum; 
-                    gen.MakeConsolid(Db.List.getList()); //   bib.Musique.Tracks);
-                    //  if (__end || __go) return;
-                    AlbumCtl.Instance.init();
-                    //   if (__end || __go) return;
-                    gen.timeRanking();
-                    //  if (__end || __go) return;
-                    ChronoData.DateAuto = true;
-
-                    //if (refresh != null)
-                    //    refresh(PHASE1, EventArgs.Empty);
-
-                    //      if (__end || __go) return;
-                    bib.Aborted = false;
-                    ListWriterMgr.Async = false;
-                    //listWriter = new ListWriter(root);
-                    try
-                    {
-                        CConf.loadConf();
-                    }
-                    catch (Exception ex)
-                    {
-                        log.log(ex.ToString());
-                    }
-                    // gen.SortByAlbum = PlayerViewModel.Instance.SortByAlbum;
-                    gen.createRot(CConf.ListBase, App.bib);
-                    //if (refresh != null)
-                    //    refresh(PHASE1, EventArgs.Empty);
-
-
-                    //log.log("visibles"); 
-                    //foreach (TrackListViewModel visible in Player.VisibleItems)
-                    //{
-                    //    if (__end || __go) return;
-                    //    visible.PieceGen.writeCommentGrouping();
-                    //    visible.refresh(); 
-                    //}
-                    //if (refresh != null)
-                    //    refresh(PHASE2, EventArgs.Empty);
-
-                    //if (__end || __go) return;
-                    //gen.writeComment();
-                    //if (__end || __go) return;
-                    //gen.writeGrouping();
-                    if (refresh != null)
-                        refresh(PHASE2, EventArgs.Empty);
-
-                    if (__end || __go) return;
-
-                    gen.CommentGo = true;
-                    gen.GroupinGO = true;
-
-
-
-                    //if (refresh != null)
-                    //    refresh(PHASE2, EventArgs.Empty);
-                    // _refresh = true;
-                    detailClassementViewModel.IhmInDispo = ihmInDispo.stat;
-                    gen.builStats();
-                    //bib = new BibViewModel(Db.Root); 
-                    //gen.createRot(CConf.ListBase, bib);
-                    //   if (bgClass.IsEnd) BackGroundTaskMgr.Start();
-                    gen.CommentGo = true;
-                    gen.GroupinGO = true;
-
-
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-                log.log(ex.ToString());
-            }
-
-            finally
-            {
-                //   gen.eraseGrouping(); 
-                if (refresh != null && PlayerViewModel.Instance.CreateRot)
-                    refresh(PHASE2, EventArgs.Empty);
-
-                detailClassementViewModel.IhmInDispo = ihmInDispo.none;
-                ExportCmd.CalculExport();
-            }
-
-
-        }
-
-        public static event EventHandler refresh;
-
-        public static void shutdown()
-        {
-            MemUtil.End();
-            __end = true;
-            App.bib.Aborted = true;
-            Db.WriteDB1();
-            Db.WriteDB2();
-            App.bib.Aborted = true;
-            Environment.Exit(0);
-        }
-
-        public static List<TrackListViewModel> getAlbum(TrackListViewModel track)
-        {
-            if (gen == null)
-                return null;
-
-            var ll = new List<TrackListViewModel>();
-
-            var l = gen.getTracksAlbum(track.Track);
-            if (l == null)
-                return null;
-            foreach (ITrackMetaData p in l)
-            {
-
-                TrackListViewModel trackList = PlayListViewModel.findTrack(bib.Musique, p.PieceId);
-                if (trackList == null)
-                    continue;
-                ll.Add(trackList);
-            }
-
-            return ll;
-
-        }
-
-        public void InfoIHm(string message, string caption)
-        {
-            MessageBox.Show(message, caption, MessageBoxButton.OK);
-        }
-
-        public bool Confirm(string question, string caption)
-        {
-            return MessageBox.Show(question, caption, MessageBoxButton.YesNo) == MessageBoxResult.Yes;
-        }
-
-        public bool? TriChoix(string question, string caption)
-        {
-            var result = MessageBox.Show(question, caption, MessageBoxButton.YesNoCancel);
-            switch (result)
-            {
-                case MessageBoxResult.Cancel:
-                    return null;
-                case MessageBoxResult.No:
-                    return false;
-                case MessageBoxResult.None:
-                    return null;
-                case MessageBoxResult.OK:
-                    return true;
-                case MessageBoxResult.Yes: return true;
-                default: return null;
-
-            }
-        }
-        public Export getConfExport(string question)
-        {
-            var dialog = new ConfExport(question, export);
-            dialog.ShowDialog();
-            return export;
-        }
-
-        public Import getConfImport(string question)
-        {
-            var dialog = new ConfImport(question, import);
-            dialog.ShowDialog();
-            return import;
-        }
-
-        public string folderDialog()
-        {
-            var dialog = new FolderBrowserDialogW(Db.DefaultFolder); // new System.Windows.Forms.FolderBrowserDialog();
-            dialog.ShowDialog();
-            //dialog.SelectedPath = Db.DefaultFolder;
-            //System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-            //string dir = null;
-            //if (result == System.Windows.Forms.DialogResult.OK)
-            //{
-            //    dir = dialog.SelectedPath;
-            //}
-
-            //return dir;
-            return dialog.Dir;
-        }
-
-        public int getNb(string question)
-        {
-            var w = new getNb(question, 2);
-            w.ShowDialog();
-            return w.Nb;
-        }
-
-
-        public bool changeName(string title, IName data)
-        {
-            var stringDialog = new StringDialog(title, data);
-            stringDialog.ShowDialog();
-            return stringDialog.Ok;
-        }
-
-        public PlayListViewModel selectPlayList(string title)
-        {
-            var dialog = new BrowsePlayList(title);
-            dialog.ShowDialog();
-            if (dialog.Ok)
-            {
-                return dialog.Selected;
-            }
-
-            return null;
-        }
-
-        public static void buildList()
-        {
-            Db.List.buildLists(bib.Listes.PlayList);
-        }
-    }
-}
-]]></content>
-  </file>
   <file path="\pdb.player\Vue\Memento.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -674,6 +116,144 @@ namespace pdb.player.Vue
         public GridLength toGrid()
         {
             return new GridLength(value, unit);
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\Vue\PlayerControler.xaml.cs">
+    <content><![CDATA[using pdb.player.model;
+using pdb.player.ViewModel;
+using pdb.player.ViewModel.Commande.PlayList;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+using System.Windows.Controls.Primitives;
+using System.Windows.Automation.Peers;
+using pdb.player.Vue.Util;
+using pdb.player.ViewModel.Colors;
+
+namespace pdb.player.Vue
+{
+    /// <summary>
+    /// Logique d'interaction pour PlayerControler.xaml
+    /// </summary>
+    public partial class PlayerControler : UserControl, IRecordClassmentObserver, IGradiant
+    {
+        private Gradient confGradiant; 
+        public PlayerControler()
+        {
+            InitializeComponent();
+           
+
+            GradiantBuilder.Instance.Add(this); 
+            this.Loaded += PlayerControler_Loaded;
+        }
+
+        void PlayerControler_Loaded(object sender, RoutedEventArgs e)
+        {
+            DataContext = PlayerViewModel.Instance;
+            DataGridPlayList.refreshOk += new EventHandler(DataGridPlayList_refreshOk);
+            DetailClassementViewModel.RecordObserver = this;
+
+        }
+
+        void DataGridPlayList_refreshOk(object sender, EventArgs e)
+        {
+            if (_currentPaying != null)
+            {
+                if (TrackListViewModel.CurrentPlaying == _currentPaying)
+                    automateNextTrack();
+                _currentPaying = null;  
+            }
+        }
+
+        void DetailClassementViewModel_classementChanged(object sender, EventArgs e)
+        {
+            focus();
+        }
+
+        private void focus()
+        {
+            //if (!CheckAccess())
+            //    Dispatcher.BeginInvoke(new Action(this.focus), DispatcherPriority.DataBind);
+            //else
+            //{
+            //    b_forward.Focus();
+            //}
+        }
+
+        private void automateNextTrack()
+        {
+            if (!CheckAccess())
+                Dispatcher.BeginInvoke(new Action(this.automateNextTrack), DispatcherPriority.DataBind);
+            else
+            {
+                ICommand forward = PlayerViewModel.Instance.Forward;
+                if (forward.CanExecute(this))
+                    forward.Execute(this);
+
+
+            }
+        }
+
+        private void txtFilter_KeyUp(object sender, KeyEventArgs e)
+        {
+            String filter = txtFilter.Text;
+            doFilter(filter);
+        }
+
+        private void doFilter(String filter)
+        {
+            PlayerViewModel.Instance.doFilter(filter);
+        }
+
+        private void btSort_Click(object sender, RoutedEventArgs e)
+        {
+            var conf = PlayerViewModel.Instance.ConfAlbumSort;
+            var dialog = new ConfAlbumSortW(conf);
+            dialog.Show();
+        }
+
+
+
+        public void signalClassementChange()
+        {
+            focus();
+        }
+
+        private TrackListViewModel _currentPaying;
+        public void autoNextTrack(TrackListViewModel track)
+        {
+            _currentPaying = track;
+        }
+
+
+
+        ViewModel.Colors.Gradient IGradiant.Conf
+        {
+            get { return Couleurs.Instance.player.gradient; }
+        }
+
+        bool IGradiant.sensGradient
+        {
+            get { return false;  }
+        }
+
+        void IBackGround.setBackground(Brush brush)
+        {
+            gmain.Background = brush; 
         }
     }
 }
@@ -1133,7 +713,7 @@ namespace pdb.util
                         histo.Add(Convert.ToDecimal(line));
                     }
 
-                    
+
                 }
 
                 if (File.Exists(PathDiff))
@@ -1147,7 +727,7 @@ namespace pdb.util
 
                 }
 
-                indexDiff = histo.Count - histoDiff.Count; 
+                indexDiff = histo.Count - histoDiff.Count;
             }
 
         }
@@ -1203,7 +783,7 @@ namespace pdb.util
 
             if (modeDiff)
             {
-                histoDiff = null; 
+                histoDiff = null;
             }
             else
             {
@@ -1249,7 +829,7 @@ namespace pdb.util
             var last = lastAutoDirection;
             lastAutoDirection = selectedByCoeff;
 
-            if (last != selectedByCoeff)
+            if (last.HasValue && last != selectedByCoeff)
                 _nbSameDirection = 0;
 
             if (selectedByCoeff)
@@ -1270,49 +850,49 @@ namespace pdb.util
                 var aux = dconvergence;
                 if (last != selectedByCoeff)
                 {
-                    if (selectedByCoeff)
+                    //if (selectedByCoeff)
+                    //{
+
+                    //dcoeffp *= dconvergence;
+                    //dcoeffm *= dconvergence;
+                    //if (dcoeffp < EPSILON) dcoeffp = EPSILON;
+                    //if (dcoeffm < EPSILON) dcoeffm = EPSILON;
+
+                    // la convergence est maintenant directement le % de baisse
+                    var r = 1 - dconvergence;
+                    dcoeffp *= r;
+                    dcoeffm *= r;
+
+                    if (dcoeffp < EPSILON)
+                    { dcoeffp = EPSILON; if (rr > 0m) dcoeffm = rr * dcoeffp; }
+                    if (dcoeffm < EPSILON)
+                    { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
+
+
+                    //   _nbSameDirection = 0;
+                    //  lastAutoDirection = null;
+
+
+
+                    if (_linkconv)
+                        calcConv();
+                    else
                     {
 
-                        //dcoeffp *= dconvergence;
-                        //dcoeffm *= dconvergence;
-                        //if (dcoeffp < EPSILON) dcoeffp = EPSILON;
-                        //if (dcoeffm < EPSILON) dcoeffm = EPSILON;
-
-                        // la convergence est maintenant directement le % de baisse
-                        var r = 1 - dconvergence;
-                        dcoeffp *= r;
-                        dcoeffm *= r;
-
-                        if (dcoeffp < EPSILON)
-                        { dcoeffp = EPSILON; if (rr > 0m) dcoeffm = rr * dcoeffp; }
-                        if (dcoeffm < EPSILON)
-                        { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
-
-
-                        //   _nbSameDirection = 0;
-                        //  lastAutoDirection = null;
-
-
-
-                        if (_linkconv)
-                            calcConv();
-                        else
-                        {
-
-                            //  var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
-                            dconvergence *= dconvdeltam; // 0.09 // 0.81
-                            //  dconvergence = 1 - delta; // 0.9 -> 0.91 // 0.1-> 0.19
-                        }
-
-
-
-                        danticonvergence *= danticonvdeltam;
-                        if (danticonvergence < 1m) danticonvergence = 1;
-
-                        //delta = danticonvergence - 1; // 0.1
-                        //delta *= danticonvdeltam;  //0.09; 
-                        //    danticonvergence = 1+delta; // 1.1 -> 1.09
+                        //  var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
+                        dconvergence *= dconvdeltam; // 0.09 // 0.81
+                        //  dconvergence = 1 - delta; // 0.9 -> 0.91 // 0.1-> 0.19
                     }
+
+
+
+                    danticonvergence *= danticonvdeltam;
+                    if (danticonvergence < 1m) danticonvergence = 1;
+
+                    //delta = danticonvergence - 1; // 0.1
+                    //delta *= danticonvdeltam;  //0.09; 
+                    //    danticonvergence = 1+delta; // 1.1 -> 1.09
+                    // }
 
 
 
@@ -1383,7 +963,7 @@ namespace pdb.util
                 decimal coeffT = CoeffT;
                 while (histo.Count >= NB_HISTO)
                     histo.RemoveAt(0);
-                histo.Add(coeffT);
+                
 
                 string montee = sens ? "up" : "down";
                 var c0 = coeffT;
@@ -1405,6 +985,7 @@ namespace pdb.util
                 misc.log("{0} {1:0.######} {2:0.######}->{3:0.######}", montee, delta, c0, coeffT);
 
                 coeffVirt = coeff;
+                histo.Add(coeffT);
             }
             catch
             {
@@ -1835,684 +1416,5 @@ namespace pdb.util
         //}
     }
 }]]></content>
-  </file>
-  <file path="\PieceDb.Db\CDb.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Xml;
-using pdb.db.obj;
-using pdb.db.piece.data;
-using pdb.obj;
-using pdb.util;
-
-namespace pdb.db
-{
-    public enum mergePriority
-    {
-        left = -1,
-        right = 1,
-        none = 0
-    }
-    /// <summary>
-    /// g�re la persistence
-    /// </summary>  
-    /// <remarks></remarks>
-    public class CDb
-    {
-        public const int CURRENT_VERSION = 3;
-        public static int Version;
-
-        const string SEQ_PIECE = "seq_piece";
-        const string SEQ_LIST = "seq_list";
-        private static int pieceSequenceId = 0;
-        private static int listSequenceId = 0;
-        private static int getPieceNextId { get { pieceSequenceId++; return pieceSequenceId; } }
-        private static int getListNextId { get { listSequenceId++; return listSequenceId; } }
-        private FileInfo LOCAL_FILE;
-        private FileInfo REMOTE_FILE;
-        private FileInfo LastFullFile;
-        private FileInfo DiffFile;
-        private FileInfo SOV;
-        private CListPiece m_list;
-        private CListPiece lastFull; private CListPiece remoteOrg;
-        private CListPiece trace;
-        private DateTime now;
-        private string sovRep;
-        private DateTime lastSov;
-        private int nbOpe;
-
-        private bool loadRemote;
-        private bool loadTrace;
-        private bool loadLastFull;
-        private bool loadDiff;
-
-
-
-        private FileInfo remoteTrace;
-        private DataConf conf;
-
-        private dbMode mode;
-        public dbMode Mode { get { return mode; } }
-        public CDb(DataConf conf)
-        {
-            this.conf = conf;
-            LOCAL_FILE = conf.dbLocal;
-            REMOTE_FILE = conf.dbRemote;
-            remoteTrace = conf.dbTrace;
-            LastFullFile = conf.dbLastFull;
-            DiffFile = conf.dbDiff;
-            SOV = conf.dbSov;
-            this.mode = conf.mode;
-
-            init();
-        }
-
-        public string DefaultFolder { get { return conf.defaultFolder; } }
-
-        private void init()
-        {
-            this.now = DateTime.Now;
-            lastSov = now;
-            sovRep = now.ToString("yy-MM-dd_HH-mm-ss");
-
-
-
-            System.DateTime l_localDate = System.DateTime.MinValue;
-            System.DateTime l_remoteDate = System.DateTime.MinValue;
-
-            if (LOCAL_FILE.Exists)
-                l_localDate = LOCAL_FILE.LastWriteTime;
-            if (REMOTE_FILE.Exists)
-                l_remoteDate = REMOTE_FILE.LastWriteTime;
-
-
-            TimeSpan l_dif = l_localDate.Subtract(l_remoteDate);
-            double l_sec = l_dif.TotalSeconds;
-            if (REMOTE_FILE.Exists)
-            {
-
-                if (Math.Abs(l_sec) > 3 || (LOCAL_FILE.Exists && REMOTE_FILE.Length != LOCAL_FILE.Length))
-                {
-                    loadRemote = true;
-                }
-                else
-                {
-                    log("not load remote, same file");
-                }
-            }
-            else
-            {
-                log("remote file does not exist");
-            }
-
-            if (remoteTrace != null && remoteTrace.Exists)
-                loadTrace = true;
-
-
-
-
-        }
-
-        public void loadData()
-        {
-            // cas diff-> je mémorise lastFull, je r�cup�re l'instantan�
-            // cas full -> je ne m�morise pas lastFull, je r�cup�re le diff et fait le merge
-
-            // gestion des diff
-            //if (mode == dbMode.diff)
-            //{
-            // je sauvegarde lastFull
-            misc.log("mode:{0}  LastFullFile.Exists: {1} DiffFile.Exists: {2}", mode, LastFullFile.Exists, DiffFile.Exists);
-            if (mode == dbMode.diff)
-            {
-                if (LastFullFile.Exists)
-                {
-                    log("load lastFull");
-                    lastFull = loadData(LastFullFile);
-                }
-                else
-                {
-                    log("load local for lastFull");
-                    lastFull = loadData(LOCAL_FILE);
-                    File.Copy(LOCAL_FILE.FullName, LastFullFile.FullName, true);
-                }
-
-                log("load local");
-                m_list = loadData(LOCAL_FILE);
-            }
-
-            else
-            {
-
-                log("load local");
-                m_list = loadData(LOCAL_FILE);
-                if (DiffFile.Exists)
-                {
-
-
-                    log("load diff");
-                    var diff = loadData(DiffFile);
-
-
-                    log("consolid diff and local");
-                    foreach (CPiece pdiff in diff)
-                    {
-                        m_list.Consolid(pdiff, mergePriority.right);
-                    }
-
-                    var sov = DiffFile.FullName.Replace(".xml", ".sov.xml");
-                    DiffFile.CopyTo(sov, true);
-                    DiffFile.Delete();
-
-
-                    write();
-
-                    log("load local consolidé for lastFull");
-                    lastFull = loadData(LOCAL_FILE);
-                    File.Copy(LOCAL_FILE.FullName, LastFullFile.FullName, true);
-                    addToZip(true, LOCAL_FILE.FullName);
-                }
-                else
-                {
-                    log("load local for lastFull");
-                    lastFull = loadData(LOCAL_FILE);
-                    File.Copy(LOCAL_FILE.FullName, LastFullFile.FullName, true);
-
-                    if (loadRemote)
-                    {
-                        log("load remote");
-                        remoteOrg = loadData(REMOTE_FILE);
-                        log("consolid remote and local");
-                        m_list.Consolid(remoteOrg);
-                    }
-                }
-            }
-
-
-            if (loadTrace)
-            {
-                log("load trace");
-                trace = loadData(remoteTrace);
-            }
-        }
-
-        public void eraseClassementForEnabled()
-        {
-
-            foreach (CPiece piece in m_list)
-            {
-                if (piece.Enabled)
-                {
-                    piece.eraseClassement();
-                }
-            }
-        }
-
-        public List<ITrackIdentity> Files
-        {
-            get
-            {
-                return new List<ITrackIdentity>(m_list.getList());
-            }
-        }
-
-        // r�cup�ration des infos externes
-        public void LegacyConsolid(CListPiece list, DateTime date)
-        {
-            misc.log("Cdb::LegacyConsolid");
-
-            DateTime now = DateTime.Now;
-            ChronoData.refreshDate(date);
-
-            foreach (CPiece ext in list)
-            {
-                m_list.legacyConsolid(ext);
-            }
-
-            m_list.bilanNatives();
-
-            setAlbumArtistFromFile();
-
-        }
-
-        public void LegacyConsolid(CPiece ext)
-        {
-            m_list.legacyConsolid(ext);
-        }
-
-        public void SynchroNative(DateTime date)
-        {
-            misc.log("Cdb::SynchroNative");
-            ChronoData.refreshDate(date);
-            foreach (CPiece piece in m_list)
-            {
-                piece.SynchroNative();
-            }
-
-        }
-
-        private void setAlbumArtistFromFile()
-        {
-            foreach (ITrackMetaData piece in m_list)
-            {
-                setAlbumArtistFromFile(piece);
-            }
-        }
-
-
-
-        private void setAlbumArtistFromFile(ITrackMetaData piece)
-        {
-
-            try
-            {
-                string location = piece.Location;
-                if (location.isNullorEmpty())
-                    return;
-                FileInfo file = new FileInfo(location);
-                DirectoryInfo dAlbum = file.Directory;
-                string dirAlbum = dAlbum.Name;
-                string dirArtist = dAlbum.Parent.Name;
-                string artist = piece.Artist;
-                string album = piece.Album;
-
-                string newArtist = artist;
-                string newAlbum = album;
-
-
-
-
-                if (artist.isNullorEmpty())
-                {
-                    if (!TrackIdentity.UNKNOW_ARTIST.Equals(dirArtist))
-                        newArtist = dirArtist;
-                    //if (!UNKNOW_ARTIST.Equals(newArtist))
-                    //    piece.Artist = newArtist;
-                }
-
-                if (album.isNullorEmpty())
-                {
-                    if (!dirAlbum.Contains(TrackIdentity.UNKNOW_ALBUM))
-                    {
-                        newAlbum = dirAlbum;
-                        if (newArtist.NotNullOrEmpty())
-                        {
-                            if (!TrackIdentity.UNKNOW_ARTIST.Equals(newArtist))
-                                newAlbum = newAlbum.Replace(newArtist, "");
-                        }
-                    }
-                }
-
-                //if (TrackIdentity.UNKNOW_ARTIST.Equals(newArtist))
-                //    piece.Artist = "";
-                //else 
-                if (newArtist != artist)
-                    piece.Artist = newArtist;
-
-                //if (TrackIdentity.UNKNOW_ALBUM.Equals(newAlbum))
-                //    piece.Album = "";
-                //else
-                if (newAlbum != album)
-                    piece.Album = newAlbum;
-
-            }
-            catch (Exception e)
-            {
-                misc.log(e.ToString());
-            }
-        }
-
-
-
-        #region "sauvegarde"
-
-
-
-        public void Sov(string fileIt)
-        {
-            var list = new List<string> { fileIt, LOCAL_FILE.FullName };
-            if (loadRemote)
-                list.Add(REMOTE_FILE.FullName);
-            if (loadTrace)
-                list.Add(remoteTrace.FullName);
-
-            ZipUtil.compress(SOV.FullName, sovRep, list);
-        }
-
-        public void SovIni()
-        {
-            var list = new List<string> { LOCAL_FILE.FullName, LastFullFile.FullName, DiffFile.FullName };
-            if (loadRemote)
-                list.Add(REMOTE_FILE.FullName);
-            if (loadTrace)
-                list.Add(remoteTrace.FullName);
-
-            ZipUtil.compress(SOV.FullName, sovRep, list);
-        }
-
-        public void SovIncrement()
-        {
-        }
-        #endregion
-
-        public void removeVersions()
-        {
-            misc.log("Suppression des versions !!!");
-            foreach (CPiece piece in m_list)
-            {
-                piece.removeVersions();
-            }
-        }
-
-        public void Menage()
-        {
-            foreach (CPiece piece in m_list)
-            {
-                piece.Menage();
-            }
-        }
-
-        public void WriteDB1()
-        {
-
-            misc.log("CDb:WriteDB1");
-
-            lock (lockSave)
-            {
-                write();
-                File.Copy(REMOTE_FILE.FullName + ".tmp", REMOTE_FILE.FullName, true);
-                misc.log("CDb:fin WriteDB1");
-            }
-
-        }
-        public void saveAsync()
-        {
-            lock (this)
-            {
-                _goSave = true;
-                if (thSave == null)
-                {
-                    thSave = new Thread(loopSave);
-                    thSave.Start();
-                }
-            }
-        }
-        private Thread thSave;
-        private bool _goSave;
-        private volatile object lockSave = new object();
-
-        private void write()
-        {
-            var settings = new XmlWriterSettings();
-            settings.Indent = true;
-            settings.Encoding = Encoding.UTF8;
-            using (XmlWriter writer = XmlWriter.Create(REMOTE_FILE.FullName + ".tmp", settings))
-            {
-                writer.WriteStartElement("db");
-                writer.WriteAttributeString("version", CURRENT_VERSION.ToString());
-                writer.WriteAttributeString(SEQ_PIECE, pieceSequenceId.ToString());
-                writer.WriteAttributeString(SEQ_LIST, listSequenceId.ToString());
-                m_list.write(writer);
-                writer.WriteEndDocument();
-                writer.Flush();
-            }
-
-            File.Copy(REMOTE_FILE.FullName + ".tmp", REMOTE_FILE.FullName, true);
-
-
-
-            if (lastFull != null)
-            {
-                try
-                {
-                    var diff = DiffFile.FullName;
-                    if (mode == dbMode.full)
-                        diff = diff.Replace(".xml", ".d.xml");
-
-                    using (XmlWriter writer = XmlWriter.Create(diff + ".tmp", settings))
-                    {
-                        writer.WriteStartElement("db");
-                        writer.WriteAttributeString("version", CURRENT_VERSION.ToString());
-                        writer.WriteAttributeString(SEQ_PIECE, pieceSequenceId.ToString());
-                        m_list.writeDiff(writer, lastFull);
-                        writer.WriteEndDocument();
-                        writer.Flush();
-                    }
-
-                    File.Copy(diff + ".tmp", DiffFile.FullName, true);
-                }
-                catch (Exception ex)
-                {
-                    misc.log(ex.ToString());
-                }
-            }
-
-            WriteDB2();
-        }
-        private void loopSave()
-        {
-            while (true)
-            {
-                Thread.Sleep(1000);
-                if (!_goSave)
-                    continue;
-                lock (this)
-                    _goSave = false;
-
-                lock (lockSave)
-                {
-
-                    try
-                    {
-                        write();
-                    }
-                    catch (Exception ex)
-                    {
-                        misc.log(ex.ToString());
-                        lock (this)
-                            _goSave = true;
-                    }
-                }
-
-            }
-        }
-
-        public void WriteDB2()
-        {
-
-            misc.log("CDb:WriteDB2");
-            lock (lockSave)
-                REMOTE_FILE.CopyTo(LOCAL_FILE.FullName, true);
-            misc.log("CDb:WriteDB2");
-
-            nbOpe++;
-            var now = DateTime.Now;
-            var ts = now - lastSov;
-            if (nbOpe >= conf.sovNb || ts > conf.sovMin)
-            {
-                nbOpe = 0;
-                lastSov = now;
-                DiffFile.Refresh();
-                if (DiffFile.Exists)
-                {
-                    addToZip(true, DiffFile.FullName);
-                    //var cp = DiffFile.DirectoryName + Path.DirectorySeparatorChar + now.ToString("yy-MM-dd_HH-mm-ss") + DiffFile.Name;
-                    //DiffFile.CopyTo(cp);
-                    //var list = new List<string> { cp };
-                    //ZipUtil.compress(SOV.FullName, sovRep, list);
-                    //File.Delete(cp); 
-                }
-
-
-            }
-        }
-
-        private void addToZip(bool withHorodate, params string[] list)
-        {
-            ZipUtil.compress(SOV.FullName, sovRep, list, withHorodate);
-        }
-
-
-        public CListPiece List
-        {
-            get
-            {
-                return m_list;
-
-            }
-
-        }
-
-        public CListPiece Remote
-        {
-            get
-            {
-                if (loadRemote)
-                    return remoteOrg;
-                return null;
-            }
-
-        }
-
-        public CListPiece Trace
-        {
-            get { return trace; }
-        }
-
-        private XmlElement loadList(FileInfo file, List<CPiece> list)
-        {
-            XmlElement root = null;
-            if (file.Exists)
-            {
-                XmlDocument l_doc = new XmlDocument();
-
-
-                l_doc.Load(file.FullName);
-
-                root = l_doc.DocumentElement;
-                var xmlTool = new XMLTool(root);
-                var version = xmlTool.getIntAttValue("version");
-                if (version > 0)
-                    Version = version;
-
-
-                var seqPiece = xmlTool.getIntAttValue(SEQ_PIECE);
-                if (seqPiece > pieceSequenceId)
-                {
-                    pieceSequenceId = seqPiece;
-                }
-
-                var seqList = xmlTool.getIntAttValue(SEQ_LIST);
-                if (seqList > listSequenceId)
-                {
-                    listSequenceId = seqList;
-                }
-
-                var pieceRoot = root;
-                if (version > 0)
-                    pieceRoot = root.ChildNodes[0] as XmlElement;
-
-
-
-                foreach (XmlElement l_xml in pieceRoot.ChildNodes)
-                {
-                    CPiece l_piece = new CPiece(l_xml);
-
-                    list.Add(l_piece); //TODO provisoire
-                    if (version > 0)
-                        checkId(l_piece);
-                    else
-                    {
-                        if (m_list != null)
-                        {
-                            m_list.checkId(l_piece); 
-                        }
-                        checkId(l_piece);
-                    }
-                    //}
-                }
-                misc.log("aux list: " + list.Count);
-
-
-
-
-            }
-            else
-            {
-
-            }
-
-            return root;
-        }
-
-
-
-        private  CListPiece loadData(FileInfo file)
-        {
-            if (file.Exists)
-            {
-
-                List<CPiece> l_list = new List<CPiece>();
-                var root = loadList(file, l_list);
-
-
-                misc.log("aux list: " + l_list.Count);
-                System.DateTime l_date = file.LastWriteTime; // File.GetLastWriteTime(a_path);
-
-                //chasse aux doublons
-                CListPiece l_ret = new CListPiece(l_list, l_date);
-                misc.log(" list: " + l_ret.Count);
-
-                var xLists = XMLTool.NodeLookUp(root, CListPiece.TOKEN_LISTS);
-
-                l_ret.loadListes(xLists);
-                return l_ret;
-            }
-            else
-            {
-                return new CListPiece();
-            }
-
-        }
-
-        public static void checkId(CPiece l_piece)
-        {
-            if (l_piece.PieceId < 0)
-                l_piece.setId(getPieceNextId);
-            if (l_piece.PieceId > pieceSequenceId)
-                pieceSequenceId = l_piece.PieceId;
-        }
-
-        public static void checkId(CPlayList pl)
-        {
-            if (pl.ID < 0)
-                pl.ID = getListNextId;
-            if (pl.ID > listSequenceId)
-                listSequenceId = pl.ID;
-        }
-        private void log(String txt)
-        {
-            misc.log(txt);
-        }
-
-        public CPiece getPiece(string location)
-        {
-            return m_list.getPiece(location);
-        }
-
-        public CPiece getPiece(int id)
-        {
-            return m_list.getPiece(id);
-        }
-    }
-
-
-}
-
-
-]]></content>
   </file>
 </db>
