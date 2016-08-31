@@ -1,123 +1,449 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  <file path="\pdb.player\Vue\Memento.cs">
+  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
-using System.Windows;
-using pdb.gen.Tuning;
-using System.Xml;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using pdb.player.ViewModel.Commande.Link;
+using pdb.player.ViewModel.Commande.PlayList;
+using pdb.player.ViewModel.Commande;
+using pdb.util;
+using System.Globalization;
 
-namespace pdb.player.Vue
+namespace pdb.player.ViewModel
 {
-    [Serializable]
-    class Memento
+    public enum listDisplay
     {
-        [NonSerialized]
-        const string PATH = "memento.dat";
-        [NonSerialized]
-        const string PATH_CONF = "..\\confAlbum.xml";
-        
-        [NonSerialized]
-        private static Memento _instance;
-        public WindowPos winPos = null;
-        public CmpPos cmpPos = null;
-        public string selectedPlaylist = "";
-        public Dictionary<string, object> dict = new Dictionary<string, object>();
-        [NonSerialized]
-        public ConfAlbumSort confAlbum;
+        all,
+        onlyDisabled,
+        onlyEnabled
+    }
+
+    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
+    {
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
+        //   private List<TrackListViewModel> tracks;
+        private Dictionary<int, TrackListViewModel> dict;
+        private object _lock = new object();
+        private PlayListViewModel parent;
+        private DispatcherOperation ope;
+      
 
 
-        private Memento()
+        private bool? onlyDisabled;
+        private bool onlyFathers;
+        public AllTracksViewModel(PlayListViewModel parent, bool? onlyDisabled, bool onlyFathers)
         {
+            this.parent = parent;
+            this.onlyDisabled = onlyDisabled;
+            this.onlyFathers = onlyFathers;
+            //   this.mode = mode; 
+            build();
+            PlayerViewModel.Instance.resumeChange += playerResumeChange;
+            PlayerViewModel.autoChange += new EventHandler(PlayerViewModel_autoChange);
+            //TrackListViewModel.CurrentHumanSelectedChanged += PlayerViewModel_autoChange; 
         }
-        public static Memento Instance
+
+        void PlayerViewModel_autoChange(object sender, EventArgs e)
+        {
+            OnPropertyChanged("AutoResume");        
+        }
+
+
+        void playerResumeChange(object sender, EventArgs e)
+        {
+            OnPropertyChanged("TV"); 
+            OnPropertyChanged("Resume");
+            OnPropertyChanged("AutoResume");  
+        }
+
+        public string Resume
         {
             get
             {
-                if (_instance == null)
-                {
+                return PlayerViewModel.Instance.Resume;
+            }
+            set
+            {
 
-                    var formater = new BinaryFormatter();
+            }
+        }
+
+        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
+        {
+            // Be nice - use BlockReentrancy like MSDN said
+
+            //var dispatcher = Dispatcher.CurrentDispatcher;
+            //if (dispatcher.CheckAccess())
+            //{
+            //    if (CollectionChanged == null)
+            //    {
+            //    }
+            //    else
+            //    {
+            //        CollectionChanged(this, e); 
+            //    }
+            //    return; 
+            //}
+
+            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
+
+
+
+            var eventHandler = CollectionChanged;
+            if (eventHandler != null)
+            {
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (NotifyCollectionChangedEventHandler handler in delegates)
+                {
                     try
                     {
-                        using (Stream st = new FileStream(PATH, FileMode.Open))
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                        // Invoke handler in the target dispatcher's thread
                         {
-                            _instance = (Memento)(formater.Deserialize(st));
-                        }
-                        var doc = new XmlDocument();
-                        doc.Load(PATH_CONF);
-                        var conf = new ConfAlbumSort(doc.DocumentElement);
+                            ope =
+                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                            handler, this, e);
+                            ope.Completed += ope_Completed;
 
-                        _instance.confAlbum = conf; 
+
+                        }
+                        else // Execute handler as is
+                            handler(this, e);
                     }
                     catch (Exception ex)
                     {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+            else
+            {
+            }
+
+            // PlayerViewModel.Instance.makeResume();
+
+        }
+
+        void ope_Completed(object sender, EventArgs e)
+        {
+            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
+            PlayerViewModel.Instance.makeResume();
+        }
+
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            var eventHandler = PropertyChanged;
+            if (eventHandler == null)
+            {
+                //   int toto = 0;
+            }
+            else
+            {
+                //var dispatcher = Dispatcher.CurrentDispatcher;
+                //if (dispatcher.CheckAccess())
+                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                //else
+                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
+
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (PropertyChangedEventHandler handler in delegates)
+                {
+                    try
+                    {
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                            // Invoke handler in the target dispatcher's thread
+                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                          handler, this, new PropertyChangedEventArgs(propertyName));
+                        else // Execute handler as is
+                            handler(this, new PropertyChangedEventArgs(propertyName));
+                    }
+                    catch (Exception ex)
+                    {
+                        App.log.log(ex.ToString());
+                    }
+                }
+            }
+        }
+
+        public void refresh()
+        {
+            build();
+            foreach (TrackListViewModel track in this)
+                track.refresh();
+
+        }
+
+        public void init()
+        {
+            refresh();
+            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        public TrackListViewModel TV { get { return TrackListViewModel.HumanSelected; } }
+
+        public void build()
+        {
+            lock (_lock)
+            {
+                var list = new List<TrackListViewModel>();
+                var dict = new Dictionary<int, TrackListViewModel>();
+                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
+                if (this.dict == null)
+                {
+                    this.dict = new Dictionary<int, TrackListViewModel>();
+                    foreach (TrackListViewModel track in list)
+                    {
+                        Add(track);
+                        this.dict.Add(track.PieceId, track);
+                        track.PropertyChanged += track_PropertyChanged;
                     }
 
-
+                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
                 }
-
-                if (_instance == null)
-                    _instance = new Memento();
-
-                return _instance;
-
-            }
-        }
-        public void save()
-        {
-            var formater = new BinaryFormatter();
-            using (Stream st = new FileStream(PATH, FileMode.Create))
-            {
-                formater.Serialize(st, this);
-            }
-            if (this.confAlbum != null)
-            {
-                var settings = new XmlWriterSettings();
-                settings.Indent = true;
-                settings.Encoding = Encoding.UTF8;
-                using (XmlWriter writer = XmlWriter.Create(PATH_CONF, settings))
+                else
                 {
-                    this.confAlbum.save(writer);
+
+                    foreach (TrackListViewModel newTrack in list)
+                    {
+                        if (!this.dict.ContainsKey(newTrack.PieceId))
+                        {
+                            Add(newTrack);
+                            this.dict.Add(newTrack.PieceId, newTrack);
+                            newTrack.PropertyChanged += track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
+                        }
+                    }
+
+                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
+                    {
+                        if (!dict.ContainsKey(track.PieceId))
+                        {
+                            Remove(track);
+                            this.dict.Remove(track.PieceId);
+                            track.PropertyChanged -= track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
+                        }
+                    }
+                }
+            }
+
+            //Clear(); 
+            //foreach (TrackListViewModel track in parent.Tracks)
+            //    Add(track); 
+        }
+
+        void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "Duration":
+                case "Enabled":
+                    PlayerViewModel.Instance.makeResume();
+                    break;
+            }
+        }
+
+        public List<TrackListViewModel> AllTracks
+        {
+            get
+            {
+                build();
+                return this;
+            }
+        }
+
+        public List<TrackListViewModel> Tracks
+        {
+            get
+            {
+                return parent.Tracks;
+            }
+        }
+
+        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool? onlyDisabled, bool onlyFathers)
+        {
+            foreach (TrackListViewModel t in parent.Tracks)
+            {
+                if (!t.Enabled || true !=onlyDisabled)
+                {
+                    if (onlyDisabled == null && t.Enabled)
+                    {
+                        if (!t.PieceGen.ClassementProvisoireRecent)
+                            continue; 
+                    }
+                    if (t.PieceParentId < 0 || !onlyFathers)
+                    {
+                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
+                        {
+                            
+                            if (!dict.ContainsKey(t.PieceId))
+                            {
+                                dict.Add(t.PieceId, t);
+                                container.Add(t);
+                                //  t.Index = container.Count; 
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (PlayListViewModel pl in parent)
+            {
+                AllTracksViewModel other = pl.AlltracksVm;
+                //if (true == onlyDisabled)
+                //    other = pl.AlltracksVmd;
+                //else
+                //    other = pl.AlltracksVm;
+                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
+            }
+        }
+
+        #region cmd
+
+        private ICommand _contextCmdCheck;
+        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
+
+        private ICommand _contextCmdUnCheck;
+        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
+
+
+        private ICommand _contextLinkFather;
+        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
+
+        private ICommand _contextLinkChild;
+        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
+
+        private ICommand _contextLinkFusion;
+        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
+
+        private ICommand _contextUnLink;
+        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
+
+        private ICommand _contextExport;
+        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
+
+        private ICommand _contextExportCompress;
+        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
+
+        private ICommand _contextDelete;
+        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
+
+        public TrackListViewModel HumanSelected
+        {
+            get
+            {
+                return TrackListViewModel.HumanSelected;
+            }
+        }
+
+        private ICommand _ContextCmdAddToList;
+        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
+
+        private ICommand _ContextCmdDbDeleteClassement;
+        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
+
+        private ICommand _ContextCmdDbDeleteRead;
+        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
+
+
+        #endregion
+
+        #region from Ihm
+        private TrackListViewModel selectedTrack;
+        public TrackListViewModel SelectedTrack
+        {
+            get
+            {
+                return selectedTrack;
+            }
+            set
+            {
+                selectedTrack = value;
+                TrackListViewModel.setHumanSelected(parent, value); //  .HumanSelected = value;
+                if (selectedTrack != null)
+                    selectedTrack.IsSelected = true;
+            }
+        }
+        #endregion
+
+        private int nbAlbumMoved;
+
+        public int NbAlbumMoved
+        {
+            get { return nbAlbumMoved; }
+        }
+
+        public string AutoResume
+        {
+            get
+            {
+               
+                try
+                {
+
+                    var conf = App.gen.SortAlbumMode.ComposantsUtiles[0].Main;
+                    var sb = new StringBuilder();
+                    
+                    sb.Append(conf.CoeffT.ToString("0.000", CultureInfo.InvariantCulture)); sb.Append("  ");
+                    sb.Append(conf.Serial); sb.Append("  "); 
+                    sb.Append((1000 * conf.dcoeffp).ToString("0")); sb.Append("m  ");
+                    var motif = selectedCoeff.none;
+                    var current = TrackListViewModel.HumanSelected;
+                    if (current != null)
+                        motif = current.SelectedMotif; 
+                    var stat10 = conf.calcStat(motif,10);
+                    sb.Append(stat10); sb.Append(" - ");
+                    var stat100 = conf.calcStat(motif,100);
+                    sb.Append(stat100); 
+
+                    //sb.Append(conf.coeffTMin(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" - ");
+                    //sb.Append(conf.coeffTMin(100).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(100).ToString("0.000", CultureInfo.InvariantCulture)); 
+                    return sb.ToString(); 
+                   
+                }
+                catch
+                {
+                    return ""; 
                 }
             }
         }
-    }
-    [Serializable]
-    class WindowPos
-    {
-        public double Top;
-        public double Left;
-        public double Width;
-        public double Height;
-    }
-    [Serializable]
-    class CmpPos
-    {
-        public Length cdBib;
-        public Length cdMain;
-        public Length cdAlbum;
-        public Length cdClassement;
+        public string NbAlbumMovedDesc
+        {
+            get
+            {
+                if (nbAlbumMoved < 0)
+                    return "";
+                if (nbAlbumMoved == 0)
+                    return "pas d'album en quarantaine";
+                return string.Format("{0} albums en quarantaine", nbAlbumMoved); 
+            }
+        }
+
+        public void setNbAlbumMoved(int nb)
+        {
+            if (nb != nbAlbumMoved)
+            {
+                nbAlbumMoved = nb;
+                OnPropertyChanged("NbAlbumMoved");
+                OnPropertyChanged("NbAlbumMovedDesc");
+            }
+
+        }
     }
 
-    [Serializable]
-    public class Length
-    {
-        public double value;
-        public GridUnitType unit;
-        public Length(GridLength ihm)
-        {
-            value = ihm.Value;
-            unit = ihm.GridUnitType;
-        }
-        public GridLength toGrid()
-        {
-            return new GridLength(value, unit);
-        }
-    }
+
 }
 ]]></content>
   </file>
@@ -186,12 +512,12 @@ namespace pdb.player.Vue
 
         private void focus()
         {
-            //if (!CheckAccess())
-            //    Dispatcher.BeginInvoke(new Action(this.focus), DispatcherPriority.DataBind);
-            //else
-            //{
-            //    b_forward.Focus();
-            //}
+            if (!CheckAccess())
+                Dispatcher.BeginInvoke(new Action(this.focus), DispatcherPriority.DataBind);
+            else
+            {
+                b_play.Focus();
+            }
         }
 
         private void automateNextTrack()
@@ -308,6 +634,79 @@ namespace pdb.util
         toujours = 2
 
     }
+
+    public class HistoStat
+    {
+        public HistoStatItem min;
+        public HistoStatItem max;
+
+        public HistoStat()
+        {
+            min = new HistoStatItem(int.MaxValue);
+            max = new HistoStatItem(-1);
+        }
+        public HistoStat(decimal val)
+        {
+            min = new HistoStatItem(val);
+            max = new HistoStatItem(val);
+        }
+
+        //private string desc(decimal d)
+        //{
+        //    if (d < 0)
+        //        return "";
+        //    if (d >= int.MaxValue)
+        //        return "";
+        //    return d.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
+        //}
+
+        public override string ToString()
+        {
+           //return string.Format("{0}({1}) {2}({3})", desc(min.absolute), desc(min.relative), desc(max.absolute), desc(max.relative)); 
+            return string.Format("{0} {1}", min, max); 
+        }
+    }
+
+    public class HistoStatItem
+    {
+        public decimal relative;
+        public decimal absolute;
+        public HistoStatItem()
+        {
+            relative = -1;
+            absolute = -1; 
+        }
+        public HistoStatItem(decimal val)
+        {
+            relative = val;
+            absolute = val;
+        }
+
+        public static string desc(decimal d)
+        {
+            if (d < 0)
+                return "";
+            if (d >= int.MaxValue)
+                return "";
+            return d.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder(); 
+            sb.Append(desc(absolute)); 
+            if (absolute != relative)
+            {
+                sb.Append("("); 
+                sb.Append (desc(relative)); 
+                sb.Append(")"); 
+            }
+            return sb.ToString(); 
+        }
+
+       
+    }
+
     [Serializable]
     public class ConfMedianne : TuningBase
     {
@@ -963,7 +1362,7 @@ namespace pdb.util
                 decimal coeffT = CoeffT;
                 while (histo.Count >= NB_HISTO)
                     histo.RemoveAt(0);
-                
+
 
                 string montee = sens ? "up" : "down";
                 var c0 = coeffT;
@@ -994,17 +1393,91 @@ namespace pdb.util
 
         }
 
+        public HistoStat calcStat(selectedCoeff motif, int nb)
+        {
+            var stat = new HistoStat();
+            int _nb = 0;
+            int count = histo.Count;
+            for (int i = count - 1; i >= 0; i--)
+            {
+                var h = histo[i];
+
+                // min 
+                if (h < stat.min.absolute)
+                    stat.min.absolute = h;
+                 // calcul du plus faible qui n'a pas fonctionné
+
+                if (h < stat.min.relative)
+                {
+                    if (i + 1 < count)
+                    {
+                        var suivant = histo[i + 1];
+                        if (suivant < h)
+                            stat.min.relative = h;
+                    }
+                    else
+                    {
+                        if (motif > selectedCoeff.noCoeff || motif == selectedCoeff.none)
+                            stat.min.relative = h;
+                    }
+                }
+
+                //max
+                if (h > stat.max.absolute)
+                    stat.max.absolute = h;
+                // calcul du max qui fonctionne
+                if (h > stat.max.relative)
+                {
+                    if (i + 1 < count)
+                    {
+                        var suivant = histo[i + 1];
+                        if (suivant > h)
+                            stat.max.relative = h;
+                    }
+                    else
+                    {
+                        if (motif <= selectedCoeff.noCoeff)
+                            stat.max.relative = h;
+                    }
+                }
+
+                _nb++;
+                if (_nb >= nb)
+                    break;
+            }
+
+            return stat; 
+        }
+
         private decimal calcMin(int nb, bool sens)
         {
             decimal min = CoeffT;
             int _nb = 0;
-            for (int i = histo.Count - 1; i >= 0; i--)
+            int count = histo.Count;
+            for (int i = count - 1; i >= 0; i--)
             {
                 var h = histo[i];
 
                 if ((sens && h > min) || (!sens && h < min))
                 {
-                    min = h;
+                    // calcul du max qui fonctionne
+                    if (sens)
+                    {
+                        if (i + 1 < count)
+                        {
+                            var suivant = histo[i + 1];
+                            if (suivant > h)
+                                min = h;
+                        }
+                    }
+                    // calcul du plus faible qui n'a pas fonctionné
+                    else
+                        if (i + 1 < count)
+                        {
+                            var suivant = histo[i + 1];
+                            if (suivant < h)
+                                min = h;
+                        }
                 }
 
                 _nb++;
