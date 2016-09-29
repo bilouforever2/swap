@@ -1,1781 +1,4 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
- <file path="\pdb.player\ViewModel\PlayerViewModel.cs">
-    <content><![CDATA[using pdb.player.model;
-using pdb.player.ViewModel.Commande;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Windows.Data;
-using System.Windows.Input;
-using pdb.player.engine;
-using pdb.player.engine.build;
-using pdb.util;
-using System.Collections;
-using pdb.gen.conf;
-using pdb.gen.albums;
-using pdb.gen.Tuning;
-using pdb.gen;
-using System.Windows.Threading;
-
-namespace pdb.player.ViewModel
-{
-
-
-    enum positionstate
-    {
-        free,
-        cannotPrevious,
-        cannotForward
-    }
-
-    class HiddenPlayList : ItrackProvider
-    {
-        private ICollectionView viewOrg;
-        private PlayListViewModel pl;
-        private static List<TrackListViewModel> hiddenSelected = new List<TrackListViewModel>();
-
-        public HiddenPlayList(PlayListViewModel pl, ICollectionView viewOrg)
-        {
-            this.viewOrg = viewOrg;
-            this.pl = pl;
-        }
-        public ICollectionView PresentationTracks
-        {
-            get { return viewOrg; }
-        }
-
-        public void Focus(int index)
-        {
-
-        }
-
-        public PlayListViewModel PlayList
-        {
-            get { return pl; }
-        }
-
-
-        public void doFilter(string filter)
-        {
-            PlayerViewModel.doFilter(PresentationTracks, filter);
-        }
-
-
-        public List<TrackListViewModel> SelectedTracks
-        {
-            get { return hiddenSelected; }
-        }
-    }
-
-
-
-    class PlayerViewModel : ViewModelBase
-    {
-        private static PlayerViewModel _instance;
-        private static volatile object _lock = new object();
-        private ConfAlbumSort confAlbumSort;
-        public ConfAlbumSort ConfAlbumSort { get { return confAlbumSort; } set { confAlbumSort = value; } }
-        public static PlayerViewModel Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        if (_instance == null)
-                            _instance = new PlayerViewModel();
-                    }
-                }
-                return _instance;
-            }
-        }
-        private IPlayerEngine player = PlayerBuilder.create("vlcplugin");
-
-        private TrackListViewModel currentTrack;
-        private PlayListViewModel currentPl;
-        public event EventHandler currentTrackChange;
-        public event EventHandler resumeChange;
-        public static event EventHandler autoChange;
-        private playerstate state;
-        private positionstate _positionstate;
-        private bool onlyEnabled = true;
-        // private bool sortByAlbum = true;
-        private bool withVirtualAlbum = CConf.ConfGen.AlbumVirtual;
-        private bool navAuto;
-        public bool NavAuto
-        {
-            get { return navAuto; }
-            set
-            {
-                if (value != navAuto)
-                {
-                    navAuto = value;
-                    OnPropertyChanged("NavAuto");
-                }
-            }
-        }
-        ItrackProvider _real;
-        private Logger log;
-        public static IPlayerEngine Player { get { return Instance.player; } }
-
-
-        public bool OnlyEnabled
-        {
-            get
-            {
-                return onlyEnabled;
-            }
-            set
-            {
-                if (value != onlyEnabled)
-                {
-                    onlyEnabled = value;
-                    OnPropertyChanged("OnlyEnabled");
-                }
-            }
-        }
-        private bool createRot = true;
-        public bool CreateRot
-        {
-            get
-            {
-                return createRot;
-            }
-            set
-            {
-                if (value != createRot)
-                {
-                    createRot = value;
-                    OnPropertyChanged("CreateRot");
-                }
-            }
-        }
-
-        public bool SortByAlbum
-        {
-            get
-            {
-                return confAlbumSort.Enabled;
-            }
-        }
-        //private albumSortMode sortAlbumMode;
-        //public albumSortMode SortAlbumMode
-        //{
-        //    get { return sortAlbumMode; }
-        //    set
-        //    {
-        //        if (value != sortAlbumMode)
-        //        {
-        //            sortAlbumMode = value;
-        //            OnPropertyChanged("SortAlbumMode");
-        //            App.go();
-        //        }
-        //    }
-        //}
-
-        public bool WithVirtualAlbum
-        {
-            get { return withVirtualAlbum; }
-            set
-            {
-                if (value != withVirtualAlbum)
-                {
-                    withVirtualAlbum = value;
-                    OnPropertyChanged("WithVirtualAlbum");
-                    App.go();
-                }
-            }
-        }
-
-
-
-        private PlayerViewModel()
-        {
-            this.log = Logger.getLogger("PlayerViewModel");
-            player.mediaEndReached += player_mediaEndReached;
-            player.Volume = volume;
-            TrackListViewModel.CurrentHumanSelectedChanged += TrackListViewModel_CurrentHumanSelectedChanged;
-
-
-            new Thread(refreshLoop).Start();
-            this.currentPl = PlayListViewModel.SelectedPlayList;
-        }
-
-        void TrackListViewModel_CurrentHumanSelectedChanged(object sender, EventArgs e)
-        {
-            makeResume();
-        }
-
-        void player_mediaEndReached(object sender, EventArgs e)
-        {
-            var track = this.CurrentTrack;
-            if (track != null)
-                track.Piece.recordJustReadTrack();
-            next();
-            App.go();
-        }
-
-        #region commande
-        private ICommand cmdPlayPause;
-        private ICommand cmdForward;
-        private ICommand cmdStop;
-        private ICommand cmdBackWard;
-        private readonly static TimeSpan LIMIT_BACK = TimeSpan.FromSeconds(5.1);
-
-        public ICommand Play
-        {
-            get
-            {
-                if (cmdPlayPause == null)
-                    cmdPlayPause = new PlayPause();
-                return cmdPlayPause;
-            }
-        }
-
-        public ICommand Forward
-        {
-            get
-            {
-                if (cmdForward == null)
-                    cmdForward = new ForWard();
-                return cmdForward;
-            }
-        }
-
-        public ICommand BackWard
-        {
-            get
-            {
-                if (cmdBackWard == null)
-                    cmdBackWard = new BackWard();
-                return cmdBackWard;
-            }
-        }
-
-        public bool canForward()
-        {
-            return canPlay() && _positionstate != positionstate.cannotForward;
-        }
-        public bool canBackWard()
-        {
-            if (!canPlay())
-                return false;
-            if (PlayJustStarted)
-                return _positionstate != positionstate.cannotPrevious;
-            return true;
-
-        }
-
-        public void backWard()
-        {
-            if (PlayJustStarted)
-                movetoPrevious();
-            else
-                goStartTrack();
-        }
-
-
-        public void forward()
-        {
-            if (!navAuto)
-                movetoNext(true);
-            else
-            {
-                var t = TrackListViewModel.HumanSelected;
-                if (t != null)
-                {
-                    t.refresh();
-                  //  var g = t.Grouping; 
-                }
-                   
-                var pl = PlayListViewModel.SelectedPlayList;
-                if (pl == null)
-                {
-                    movetoNext(true);
-                    return;
-                }
-
-                string _album = "";
-                if (currentTrack != null)
-                    _album = currentTrack.Album;
-                movetoNext(true); // des fois le morceaux affiché n'est pas celui joué. Dommage...
-                if (currentTrack != null && currentTrack.Album == _album)
-                {
-                    if (state == playerstate.play)
-                        play(false, true);
-                    return;
-                }
-
-                if (currentTrack == null)
-                    return;
-                var album = App.gen.Albums.getAlbum(CurrentTrack.Track);
-                var tracks = album.Tracks;
-                //    tracks.Sort(new PieceClassementComparer());
-                //  decimal val = int.MaxValue;
-                int i = 0;
-                TrackListViewModel choose = null;
-                if (confAlbumSort.ComposantsUtiles[0].cmpMin > modeMin.non)
-                {
-                    var next = album.Next;
-                    if (next != null)
-                        choose = pl.FindTrack(next.PieceId);
-                }
-                else
-                {
-                    for (i = 0; i < tracks.Count; i++)
-                    {
-                        var item = tracks[i];
-                        if (item != null && (!onlyEnabled || item.Enabled))
-                        {
-                            var tl = pl.FindTrack(item.PieceId);
-                            if (!tl.Exists)
-                                continue;
-                            choose = tl;
-
-                            //val = v;
-                            // choose = tl;
-                            if (item.VirtualClassement == 0m)
-                            {
-                                break;
-                                //if (confAlbumSort.ComposantsUtiles[0].cmpMin != modeMin.toujours)
-                                //    choose = tl;
-                                //break;
-                            }
-                            // choose = tl;
-                        }
-                    }
-                }
-
-                if (choose != null)
-                {
-                    //var p = choose.PieceGen;
-                    //if (p != null)
-                    //   confAlbumSort.auto(p.AutoCoeff1, p.AutoCoeff2); 
-                    reset(provider, choose, state == playerstate.play);
-
-                }
-
-            }
-        }
-
-        public bool isHidden { get { return provider is HiddenPlayList; } }
-
-        public void pause()
-        {
-            State = playerstate.pause;
-            player.pause();
-        }
-
-        private bool PlayJustStarted { get { return ElapsedTime < LIMIT_BACK; } }
-
-        #endregion
-
-        #region navigation
-        public bool canPlay()
-        {
-            //if (currentPl == null)
-            //    return false;
-            var tracks = PresentationTracks;
-            if (tracks == null)
-                return false;
-            if (tracks.IsEmpty)
-                return false;
-            return true;
-        }
-
-
-
-        private void movetoNext(bool autoPlay)
-        {
-            move(true, autoPlay);
-        }
-
-        private void goStartTrack()
-        {
-            Position = 0;
-        }
-
-        private void move(bool _toNext, bool autoPlay)
-        {
-            bool playing = state == playerstate.play;
-            TrackListViewModel item = null;
-
-
-
-            var tracks = PresentationTracks;
-
-            Func<bool> _move;
-            if (_toNext)
-                _move = tracks.MoveCurrentToNext;
-            else
-                _move = tracks.MoveCurrentToPrevious;
-            try
-            {
-
-
-                if (currentTrack != null)
-                    tracks.MoveCurrentTo(currentTrack);
-                if (!_move())
-                {
-                    return;
-                }
-
-                while (true)
-                {
-                    item = tracks.CurrentItem as TrackListViewModel;
-                    if (item != null && item.Exists && (!onlyEnabled || item.Enabled))
-                        break;
-                    if (!_move())
-                    {
-                        item = null;
-                        return;
-                    }
-
-                }
-
-
-
-            }
-            finally
-            {
-                if (item == null)
-                    _positionstate = _toNext ? positionstate.cannotForward : positionstate.cannotPrevious;
-                CurrentTrack = item;
-                tracks.MoveCurrentTo(currentTrack);
-                if (item != null)
-                {
-                    focus(tracks.CurrentPosition);
-                    if (playing && autoPlay)
-                    {
-                        player.play(item.Location, true);
-                    }
-                }
-
-            }
-        }
-
-
-        private void movetoPrevious()
-        {
-            move(false, true);
-            //bool playing = state == playerstate.play;
-            //TrackListViewModel item = null;
-
-            //var tracks = PresentationTracks;
-            //try
-            //{
-
-
-            //    if (currentTrack != null)
-            //        tracks.MoveCurrentTo(currentTrack);
-            //    if (!tracks.MoveCurrentToPrevious())
-            //    {
-            //        _positionstate = positionstate.cannotPrevious;
-            //        state = playerstate.stop;
-            //        return;
-            //    }
-
-            //    while (true)
-            //    {
-            //        item = tracks.CurrentItem as TrackListViewModel;
-            //        if (item.Enabled)
-            //            break;
-            //        if (!tracks.MoveCurrentToPrevious())
-            //        {
-            //            _positionstate = positionstate.cannotPrevious;
-            //            state = playerstate.stop;
-            //            return;
-            //        }
-
-            //    }
-
-
-
-            //}
-            //finally
-            //{
-            //    CurrentTrack = item;
-            //    tracks.MoveCurrentTo(currentTrack);
-            //    if (item != null)
-            //    {
-            //        focus(tracks.CurrentPosition);
-            //        if (playing)
-            //        {
-            //            player.play(item.Location, true);
-
-            //        }
-            //    }
-
-            //}
-        }
-
-
-        public void play(bool forceDisabled, bool reload)
-        {
-
-            TrackListViewModel item = currentTrack;
-            var tracks = PresentationTracks;
-            try
-            {
-                if (!canPlay())
-                    return;
-
-                while (true)
-                {
-                    if (item == null)
-                    {
-                        _positionstate = positionstate.cannotPrevious;
-
-                        if (!tracks.MoveCurrentToFirst())
-                        {
-                            //_positionstate = positionstate.cannotPrevious; 
-                            return;
-                        }
-
-                        while (true)
-                        {
-                            item = tracks.CurrentItem as TrackListViewModel;
-                            if (item != null && item.Exists && (!onlyEnabled || item.Enabled))
-                                break;
-                            if (!tracks.MoveCurrentToNext())
-                            {
-                                _positionstate = positionstate.cannotForward;
-                                return;
-                            }
-                            _positionstate = positionstate.free;
-                        }
-
-                        if (item == null)
-                            return;
-
-
-                    }
-                    tracks.MoveCurrentTo(item);
-                    if (tracks.CurrentPosition >= 0)
-                        break;
-                    item = null;
-                }
-
-                CurrentTrack = item;
-
-                focus(tracks.CurrentPosition);
-
-                State = playerstate.play;
-                //item.Playing = true;
-                player.play(currentTrack.Location, reload);
-            }
-            finally
-            {
-                if (!canPlay() || currentTrack == null)
-                    stop();
-            }
-        }
-
-
-
-        public void stop()
-        {
-
-            if (isHidden)
-            {
-                provider = _real;
-                tracks = provider.PresentationTracks;
-            }
-
-            State = playerstate.stop;
-            player.stop();
-
-        }
-
-        private void next()
-        {
-            if (navAuto)
-                forward();
-            else
-                movetoNext(true);
-        }
-
-
-
-        #endregion
-
-        private ItrackProvider provider;
-        //internal ItrackProvider Provider
-        //{
-        //    set
-        //    {
-
-        //        //if (state != playerstate.stop)
-        //        //{
-        //        //    if (provider != null)
-        //        //    {
-        //        //        if (provider is HiddenPlayList)
-        //        //        {
-        //        //        }
-        //        //        else
-        //        //        {
-        //        //            provider = new HiddenPlayList(provider.PresentationTracks);
-        //        //        }
-        //        //    }
-        //        //    else
-        //        //        provider = value;
-        //        //}
-        //        provider = value;
-        //    }
-        //}
-        public ICollectionView PresentationTracks
-        {
-            get
-            {
-                if (provider == null)
-                    return null;
-                return provider.PresentationTracks;
-            }
-        }
-        private void focus(int index)
-        {
-            if (provider == null)
-                return;
-            provider.Focus(index);
-        }
-
-
-
-
-
-
-        public playerstate State
-        {
-            get
-            {
-                return state;
-            }
-            set
-            {
-                if (value != state)
-                {
-                    state = value;
-                    OnPropertyChanged("State");
-                    OnPropertyChanged("SrcPlayPause");
-                }
-            }
-        }
-
-
-
-        private bool bEnd;
-        private void refreshLoop()
-        {
-            while (!bEnd)
-            {
-                Thread.Sleep(1000);
-                refresh();
-            }
-        }
-
-        private void refresh()
-        {
-            try
-            {
-
-                //  this.IndexList = infos.IndexList;
-                var _position = player.Position;
-                if (_position != position) { position = _position; OnPropertyChanged("Position"); }
-
-                this.ElapsedTime = player.Elapsed;
-                this.Length = player.Duration;
-
-                this.RemainingTime = Length - ElapsedTime;
-                if (CurrentTrack == null)
-                {
-                    CurrentName = "";
-                    CurrentAuthorAlbum = "";
-                }
-                else
-                {
-                    CurrentName = currentTrack.Name;
-                    CurrentAuthorAlbum = String.Format("{0} - {1}", currentTrack.Artist, currentTrack.Album);
-                    if (currentTrack.Exists)
-                        currentTrack.Duration = length;
-                }
-
-            }
-            catch { }
-
-        }
-
-
-        public TrackListViewModel CurrentTrack
-        {
-            get { return currentTrack; }
-            set
-            {
-                if (value != null)
-                    value.Playing = true;
-                if (value != currentTrack)
-                {
-                    if (currentTrack != null)
-                        currentTrack.Playing = false;
-                    currentTrack = value;
-                    if (currentTrack == null)
-                        stop();
-                    if (currentTrackChange != null)
-                        currentTrackChange(Instance, EventArgs.Empty);
-                }
-            }
-        }
-
-        public static void reset(ItrackProvider provider, TrackListViewModel track)
-        {
-            reset(provider, track, true);
-        }
-
-        public static void makeauto(TrackListViewModel current)
-        {
-            if (current != null)
-            {
-                var p = current.PieceGen;
-                if (p != null)
-                {
-                    Instance.confAlbumSort.auto(p);
-                    if (autoChange != null)
-                        autoChange(current, EventArgs.Empty);
-                }
-            }
-        }
-
-        public static void reset(ItrackProvider provider, TrackListViewModel track, bool autoPlay)
-        {
-            if (provider != null)
-            {
-                Instance.provider = provider;
-                Instance.currentPl = provider.PlayList;
-                Instance.provider = provider;
-                Instance.tracks = provider.PresentationTracks;
-
-            }
-            Instance._positionstate = positionstate.free;
-
-
-
-
-
-
-            Instance.CurrentTrack = track;
-            if (autoPlay)
-                Instance.play(true, true);
-            Instance.makeResume();
-            App.go();
-        }
-
-
-        public PlayListViewModel PlayList
-        {
-            get
-            {
-                return currentPl;
-            }
-        }
-        ICollectionView tracks = null;
-        public void set(ItrackProvider provider)
-        {
-            try
-            {
-                if (provider == null)
-                {
-                    log.log("provider null");
-                    this.provider = null;
-                    this.currentPl = null;
-                    return;
-                }
-                else if (this.provider == null)
-                {
-                    log.log("init provider " + provider);
-                    this.provider = provider;
-                    this.currentPl = provider.PlayList;
-                    this.tracks = provider.PresentationTracks;
-                }
-
-                else
-                {
-
-
-                    if (provider.PlayList == currentPl || state == playerstate.stop)
-                    {
-                        if (isHidden)
-                        {
-                            log.log("retour au réel");
-                            this.provider = provider;
-                            this.currentPl = provider.PlayList;
-                            this.tracks = provider.PresentationTracks;
-                            tracks.MoveCurrentTo(TrackListViewModel.CurrentPlaying);
-                            provider.Focus(tracks.CurrentPosition);
-                        }
-                        else
-                        {
-                            log.log("détection standart");
-                            this.provider = provider;
-                            this.currentPl = provider.PlayList;
-                            this.tracks = provider.PresentationTracks;
-                        }
-                    }
-
-                    else
-                    {
-                        if (isHidden)
-                        {
-                            log.log("toujours virtuel");
-                        }
-                        else
-                        {
-
-
-                            log.log("passage en virtuel");
-                            this.provider = new HiddenPlayList(currentPl, tracks);
-                            this._real = provider;
-                            // this.currentPl = provider.PlayList;
-                            //this.tracks = provider.PresentationTracks; 
-                        }
-                    }
-                }
-
-                _positionstate = positionstate.free;
-                if (currentPl == null)
-                {
-                    CurrentTrack = null;
-                    stop();
-                    return;
-                }
-
-            }
-            finally
-            {
-                OnPropertyChanged("State");
-                OnPropertyChanged("SrcPlayPause");
-                makeResume();
-            }
-        }
-        //  private class filterTask
-        //  {
-        //      public filterTask()
-        //      {
-        //      }
-        //      public string filter;
-        //      //public string waitingFilter; 
-        //      //private bool cancel; 
-        //      //private Thread th;
-        //      public Predicate<object> Filter;
-        //      //public ICollectionView coll;
-        //      //private bool busy;
-
-        //      public void go()
-        //      {
-
-        //          if (!string.IsNullOrEmpty(filter))
-        //              filter = filter.Trim().ToLower().removeAccent();
-
-        //          var tab = filter.Split(' ');
-        //          // var coll = CollectionViewSource.GetDefaultView(dg.ItemsSource); 
-        //          lock (this)
-        //              busy = true;
-        //          coll.Filter = item =>
-        //          {
-        //              TrackListViewModel vitem = item as TrackListViewModel;
-        //              if (vitem == null) return false;
-
-        //              //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
-        //              //    return vitem.Classement.StartsWith(filter);
-        //              bool ok = true;
-        //              var name = vitem.Name.Trim().ToLower().removeAccent();
-        //              var artist = vitem.Artist.Trim().ToLower().removeAccent();
-        //              var album = vitem.Album.Trim().ToLower().removeAccent();
-        //              var classement = vitem.Classement;
-        //              foreach (string str in tab)
-        //              {
-        //                  if (!ok)
-        //                      return false;
-        //                  if (string.IsNullOrEmpty(str))
-        //                      continue;
-        //                  var str_ = str.Trim();
-        //                  if (str_ == string.Empty)
-        //                      continue;
-
-        //                  ok = name.Contains(str_)
-        //                      || artist.Contains(str_)
-        //                      || album.Contains(str_)
-        //                      || classement.StartsWith(str_);
-
-        //              }
-
-        //              return ok;
-
-        //          };
-
-        //          lock (this)
-        //              busy = true;
-
-        //      }
-        //      private void getItems()
-        //      {
-        //          try
-        //          {
-        //              if (!string.IsNullOrEmpty(filter))
-        //                  filter = filter.Trim().ToLower().removeAccent();
-        //              if (cancel)
-        //                  return;
-        //              var tab = filter.Split(' ');
-        //              if (cancel)
-        //                  return;
-        //              Filter = item =>
-        //              {
-        //                  TrackListViewModel vitem = item as TrackListViewModel;
-        //                  if (vitem == null) return false;
-
-        //                  //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
-        //                  //    return vitem.Classement.StartsWith(filter);
-        //                  bool ok = true;
-        //                  var name = vitem.Name.Trim().ToLower().removeAccent();
-        //                  var artist = vitem.Artist.Trim().ToLower().removeAccent();
-        //                  var album = vitem.Album.Trim().ToLower().removeAccent();
-        //                  var classement = vitem.Classement;
-        //                  foreach (string str in tab)
-        //                  {
-        //                      if (!ok)
-        //                          return false;
-        //                      if (string.IsNullOrEmpty(str))
-        //                          continue;
-        //                      var str_ = str.Trim();
-        //                      if (str_ == string.Empty)
-        //                          continue;
-
-        //                      ok = name.Contains(str_)
-        //                          || artist.Contains(str_)
-        //                          || album.Contains(str_)
-        //                          || classement.StartsWith(str_);
-
-        //                  }
-
-        //                  return ok;
-
-        //              };
-        //          }
-        //          catch (Exception ex)
-        //          {
-        //              App.log.log(ex.ToString()); 
-        //          }
-        //      }
-        //  }
-        ////  private static filterTask filtertask = new filterTask(); 
-        private static IDisposable work;
-        private static FilterTask filterTask = null;
-
-        private static bool cancel;
-        public static void doFilter0(ICollectionView coll, string filter)
-        {
-
-            ILogger log = App.log;
-            log.log("filter=>{0}", filter);
-            lock (_lock)
-            {
-                if (work == null)
-                {
-                    log.log("filter=>{0} verrou libre", filter);
-                    work = coll.DeferRefresh();
-                }
-                else
-                {
-                    log.log("filter=>{0} verrou pris, abandon tâche en cours", filter);
-                    cancel = true;
-                }
-            }
-
-            var _cancel = cancel;
-            if (_cancel)
-                log.log("filter=>{0} verrou pris, attente fin tâche en cours", filter);
-            while (cancel)
-                Thread.Sleep(30);
-
-            if (_cancel)
-                log.log("filter=>{0} verrou pris, fin d'attente fin tâche en cours", filter);
-
-            if (!string.IsNullOrEmpty(filter))
-                filter = filter.Trim().ToLower().removeAccent();
-
-            var tab = filter.Split(' ');
-            // var coll = CollectionViewSource.GetDefaultView(dg.ItemsSource); 
-
-
-            _cancel = cancel;
-            if (!_cancel)
-            {
-                lock (_lock)
-                    _cancel = cancel;
-            }
-
-            if (!_cancel)
-            {
-                log.log("filter=>{0} lancement filtre", filter);
-                coll.Filter = item =>
-                {
-                    if (cancel)
-                        return false;
-                    TrackListViewModel vitem = item as TrackListViewModel;
-                    if (vitem == null) return false;
-
-
-
-                    //if (Regex.IsMatch(filter, @"[0-5]+\.?[0-5]?") || Regex.IsMatch(filter, @"\.[0-5]?"))
-                    //    return vitem.Classement.StartsWith(filter);
-                    bool ok = true;
-                    var name = vitem.Name.Trim().ToLower().removeAccent();
-                    var artist = vitem.Artist.Trim().ToLower().removeAccent();
-                    var album = vitem.Album.Trim().ToLower().removeAccent();
-                    var classement = vitem.Classement;
-                    foreach (string str in tab)
-                    {
-                        if (!ok)
-                            return false;
-                        if (string.IsNullOrEmpty(str))
-                            continue;
-                        var str_ = str.Trim();
-                        if (str_ == string.Empty)
-                            continue;
-
-                        ok = name.Contains(str_)
-                            || artist.Contains(str_)
-                            || album.Contains(str_)
-                            || classement.StartsWith(str_);
-
-                    }
-
-                    return ok;
-
-                };
-
-                if (cancel)
-                    log.log("filter=>{0} la tâche a été interrompue", filter);
-            }
-            else
-            {
-                log.log("filter=>{0} finalement pas de lancement", filter);
-            }
-            lock (_lock)
-            {
-                if (!cancel)
-                {
-                    if (work != null)
-                    {
-                        log.log("filter=>{0} application du filtre", filter);
-                        work.Dispose();
-                    }
-                    else
-                    {
-                        log.log("filter=>{0} ben pourquoa le work était null ????", filter);
-                    }
-                    work = null;
-
-                }
-            }
-
-            lock (_lock)
-                cancel = false;
-
-            log.log("filter=>{0} fin", filter);
-        }
-
-
-
-
-        private class FilterTask
-        {
-            private ICollectionView coll;
-            public readonly string filter0;
-            private string filter;
-            private bool _cancel;
-            private bool end;
-            private Thread th;
-            SimpleChrono log;
-            public string step;
-            private Dictionary<int, bool> l = new Dictionary<int, bool>();
-            public FilterTask(string filter, ICollectionView coll, SimpleChrono log)
-            {
-                this.filter0 = filter;
-                this.filter = filter;
-                this.coll = coll;
-                this.log = log;
-                step = "ini";
-                th = new Thread(calc);
-                th.Start();
-            }
-
-            public void cancel()
-            {
-                lock (_lock)
-                    _cancel = true;
-            }
-
-            public bool End { get { return end; } }
-            public bool Cancel { get { return _cancel; } }
-
-            private void calc()
-            {
-                step = "calc";
-                try
-                {
-                    if (!string.IsNullOrEmpty(filter))
-                        filter = filter.Trim().ToLower().removeAccent();
-                    if (string.IsNullOrWhiteSpace(filter))
-                    {
-                        apply();
-                        return;
-                    }
-
-                    var tab = filter.Split(' ');
-
-                    int nb = 0;
-                    int nbOk = 0;
-
-                    foreach (TrackListViewModel vitem in coll.SourceCollection)
-                    {
-                        if (_cancel)
-                            return;
-
-                        bool ok = true;
-                        var name = vitem.Name.Trim().ToLower().removeAccent();
-                        var artist = vitem.Artist.Trim().ToLower().removeAccent();
-                        var album = vitem.Album.Trim().ToLower().removeAccent();
-                        var classement = vitem.Classement;
-                        foreach (string str in tab)
-                        {
-                            if (ok)
-                            {
-                                if (string.IsNullOrEmpty(str))
-                                    continue;
-                                var str_ = str.Trim();
-                                if (str_ == string.Empty)
-                                    continue;
-
-                                ok = name.Contains(str_)
-                                    || artist.Contains(str_)
-                                    || album.Contains(str_)
-                                    || classement.StartsWith(str_);
-                            }
-                            else
-                                break;
-
-                        }
-
-                        l.Add(vitem.PieceId, ok);
-                        nb++;
-                        if (ok)
-                            nbOk++;
-                    }
-
-                    log.log(string.Format("{0}/{1}", nbOk, nb));
-                    // log.log(string.Format("calc:{0} item{1} {2} sélectionné{3}", nb, (nb > 1 ? "s" : ""), nbOk, (nbOk > 1 ? "s" : "")));   
-
-                    lock (_lock)
-                    {
-                        if (_cancel)
-                            return;
-                    }
-
-
-                    apply();
-
-
-                }
-                finally
-                {
-                    if (_cancel)
-                    {
-                        lock (_lock)
-                            end = true;
-                        log.log("tache terminée par cancel");
-                    }
-                }
-
-
-
-
-
-            }
-
-            public void apply()
-            {
-                step = "apply";
-
-                bool __cancel = _cancel;
-
-                if (!__cancel)
-                {
-                    lock (_lock)
-                        __cancel = _cancel;
-                }
-                if (Dispatcher.CurrentDispatcher == App.Current.Dispatcher)
-                {
-                    if (string.IsNullOrWhiteSpace(filter))
-                    {
-                        coll.Filter = null;
-                        return;
-                    }
-
-                    if (__cancel)
-                        return;
-                    step = "applyAppDispatcher";
-                    try
-                    {
-
-
-
-                        if (work == null)
-                        {
-                            log.log("creation du tempo");
-                            work = coll.DeferRefresh();
-                        }
-                        else
-                        {
-                            log.log("tempo déjà créé ");
-
-                        }
-
-
-                        coll.Filter = item =>
-                        {
-                            if (_cancel)
-                                return false;
-
-                            var t = item as TrackListViewModel;
-                            if (t == null)
-                                return false;
-                            if (!l.ContainsKey(t.PieceId))
-                                return false;
-                            return l[t.PieceId];
-                        };
-
-
-
-
-                        if (!__cancel)
-                        {
-                            log.log("application");
-                            work.Dispose();
-                            work = null;
-                            log.log("fin application");
-                        }
-                        else
-                        {
-                            log.log("abandon application");
-                        }
-                    }
-                    finally
-                    {
-                        lock (_lock)
-                            end = true;
-                        log.log("tache terminée par application");
-                    }
-                }
-                else
-                {
-                    App.Current.Dispatcher.BeginInvoke(new Action(apply), DispatcherPriority.Background);
-                }
-            }
-
-            public override string ToString()
-            {
-                return string.Format("en cours:{0} step:{1} end:{2} cancel:{3}", filter0, step, End, Cancel);
-            }
-
-        }
-
-
-        public static void doFilter(ICollectionView coll, string filter)
-        {
-            SimpleChrono log = new SimpleChrono(string.Format("\tfilter=>{0}\t", filter), App.log);
-
-            log.log("");
-            lock (_lock)
-            {
-                bool _cancelCurrent = false;
-                bool _same = false;
-
-                if (filterTask != null)
-                {
-                    log.log(filterTask.ToString());
-                }
-
-                _cancelCurrent = filterTask != null && !filterTask.End;
-                _same = _cancelCurrent && filterTask.filter0.Equals(filter);
-                if (_same)
-                {
-                    log.log("identique");
-                    return;
-                }
-                else if (_cancelCurrent)
-                {
-                    log.log("abandon tâche en cours");
-                    filterTask.cancel();
-                }
-
-                else
-                {
-                    log.log("verrou libre");
-                }
-
-                filterTask = new FilterTask(filter, coll, log);
-
-            }
-
-
-
-
-
-        }
-
-
-
-        //public void set(ItrackProvider provider)
-        //{
-        //    try
-        //    {
-        //        if (provider == null)
-        //        {
-        //            this.provider = null;
-        //            this.currentPl = null;
-        //            return;
-        //        }
-        //        else if (this.provider == null)
-        //        {
-        //            this.provider = provider;
-        //            this.currentPl = provider.PlayList;
-        //            this.tracks = provider.PresentationTracks;
-        //        }
-
-        //        else
-        //        {
-        //            if (provider.PlayList == currentPl || state == playerstate.stop)
-        //            {
-        //                this.provider = provider;
-        //                this.currentPl = provider.PlayList;
-        //                this.tracks = provider.PresentationTracks;
-        //            }
-
-        //            else
-        //            {
-        //                if (_real == null || _real.PlayList != provider.PlayList)
-        //                {
-        //                    this.provider = new HiddenPlayList(currentPl, tracks);
-        //                    this._real = provider;
-        //                }
-        //                else
-        //                {
-        //                    this.provider = _real;
-        //                }
-        //            }
-        //        }
-
-        //        _positionstate = positionstate.free;
-        //        if (currentPl == null)
-        //        {
-        //            CurrentTrack = null;
-        //            stop();
-        //            return;
-        //        }
-
-        //    }
-        //    finally
-        //    {
-        //        OnPropertyChanged("State");
-        //        OnPropertyChanged("SrcPlayPause");
-        //    }
-        //}
-
-
-        public void doFilter(String filter)
-        {
-            var provider = DisplayProvider;
-
-            if (provider == null)
-                return;
-            provider.doFilter(filter);
-            makeResume();
-        }
-
-        private ItrackProvider DisplayProvider
-        {
-            get
-            {
-                if (provider == null)
-                    return null;
-                if (isHidden && _real != null)
-                {
-                    return _real;
-                }
-                return provider;
-            }
-        }
-
-        private string resume;
-
-        public void makeResume()
-        {
-            string newResume = resume;
-            try
-            {
-
-                IEnumerable items = null;
-                var provider = DisplayProvider;
-                if (provider == null)
-                    return;
-                var tracks = provider.PresentationTracks;
-                int nbOrg = -1;
-                items = tracks;
-                if (items == null)
-                    return;
-
-                var selected = provider.SelectedTracks;
-                if (selected.Count > 1)
-                {
-                    items = selected;
-                    nbOrg = 0;
-                    foreach (TrackListViewModel t in tracks)
-                        nbOrg++;
-                }
-                int nb = 0, nbSelected = 0, nbPresent = 0;
-                TimeSpan duration = new TimeSpan(), durationSelected = new TimeSpan(), durationPresent = new TimeSpan();
-
-                foreach (TrackListViewModel track in items)
-                {
-                    nb++;
-                    duration += track.Duration;
-                    if (track.Enabled)
-                    {
-                        nbSelected++;
-                        durationSelected += track.Duration;
-                    }
-                    if (track.Exists)
-                    {
-                        nbPresent++;
-                        durationPresent += track.Duration;
-                    }
-                }
-
-                ITextWriter sb = new pdb.util.StringBuilder();
-                sb.Append(nb);
-                sb.Append(" ");
-                sb.Append("elt");
-                if (nb > 1)
-                    sb.Append("s");
-                if (nbOrg >= 0)
-                {
-                    sb.Append(" sur ");
-                    sb.Append(nbOrg);
-                    sb.Append(",");
-                }
-                sb.Append(" ");
-                humanDuration(sb, duration);
-                sb.Append(" ( ");
-                sb.Append(nbSelected);
-                sb.Append(" ");
-                sb.Append("elt");
-                if (nbSelected > 1)
-                    sb.Append("s");
-                sb.Append(" ");
-                humanDuration(sb, durationSelected);
-
-                sb.Append(" )");
-
-                if (nbPresent > 0)
-                {
-                    sb.Append(" presents: ");
-                    sb.Append(nbPresent);
-                    sb.Append(" ");
-                    sb.Append("elt");
-                    if (nb > 1)
-                        sb.Append("s");
-                    sb.Append(" ");
-                    humanDuration(sb, durationPresent);
-                }
-                sb.Append("\t");
-
-                var currentTrack = TrackListViewModel.HumanSelected;
-                if (currentTrack != null)
-                {
-                    humanSize(sb, currentTrack.Size);
-                    sb.Append(" ");
-                    sb.Append(currentTrack.Location);
-                }
-
-                newResume = sb.ToString();
-            }
-            catch (Exception e0)
-            {
-                App.log.log(e0.ToString());
-            }
-            finally
-            {
-                if (newResume != resume)
-                {
-                    resume = newResume;
-                    if (resumeChange != null)
-                    {
-                        try
-                        {
-                            resumeChange(this, EventArgs.Empty);
-                        }
-                        catch (Exception ex)
-                        {
-                            App.log.log(ex.ToString());
-                        }
-                    }
-                }
-            }
-        }
-
-        public string Resume
-        {
-            get
-            {
-                //if (resume == null)
-                //    makeResume();
-                return resume;
-            }
-        }
-
-        private void humanSize(ITextWriter sb, long size)
-        {
-            sb.Append(size.HumanReadableSize(-1));
-        }
-
-        private void humanDuration(ITextWriter sb, TimeSpan duration)
-        {
-            TimeSpan courant = duration;
-            TimeSpan reste = new TimeSpan();
-            TimeSpan ts = new TimeSpan();
-            double days = duration.TotalDays;
-            int idays = (int)days;
-
-            double hours = duration.TotalHours;
-            int ihours = (int)hours;
-
-
-            if (days >= 1)
-            {
-                ts = new TimeSpan(idays, 0, 0, 0);
-                reste = courant.Subtract(ts);
-                sb.Append(idays);
-                sb.Append("j");
-                //if (idays > 1)
-                //    sb.Append("s");
-
-                hours = reste.TotalHours;
-                ihours = (int)hours;
-
-                if (ihours == 0)
-                    return;
-                sb.Append(" ");
-                sb.Append(ihours);
-                sb.Append("h");
-                //if (ihours > 1)
-                //    sb.Append("s");
-                return;
-            }
-
-            double mins = duration.TotalMinutes;
-            int imins = (int)mins;
-
-            if (hours > 1)
-            {
-                ts = new TimeSpan(ihours, 0, 0);
-                reste = courant.Subtract(ts);
-                sb.Append(ihours);
-                sb.Append("h");
-                //if (ihours > 1)
-                //    sb.Append("s");
-
-                mins = reste.TotalMinutes;
-                imins = (int)mins;
-
-                if (imins == 0)
-                    return;
-                sb.Append(" ");
-                sb.Append(imins);
-                sb.Append("m");
-                //if (imins > 1)
-                //    sb.Append("s");
-                return;
-
-            }
-
-            ts = new TimeSpan(0, imins, 0);
-            reste = courant.Subtract(ts);
-            sb.Append(imins);
-            sb.Append("m");
-            //if (imins > 1)
-            //    sb.Append("s");
-
-            double secs = reste.TotalSeconds;
-            int isec = (int)secs;
-
-
-            if (isec == 0)
-                return;
-            sb.Append(" ");
-            sb.Append(isec);
-            sb.Append("s");
-            //if (imins > 1)
-            //    sb.Append("s");
-            return;
-
-
-
-        }
-
-        # region infos
-
-        private bool transitionState = false;
-        public bool TransitionState { set { transitionState = value; OnPropertyChanged("SrcPlayPause"); } }
-
-        public String SrcPlayPause
-        {
-            get
-            {
-                if (isHidden)
-                    return @"images\Toolbar-MP3-Stop-icon.png";
-                if (state != playerstate.play)
-                    return @"images\Toolbar-MP3-Play-icon.png";
-                return @"images\Toolbar-MP3-Pause-icon.png";
-            }
-        }
-
-
-        //private int indexList = -1;
-        //public int IndexList
-        //{
-        //    get { return indexList; }
-        //    set
-        //    {
-        //        if (value != indexList)
-        //        {
-        //            indexList = value;
-        //            this.OnPropertyChanged("IndexList");
-        //        }
-        //    }
-        //}
-
-        private double position = 0;
-        public double Position
-        {
-            get
-            {
-
-                return position;
-            }
-            set
-            {
-                if (value != position)
-                {
-                    position = value;
-                    player.Position = value;
-                    this.OnPropertyChanged("Position");
-                }
-            }
-        }
-
-        private String currentName;
-        public String CurrentName
-        {
-            get { return currentName; }
-            set
-            {
-                if (value != currentName)
-                {
-                    currentName = value;
-                    this.OnPropertyChanged("CurrentName");
-                }
-            }
-        }
-
-        private double volume = 0.5;
-        public double Volume
-        {
-            get { return volume; }
-            set
-            {
-                if (value != volume)
-                {
-                    volume = value;
-                    player.Volume = value;
-                    OnPropertyChanged("Volume");
-                }
-            }
-        }
-
-
-        private String currentAuthorAlbum;
-        public String CurrentAuthorAlbum
-        {
-            get { return currentAuthorAlbum; }
-            set
-            {
-                if (value != currentAuthorAlbum)
-                {
-                    currentAuthorAlbum = value;
-                    this.OnPropertyChanged("CurrentAuthorAlbum");
-                }
-            }
-        }
-
-        private TimeSpan sinceBeginReadTrack;
-        public TimeSpan ElapsedTime
-        {
-            get { return sinceBeginReadTrack; }
-            set
-            {
-                if (value != sinceBeginReadTrack)
-                {
-                    sinceBeginReadTrack = value;
-                    this.OnPropertyChanged("ElapsedTime");
-                }
-            }
-        }
-
-        private TimeSpan remainingTime;
-        public TimeSpan RemainingTime
-        {
-            get { return remainingTime; }
-            set
-            {
-                if (value != remainingTime)
-                {
-                    remainingTime = value;
-                    this.OnPropertyChanged("RemainingTime");
-                }
-            }
-        }
-
-        private TimeSpan length;
-        public TimeSpan Length
-        {
-            get { return length; }
-            set
-            {
-                if (value != length && value > TimeSpan.FromMilliseconds(100))
-                {
-                    length = value;
-                    this.OnPropertyChanged("Length");
-                }
-            }
-        }
-        #endregion
-    }
-}
-]]></content>
-  </file>
   <file path="\pdb.podcast\Loader.cs">
     <content><![CDATA[
 using pdb.obj;
@@ -1788,8 +11,9 @@ namespace pdb.podcast
 {
     public class Loader : pdb.it.Loader
     {
+        private bool import;
         public Loader(Conf conf, bool useDetect) : base(conf, useDetect) { }
-        public Loader(Conf conf, Db db, Action abortList) : base(conf, abortList) { this.db = db;  }
+        public Loader(Conf conf, bool import, Db db, Action abortList) : base(conf, abortList) { this.db = db; this.import = import; }
         private Db db;
         protected override void afterCreate(it.PlayList playlist, it.TrackInfoItunes track, int id)
         {
@@ -1801,14 +25,25 @@ namespace pdb.podcast
                 _track.Rare = true;
         }
 
-        public override it.TrackInfoItunes create()
+        public override it.TrackInfoItunes create(string location)
         {
-            var t = new TrackInfoItunes();
+            TrackInfoItunes t = null;
+            if (import)
+            {
+                t = new TrackInfoItunes() { Location = location };
+            }
+            else
+            {
+                t = db.get(location);
+                if (t == null)
+                    t = new TrackInfoItunes() { Location = location };
+            }
+
             t.Present = true;
-            return t; 
+            return t;
         }
 
-      
+
 
         public void check(TrackInfoItunes track)
         {
@@ -1819,9 +54,9 @@ namespace pdb.podcast
                     track.Present = true;
                     createTrack(track);
                 }
-                else return; 
+                else return;
             }
-            track.import(); 
+            track.import();
         }
 
 
@@ -1940,6 +175,9 @@ namespace pdb.podcast
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>bin\Release\</OutputPath>
     <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>pdb.podcast.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Interop.iTunesLib">
@@ -2089,7 +327,7 @@ namespace pdb.podcast
         private static AsyncFileWriter asyncFw = AsyncFileWriter.Instance;
         private static Chrono chrono = new Chrono();
         private static Logger logChrono;
-        private static DB.Db db = new DB.Db();
+        private static DB.Db db; 
 
 
         private static XmlWriter writer;
@@ -2098,7 +336,7 @@ namespace pdb.podcast
 
         private string _empreinte;
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
 
             Logger.init(Environment.CurrentDirectory.Replace("\\", "_"));
@@ -2108,10 +346,10 @@ namespace pdb.podcast
             logAuto.NoReset = true;
 
             FileRegister.init(new BgDictString0<FileValue>());
-            await _instance.go(args);
+             _instance.go(args);
         }
 
-        void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+       void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             Console.WriteLine("\nThe read operation has been interrupted.");
             Console.WriteLine("  Key pressed: {0}", e.SpecialKey);
@@ -2137,6 +375,11 @@ namespace pdb.podcast
                 AsyncFileWriter.End();
                 Memory.End();
                 Exporter.Abort();
+                if (_writeDb!= null )
+                {
+                    misc.log("attente writeDb");
+                    _writeDb.Wait(); 
+                }
                 Environment.Exit(0);
             }
             else
@@ -2190,7 +433,7 @@ namespace pdb.podcast
 
         #region Task
 
-
+        private Task _writeDb;
         private Task<List<ITrackInfoItunes>> _loadTracks;
         private async Task<List<ITrackInfoItunes>> loadTracks(bool firstStep, bool forceLoad)
         {
@@ -2238,8 +481,8 @@ namespace pdb.podcast
                 var itConf = new pdb.it.Conf(xelt);
 
                 // loader = new Loader(itConf, true);
-
-                loader = new Loader(itConf, db,
+                bool import = Conf.Import.enabled;
+                loader = new Loader(itConf, import, db, 
                     () =>
                     {
                         misc.Pre = "[Load " + step + "] ";
@@ -2253,7 +496,8 @@ namespace pdb.podcast
                ;
                 // loader.init();
                 TrackInfoItunes.DefaultFolder = loader.DefaultFolder;
-                var tloadDb = Task.Run(() => db.load());
+                db = new DB.Db(import);
+                var tloadDb =  Task.Run(() => db.load());
 
 
                 string ziqueOrg = loader.DefaultFolder;
@@ -2313,7 +557,7 @@ namespace pdb.podcast
 
                             PlayList.AbortOpe();
                             BackGroundTaskMgr.Reset();
-                            loader.saveIds();
+                       
                             BackGroundTaskMgr.recordMsProc();
                             Logger.Reset();
                             BackGroundTaskMgr.Start();
@@ -2456,7 +700,8 @@ namespace pdb.podcast
                             listIt = new List<TrackInfoItunes>();
                             Dict<string, TrackInfoItunes> dictLoc = new Dict<string, TrackInfoItunes>();
                             GroupStat trackStat = new GroupStat();
-                            if (listTrack.Count == 0) listTrack = await _loadTracks; //TODO SUPPR !
+                          //  if (listTrack.Count == 0) listTrack = await _loadTracks; //TODO SUPPR !
+                            loader.saveIds();
                             foreach (ITrackInfoItunes _track in listTrack)
                             {
                                 if (_track.isPodcast)
@@ -2478,37 +723,37 @@ namespace pdb.podcast
                                 }
                             }
 
-                            if (firstLoad && Conf.Import.enabled)
-                            {
-                                await tloadDb;
-                                firstLoad = false;
+                            //if (firstLoad && Conf.Import.enabled)
+                            //{
+                            //    await tloadDb;
+                            //    firstLoad = false;
 
-                                foreach (TrackInfoItunes tdb in db.Tracks)
-                                {
-                                    loader.check(tdb);
-                                }
-                            }
+                            //    foreach (TrackInfoItunes tdb in db.Tracks)
+                            //    {
+                            //        loader.check(tdb);
+                            //    }
+                            //}
 
                             await tloadDb;
 
-                            db.write(listIt);
-                            return;
+                           // db.write(listIt);
+                           
 
-                            // Task.Run(()=> db.write(listIt));
+                     _writeDb = Task.Run(()=> db.write(listIt));
 
-                            var fileExport = Conf.Export.fOut;
-                            if (!string.IsNullOrEmpty(fileExport))
-                            {
-                                ITextWriter sb = new StringBuilder();
-                                foreach (TrackInfoItunes t in db.Tracks)
-                                {
-                                    if (FileRegister.Exist(t.Location))
-                                        sb.AppendLine(t.DbId.ToString());
-                                }
+                            //var fileExport = Conf.Export.fOut;
+                            //if (!string.IsNullOrEmpty(fileExport))
+                            //{
+                            //    ITextWriter sb = new StringBuilder();
+                            //    foreach (TrackInfoItunes t in db.Tracks)
+                            //    {
+                            //        if (FileRegister.Exist(t.Location))
+                            //            sb.AppendLine(t.DbId.ToString());
+                            //    }
 
-                                sb.Flush();
-                                asyncFw.post(fileExport, sb.ToString());
-                            }
+                            //    sb.Flush();
+                            //    asyncFw.post(fileExport, sb.ToString());
+                            //}
 
                             chrono.bip("loadTracks");
 
@@ -3196,6 +1441,8 @@ namespace pdb.podcast
                 {
                     currentRoot = rootIt.roots[r];
                     var folder = loader.TreePlayList.getComposite(currentRoot.name);
+                    if (folder == null)
+                        folder = loader.getOrCreateFolder(currentRoot.name);
                     folders = new List<string>(folders);
 
                     var nname = name;
@@ -3685,7 +1932,7 @@ namespace pdb.podcast
     {
         private static Loader loader;
         public static Loader Loader { set { loader = value; } }
-        private bool present; public bool Present { get { return present; } set { present = value; } }
+      
         private int albumRating; public int AlbumRating { get { return albumRating; } }
         //  private bool ratingComputed; public bool RatingComputed { get { return ratingComputed; } }
 
@@ -3704,10 +1951,11 @@ namespace pdb.podcast
             this.info = db.info;
             this.playCount = db.playCount;
             this.playedDate = db.playedDate;
+            this.enabled = db.enabled; 
             present = true;
-            db.present = true; 
+            db.present = true;
 
-            import(); 
+            import();
         }
 
         private DateTime offset;
@@ -3725,11 +1973,13 @@ namespace pdb.podcast
         {
             get
             {
+                if (track != null)
+                    return track; 
                 if (!present)
                 {
                     if (!isPresent())
                         return new NoTrack(this);
-                    loader.resurrection(this);
+                     // loader.resurrection(this);
                 }
                 return base.Track;
             }
@@ -3739,11 +1989,13 @@ namespace pdb.podcast
         {
             get
             {
+                if (tracktrack != null)
+                    return tracktrack; 
                 if (!present)
                 {
                     if (!isPresent())
                         return new NoTrack(this);
-                    loader.resurrection(this);
+                    //   loader.resurrection(this);
                 }
                 return base.TrackTrack;
             }
@@ -4127,7 +2379,7 @@ namespace pdb.podcast
             str = reader.GetAttribute("date");
             if (!string.IsNullOrEmpty(str))
             {
-                playCount = 1; 
+                playCount = 1;
                 playedDate = Convert.ToDateTime(str);
             }
 
@@ -4149,16 +2401,20 @@ namespace pdb.podcast
                 rare = true;
             if ("y" == reader.GetAttribute("info"))
                 info = true;
+            if ("y" == reader.GetAttribute("disabled"))
+                enabled = false;
+            else
+                enabled = true; 
             str = reader.GetAttribute("s");
             if (!string.IsNullOrEmpty(str))
                 _size = Convert.ToInt64(str);
             else
-                _size = -1; 
+                _size = -1;
 
             str = reader.GetAttribute("d");
             if (!string.IsNullOrEmpty(str))
                 duree = timeSpan.FromSecondes(Convert.ToInt32(str));
-           
+
         }
         public override void build(XmlNode xTrack)
         {
@@ -4712,7 +2968,7 @@ namespace pdb.podcast
                 selected = value;
                 if (isPresent() && !present)
                 {
-                    loader.resurrection(this);
+                    // loader.resurrection(this);
                 }
 
 
@@ -4982,10 +3238,12 @@ namespace pdb.podcast.DB
         const string FILE = "..\\db.xml";
         //   private XmlSerializer xmlSerializer;
 
-        private bool import; 
+        private bool import;
+        private bool loaded;
 
-        public Db()
+        public Db(bool import)
         {
+            this.import = import;
             //xmlSerializer = new XmlSerializer()
             //{
             //    FillLists = false,
@@ -5002,11 +3260,28 @@ namespace pdb.podcast.DB
         {
             get
             {
+                if (!loaded)
+                {
+                    lock (_lock)
+                    {
+
+                    }
+                }
+
+                return new List<TrackInfoItunes>(dict.Values);
+            }
+        }
+
+        public TrackInfoItunes get(string location)
+        {
+            if (!loaded)
+            {
                 lock (_lock)
                 {
-                    return new List<TrackInfoItunes>(dict.Values);
+
                 }
             }
+            return dict[location];
         }
 
         public void Check(TrackInfoItunes track)
@@ -5022,11 +3297,18 @@ namespace pdb.podcast.DB
                 track.DbId = id;
             }
             else
+            {
                 track.DbId = dbTrack.DbId;
+                if (import)
+                {
+                    track.import(dbTrack);
+                }
+            }
+            track.Present = true;
             dict[location] = track;
         }
 
-        public void import(IEnumerable<TrackInfoItunes> listIt)
+        public void Import(IEnumerable<TrackInfoItunes> listIt)
         {
             foreach (TrackInfoItunes it in listIt)
             {
@@ -5035,7 +3317,7 @@ namespace pdb.podcast.DB
                 if (tdb == null)
                     continue;
 
-                it.import(tdb); 
+                it.import(tdb);
             }
         }
 
@@ -5046,10 +3328,12 @@ namespace pdb.podcast.DB
                 if (tdb.isPresent())
                 {
                     loader.createTrack(tdb);
-                    tdb.import(); 
+                    tdb.import();
                 }
             }
         }
+
+
 
         public void load()
         {
@@ -5084,7 +3368,7 @@ namespace pdb.podcast.DB
                 }
                 finally
                 {
-
+                    loaded = true;
                 }
             }
         }
@@ -5140,6 +3424,8 @@ namespace pdb.podcast.DB
                 if (size > 0)
                     writer.WriteAttributeString("s", size.ToString());
             }
+            if (!track.Enabled)
+                writer.WriteAttributeString("disabled", "y"); 
             writer.WriteEndElement();
 
         }
@@ -5153,7 +3439,7 @@ namespace pdb.podcast.DB
                 var settings = new XmlWriterSettings();
                 settings.Indent = true;
                 settings.Encoding = Encoding.UTF8;
-                using (XmlWriter writer = XmlWriter.Create(FILE +".tmp", settings))
+                using (XmlWriter writer = XmlWriter.Create(FILE + ".tmp", settings))
                 {
                     writer.WriteStartElement("db");
                     writer.WriteAttributeString("version", CURRENT_VERSION.ToString());
@@ -5165,7 +3451,7 @@ namespace pdb.podcast.DB
                     writer.WriteEndDocument();
                     writer.Flush();
                 }
-                File.Copy(FILE + ".tmp", FILE, true); 
+                File.Copy(FILE + ".tmp", FILE, true);
             }
             //File.Copy(REMOTE_FILE.FullName + ".tmp", REMOTE_FILE.FullName, true);
         }
@@ -5196,360 +3482,429 @@ namespace pdb.podcast.DB
         // adele defaut rating 20 rating computed albumrating 20
 
 
-        private static void write(XmlWriter writer, PropertyInfo prop)
-        {
 
-        }
 
     }
 }]]></content>
   </file>
-  <file path="\pdb.util\TimeSpan.cs">
+  <file path="\pdb.podcast\Report\Stat.cs">
     <content><![CDATA[using System;
+using System.IO;
+using pdb.util;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
+namespace pdb.podcast.Report
+{
+    /// <summary>
+    /// Stats total : nb d'éléments, durée, taille
+    /// </summary>
+    public class Stat : IComparable<Stat>
+    {
+        private int nb;
+        /// <summary>
+        /// taille en octets
+        /// </summary>
+        private long _size;
+        private TimeSpan ts;
+        private TrackInfoItunes first;
+        private TrackInfoItunes last;
+        private List<TrackInfoItunes> list = new List<TrackInfoItunes>();
+
+        const double Ko = 1024.0;
+        const double Mo = Ko * Ko;
+
+
+        public TimeSpan Ts { get { return ts; } }
+        public long Size { get { return _size; } }
+        public int Nb { get { return nb; } }
+        public TrackInfoItunes Last { get { return last; } }
+
+        public double getTotalSize()
+        {
+            return _size / Mo;
+        }
+
+        public string getEmpreinte()
+        {
+            return string.Format("{0}|{1}", nb, (long)(_size / (long)Ko));
+        }
+
+
+        /// <summary>
+        /// Rapport
+        /// </summary>
+        /// <param name="sb"></param>
+        public void rapport(ITextWriter sb)
+        {
+            if (nb == 0)
+                return;
+
+
+            sb.Append(ts.TotalMinutes.ToString("0000"));
+            sb.Append("/");
+            double size = getTotalSize();
+            sb.Append(size.ToString("0000"));
+            sb.Append(" ");
+            sb.Append(nb);
+            sb.Append(" elt.");
+
+            rapportDates(sb);
+
+        }
+
+        public void rapportDates(ITextWriter sb)
+        {
+            if (nb == 0)
+                return;
+            sb.Append(" ");
+            sb.Append(first.ToString());
+            if (last != null && last != first)
+            {
+                sb.Append(" |-> ");
+                sb.Append(last.ToString());
+            }
+        }
+
+        public static double getSizeinMo(TrackInfoItunes track)
+        {
+            var file = FileRegister.Check(track.Location);
+            return file.Length / Mo;
+        }
+
+        /// <summary>
+        /// Prise en compte d'un élément : cumul des valeurs  nb d'éléments, durée, taille
+        /// </summary>
+        /// <param name="track"></param>
+        public void recordTrack(TrackInfoItunes track)
+        {
+
+          //  var file = FileRegister.Check(track.Location); //new FileInfo(track.Location);
+            _size += track.Size;
+            ts += track.Duration;
+            if (first == null)
+            {
+                first = track;
+                last = track;
+            }
+
+            if (track.Pub >= last.Pub)
+                last = track;
+            if (track.Pub < first.Pub)
+                first = track;
+            nb++;
+            list.Add(track);
+
+        }
+
+        public int CompareTo(Stat other)
+        {
+            return _size.CompareTo(other._size);
+        }
+
+        public List<TrackInfoItunes> List { get { return list; } }
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.util\FileRegister.cs">
+    <content><![CDATA[using System.IO;
+using System.Threading.Tasks;
 
 namespace pdb.util
 {
-    public struct timeSpan
+    public class FileRegister
     {
-        public static DateTime Date0;
-        const int MAX = int.MaxValue - 100; 
-        private readonly int sec;
-        public const int SEC_IN_MIN = 60;
-        public const int SEC_IN_HOUR = SEC_IN_MIN * 60;
-        public const int SEC_IN_DAY = SEC_IN_HOUR * 24;
-
-        public static timeSpan MaxValue = new timeSpan(MAX);
-
-        private int borne(double sec)
+        private static FileRegister _instance = new FileRegister();
+        private BgDictString0<FileValue> dict = new BgDictString<FileValue>();
+        public static void init(BgDictString0<FileValue> dict)
         {
-            if (sec >= MAX)
-                sec = MAX;
-            else if (sec <= -MAX)
-                sec = -MAX;
-            return (int)Math.Round(sec); 
-
+            _instance.dict = dict; 
         }
 
-        private timeSpan(double sec) : this()
-        {          
-            this.sec = borne(sec);           
-        }
-        public timeSpan(System.TimeSpan ts) : this()
-        {          
-            this.sec = borne(ts.TotalSeconds);            
-        }
-
-        //public static timeSpan operator +(timeSpan t1, System.TimeSpan ts2)
-        //{
-        //    return new timeSpan(t1.sec + ts2.TotalSeconds);
-        //}
-
-        public static timeSpan operator +(timeSpan t1, timeSpan t2)
+      
+        private FileValue check(string location)
         {
-            return new timeSpan(t1.sec + t2.sec);
+            if (!dict.ContainsKey(location))
+            {
+                bool _exists = false;
+                string fullName = "";
+                string dirAndFileName = ""; 
+                long length = 0; 
+                try
+                {
+                    
+                    FileInfo infos = new FileInfo(location);
+                    _exists = infos.Exists;                   
+                    fullName = infos.FullName;
+
+                    DirectoryInfo dir = infos.Directory;
+                    dirAndFileName = dir.Name + Path.DirectorySeparatorChar + infos.Name; 
+
+                    if (_exists)
+                        length = infos.Length; 
+                     
+                }
+                catch { }
+                var value = new FileValue(fullName, dirAndFileName, length, _exists);
+                dict.Add(location, value); 
+                    return value; 
+            }
+            return dict[location] ; 
         }
 
-        //public static timeSpan operator -(timeSpan t1, System.TimeSpan ts2)
-        //{
-        //    return new timeSpan(t1.sec - ts2.TotalSeconds);
-        //}
-
-        public static timeSpan operator -(timeSpan t1, timeSpan t2)
+        private FileValue delete(string location)
         {
-            return new timeSpan(t1.sec - t2.sec);
-        }
-        public static bool operator ==(timeSpan t1, timeSpan t2)
-        {
-            return t1.sec == t2.sec;
+            var value = check(location);
+            value.delete();
+            return value; 
+           
         }
 
-        public static timeSpan operator *(timeSpan t, int i)
+        public static FileValue Check(string location)
         {
-            return new timeSpan(t.sec * i);
+            return _instance.check(location); 
         }
 
-        public static bool operator !=(timeSpan t1, timeSpan t2)
+        public static bool Exist(string location)
         {
-            return t1.sec != t2.sec;
+            return _instance.check(location).Exists; 
         }
-        public static bool operator >(timeSpan t1, timeSpan t2)
+        public static string FullName(string location)
         {
-            return t1.sec > t2.sec;
+            return _instance.check(location).FullName;
         }
-        public static bool operator >=(timeSpan t1, timeSpan t2)
+        public static long Length(string location)
         {
-            return t1.sec >= t2.sec;
+            return _instance.check(location).Length;
         }
-        public static bool operator <(timeSpan t1, timeSpan t2)
+        public static FileValue Delete(string location)
         {
-            return t1.sec < t2.sec;
-        }
-        public static bool operator <=(timeSpan t1, timeSpan t2)
-        {
-            return t1.sec <= t2.sec;
-        }
-        public static timeSpan FromMinutes(double d)
-        {
-            var s = d * SEC_IN_MIN;
-            return new timeSpan(s);
+            return _instance.delete(location); 
         }
 
-        public static timeSpan FromDays(double d)
-        {          
-            var s = d * SEC_IN_DAY;
-            return new timeSpan(s);
-        }
+       
+    }
 
-        public static timeSpan FromDate(DateTime t)
+
+    public class FileValue
+    {
+        public readonly string FullName;
+        private  bool _exists;
+        public long Length;
+        public readonly string DirAndFileName;
+        public FileValue(string fullName, string dirAndFileName, long length, bool exists)
         {
-            return new timeSpan(t - Date0);
+            this.FullName = fullName;
+            this.DirAndFileName = dirAndFileName; 
+            this.Length = length;
+            this._exists = exists;
         }
 
-        public static timeSpan FromSecondes(int s)
-        {
-            return new timeSpan(s); 
-        }
-
-        public double TotalMinute { get { return sec / 60.0; } }
-        public double TotalDay { get { return sec / 86400.0; } }
-        public int Value { get { return sec; } }
-
+        public bool Exists { get { return _exists; } }
         public override string ToString()
         {
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append(TotalMinute.ToString("0.#")); sb.Append(" ");
-            var sec = Math.Abs(this.sec);
-
-            int d = sec / SEC_IN_DAY;
-            int r = sec - d * SEC_IN_DAY;
-            int h = r / SEC_IN_HOUR;
-            r -= h * SEC_IN_HOUR;
-            int m = r / SEC_IN_MIN;
-            r -= SEC_IN_MIN * m;
-
-            bool w = false;
-            if (d > 0)
-            {
-                w = true;
-                sb.Append(d); sb.Append("j ");
-            }
-            if (w || h > 0)
-            {
-                w = true;
-                sb.Append(h); sb.Append("h ");
-            }
-            if (w || m > 0)
-            {
-                sb.Append(m); sb.Append("m ");
-            }
-            sb.Append(r); sb.Append("s");
-
-            return sb.ToString();
-
+            return string.Format("{0} {1} {2}", Exists, FullName, Length);
         }
+
+        public void delete() { _exists = false; }
+        public void copy(long length)
+        {
+            _exists = true;
+            Length = length; 
+        }
+
         public override bool Equals(object obj)
         {
-            if (obj is int)
-                return sec.Equals(obj);
-            if (obj is timeSpan)
-                return sec.Equals(((timeSpan)obj).sec);
-            return false;
+            var o = obj as FileValue;
+            if (o == null) return false;
+            return FullName == o.FullName ; //&& Exists == o.Exists;
         }
         public override int GetHashCode()
         {
-            return sec.GetHashCode();
+            return FullName.GetHashCode(); // +Length.GetHashCode();
         }
-
     }
 
 
 }
 ]]></content>
   </file>
-  <file path="\pieceDb.iT\Conf.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using pdb.util;
-using pdb.it.detect;
-
-namespace pdb.it
-{
-    public class Conf
-    {
-        private bool deleteFile;
-        public bool DeleteFile { get { return deleteFile; } }
-        private bool scanListLimit;
-        public bool ScanListLimit { get { return scanListLimit; } }
-
-        private bool singleThread;
-        public bool SingleThread { get { return singleThread; } }
-
-        private int maxScan = 3;
-        public int MaxScan { get { return maxScan; } }
-
-        private int delay = 1000;
-        public int Delay { get { return delay; } }
-
-        private bool gcCollect;
-        public bool GcCollect { get { return gcCollect; } }
-
-
-
-        private TimeSpan refreshMax = TimeSpan.MaxValue;
-        public TimeSpan RefreshMax { get { return refreshMax; } }
-
-
-
-        private ConfDetect detect = new ConfDetect();
-        internal ConfDetect Detect { get { return detect; } }
-
-        private TimeSpan refresh = TimeSpan.FromSeconds(0);
-        public TimeSpan Refresh { get { return refresh; } }
-
-        public bool WaitForNextSong { get { return refresh.TotalSeconds < 0; } }
-
-        private bool autoPlay;
-        private int autoList;
-        public bool AutoPlay { get { return autoPlay; } }
-        public int AutoList { get { return autoList; } }
-        private bool deleteCurrentAlbum = true;
-        public bool DeleteCurrentAlbum { get { return deleteCurrentAlbum; } }
-        private bool complexSearch;
-        public bool ComplexSearch { get { return complexSearch; } }
-
-        //private bool checkFileExist;
-        //public bool CheckFileExist { get { return checkFileExist; } }
-
-        private bool playListAddFile;
-        public bool PlayListAddFile { get { return playListAddFile; } }
-
-        private string dbTrack;
-        public string DbTrack { get { return dbTrack; } }
-
-        private string dbTrackList;
-        public string DbTrackList { get { return dbTrackList; } }
-
-        private bool proxyTrack;
-        public bool ProxyTrack { get { return proxyTrack; } }
-
-        private bool proxyTrackList;
-        public bool ProxyTrackList { get { return proxyTrackList; } }
-
-        private bool persistIt;
-        public bool PersistIt { get { return persistIt; } }
-
-        private int lockWarn;
-        public int LockWarn { get { return lockWarn; } }
-
-        private int lockAbort;
-        public int LockAbort { get { return lockAbort; } }
-
-        //private string dbTrackBib;
-        //public string DbTrackBib { get { return dbTrackBib; } }
-
-        private List<string> logicalLists = new List<string>();
-        private List<string> includeLists = new List<string>();
-
-        public List<string> LogicalLists { get { return logicalLists; } }
-        public List<string> IncludeLists { get { return includeLists; } }
-
-        private string defaultFolder; public string DefaultFolder { get { return defaultFolder; } }
-
-
-        public Conf()
-        {
-        }
-
-        public Conf(XmlElement root)
-        {
-            XmlElement xit = XMLTool.NodeLookUp(root, "it");
-            if (xit == null)
-                return;
-            XMLTool l_xmlConf = new XMLTool(xit);
-
-            scanListLimit = l_xmlConf.getBoolValue("scanListLimit");
-            singleThread = l_xmlConf.getBoolValue("singleThread");
-            gcCollect = l_xmlConf.getBoolValue("gcCollect");
-            proxyTrack = l_xmlConf.getBoolValue("proxyTrack");
-            proxyTrackList = l_xmlConf.getBoolValue("proxyTrackList");
-            persistIt = l_xmlConf.getBoolValue("persistIt", true);
-
-
-            string l_str = l_xmlConf.getNodeValue("maxScan");
-            if (!string.IsNullOrEmpty(l_str))
-            {
-                maxScan = Convert.ToInt32(l_str);
-
-            }
-
-            l_str = l_xmlConf.getNodeValue("deleteFile");
-            if (!string.IsNullOrEmpty(l_str))
-                deleteFile = Convert.ToBoolean(l_str);
-
-            l_str = l_xmlConf.getNodeValue("refreshMax");
-            if (!string.IsNullOrEmpty(l_str))
-                refreshMax = TimeSpan.FromSeconds(Convert.ToDouble(l_str));
-
-
-
-            l_str = l_xmlConf.getNodeValue("delay");
-            if (!string.IsNullOrEmpty(l_str))
-                delay = Convert.ToInt32(l_str);
-
-            l_str = l_xmlConf.getNodeValue("lockWarn");
-            if (!string.IsNullOrEmpty(l_str))
-                lockWarn = Convert.ToInt32(l_str);
-            Locker.LockWarn = lockWarn;  
-
-            l_str = l_xmlConf.getNodeValue("lockAbort");
-            if (!string.IsNullOrEmpty(l_str))
-                lockAbort = Convert.ToInt32(l_str);
-            Locker.LockAbort = lockAbort;  
-
-            l_str = l_xmlConf.getNodeValue("refresh");
-            if (!string.IsNullOrEmpty(l_str))
-                refresh = TimeSpan.FromSeconds(Convert.ToDouble(l_str));
-            autoPlay = l_xmlConf.getBoolValue("autoPlay");
-            deleteCurrentAlbum = l_xmlConf.getBoolValue("deleteCurrentAlbum");
-
-            l_str = l_xmlConf.getNodeValue("autoList");
-            if (!string.IsNullOrEmpty(l_str))
-                autoList = Convert.ToInt32(l_str);
-
-            // checkFileExist = l_xmlConf.getBoolValue("checkFileExist");
-            playListAddFile = l_xmlConf.getBoolValue("playListAddFile");
-            complexSearch = l_xmlConf.getBoolValue("complexSearch");
-            dbTrack = l_xmlConf.getNodeValue("dbTrack");
-            //   dbTrackBib = l_xmlConf.getNodeValue("dbTrackBib");
-            dbTrackList = l_xmlConf.getNodeValue("dbTrackList");
-
-            defaultFolder = l_xmlConf.getNodeValue("defaultFolder"); 
-
-            buildList(logicalLists, l_xmlConf.getNode("logicalLists"));
-            buildList(includeLists, l_xmlConf.getNode("includeLists"));
-
-            detect = new ConfDetect(xit);
-        }
-
-        private void buildList(List<string> list, XMLTool xml)
-        {
-            if (xml == null)
-                return;
-            foreach (XMLTool sub in xml)
-                list.Add(sub.InnerText);
-
-        }
-
-    }
-}
-]]></content>
+  <file path="\pdb.util\pdb.util.csproj">
+    <content><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{C2B34CA9-3BB2-464F-8691-5F5B7CB2B997}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>pdb.util</RootNamespace>
+    <AssemblyName>pdb.util</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\pdb.util.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\pdb.util.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\</OutputPath>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\</OutputPath>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AsyncFileWriter.cs" />
+    <Compile Include="BgDict.cs" />
+    <Compile Include="Chrono.cs" />
+    <Compile Include="CustomFormat.cs" />
+    <Compile Include="CUtil.cs" />
+    <Compile Include="DateUtil.cs" />
+    <Compile Include="DecimalIndex.cs" />
+    <Compile Include="DescBuilder.cs" />
+    <Compile Include="Dict.cs" />
+    <Compile Include="FileRegister.cs" />
+    <Compile Include="Generic\Attributs\AttributeHelper.cs" />
+    <Compile Include="Generic\Attributs\CustomAttribute.cs" />
+    <Compile Include="Generic\Attributs\Db\DbAttributes.cs" />
+    <Compile Include="Generic\Attributs\Db\SbAttributes.cs" />
+    <Compile Include="Generic\Attributs\GlobalAttributes.cs" />
+    <Compile Include="Generic\Attributs\Json\GlobalAttributes.cs" />
+    <Compile Include="Generic\Attributs\NameAttributeBase.cs" />
+    <Compile Include="Generic\Attributs\Sp\GlobalAttributes.cs" />
+    <Compile Include="Generic\Attributs\Xml\XmlAttributes.cs" />
+    <Compile Include="Generic\Encode\Getters.cs" />
+    <Compile Include="Generic\Encode\JSON.cs" />
+    <Compile Include="Generic\Encode\JsonEncoder.cs" />
+    <Compile Include="Generic\Encode\JsonParser.cs" />
+    <Compile Include="Generic\Encode\JsonSerializer.cs" />
+    <Compile Include="Generic\Encode\JsonXmlEncoder.cs" />
+    <Compile Include="Generic\Encode\SafeDictionary.cs" />
+    <Compile Include="Generic\INode.cs" />
+    <Compile Include="Generic\MappingException.cs" />
+    <Compile Include="Generic\Parse\DbParser.cs" />
+    <Compile Include="Generic\Parse\DbWrapper.cs" />
+    <Compile Include="Generic\Parse\JsonParser.cs" />
+    <Compile Include="Generic\Parse\Json\JsonBuilder.cs" />
+    <Compile Include="Generic\Parse\Json\JsonParseException.cs" />
+    <Compile Include="Generic\Parse\Json\JsonState.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateDeuxPoints.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateFinal.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateIni.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateName.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateValue.cs" />
+    <Compile Include="Generic\Parse\Json\JsonStateValueIni.cs" />
+    <Compile Include="Generic\Parse\Json\JsonWrapper.cs" />
+    <Compile Include="Generic\Parse\Node.cs" />
+    <Compile Include="Generic\Parse\Parser.cs" />
+    <Compile Include="Generic\Parse\ParserBase.cs" />
+    <Compile Include="Generic\Parse\XmlParser.cs" />
+    <Compile Include="Generic\Parse\XmlSerializer.cs" />
+    <Compile Include="Generic\Parse\XmlWrapper.cs" />
+    <Compile Include="Generic\TypeInfo.cs" />
+    <Compile Include="Generic\Utils.cs" />
+    <Compile Include="Generic\XmlParser.cs" />
+    <Compile Include="Generic\XmlSerializer.cs" />
+    <Compile Include="list\DictList.cs" />
+    <Compile Include="DictLocation.cs" />
+    <Compile Include="DisposableCounter.cs" />
+    <Compile Include="FileUtil.cs" />
+    <Compile Include="HashList.cs" />
+    <Compile Include="ILogger.cs" />
+    <Compile Include="list\LinkedList.cs" />
+    <Compile Include="list\SequentialDict.cs" />
+    <Compile Include="list\SequentialDictString.cs" />
+    <Compile Include="Locker.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="LoggerConsole.cs" />
+    <Compile Include="Medianne.cs" />
+    <Compile Include="MemUtil.cs" />
+    <Compile Include="misc.cs" />
+    <Compile Include="OutputRecorder.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Queue.cs" />
+    <Compile Include="serialize\Serializer.cs" />
+    <Compile Include="serialize\TextSerializer.cs" />
+    <Compile Include="StringUtil.cs" />
+    <Compile Include="TextWriter.cs" />
+    <Compile Include="ThreadUtil.cs" />
+    <Compile Include="TimeSpan.cs" />
+    <Compile Include="TuningBase.cs" />
+    <Compile Include="XMLTool.cs" />
+    <Compile Include="ZipUtil.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>]]></content>
   </file>
   <file path="\pieceDb.iT\ITrackBuilder.cs">
     <content><![CDATA[using System;
@@ -5564,7 +3919,7 @@ namespace pdb.it
     public interface ITrackBuilder
     {
        // void build(TrackInfoItunes track, XmlNode xTrack); 
-        TrackInfoItunes create();
+        TrackInfoItunes create(string location);
         void createTrack(TrackInfoItunes track); 
     }
     
@@ -5628,10 +3983,7 @@ using System.Threading.Tasks;
 
 namespace pdb.it
 {
-    interface ICreateTrack
-    {
 
-    }
     public class Loader : ILoader, ITrackBuilder, IAbortTask // : ILoader
     {
         private Action abortList;
@@ -5659,6 +4011,7 @@ namespace pdb.it
 
 
         private BgDict<int, TrackInfoItunes> m_htPieces = new BgDict<int, TrackInfoItunes>();
+        private BgDictString<TrackInfoItunes> m_htLoc = new BgDictString<TrackInfoItunes>();
         private BgDict<int, IITFileOrCDTrack> m_htTracks = new BgDict<int, IITFileOrCDTrack>();
 
         public void getNatives(ArrayList list)
@@ -6151,7 +4504,7 @@ namespace pdb.it
             this.Conf = conf;
             this.m_defaultFolder = conf.DefaultFolder;
             if (!m_defaultFolder.EndsWith(@"\"))
-                m_defaultFolder += @"\"; 
+                m_defaultFolder += @"\";
             this.useDetect = useDetect;
 
             this.player = new AutoPlayer(this, conf);
@@ -6166,7 +4519,8 @@ namespace pdb.it
 
         public void saveIds()
         {
-            persist.record();
+            if (persist != null)
+                persist.record();
         }
 
         private bool initialized;
@@ -6676,14 +5030,15 @@ namespace pdb.it
                         continue;
 
                     //  var xTrack = xtracks.ChildNodes[i + 1];
-                    int ID = TrackInfoItunes.getID(xTrack);
+                    //int ID = TrackInfoItunes.getID(xTrack);
+                    string loc = TrackInfoItunes.getLocation(xTrack);
                     //TrackInfoItunes track = trackBuilder.create(xTrack);
 
 
                     TrackInfoItunes track = null;
-                    if (m_htPieces.ContainsKey(ID))
+                    if (m_htLoc.ContainsKey(loc))
                     {
-                        track = m_htPieces[ID];
+                        track = m_htLoc[loc];
                         track.build(xTrack);
 
                     }
@@ -6691,7 +5046,7 @@ namespace pdb.it
 
                     else
                     {
-                        track = create();
+                        track = create(loc);
                         track.build(xTrack);
                         if (track.Strange)
                             continue;
@@ -6699,6 +5054,7 @@ namespace pdb.it
 
 
                         m_htPieces.Add(track.ID, track);
+                        m_htLoc.Add(loc, track);
                     }
 
                     string location = track.Location;
@@ -6936,7 +5292,7 @@ namespace pdb.it
 
 
                     //CPiece l_piece = new CPiece(l_details, l_strFile, l_infos, l_rating, l_date, l_duration, l_enabled);
-                    TrackInfoItunes l_piece = create();
+                    TrackInfoItunes l_piece = create(location);
                     l_piece.build(track);
                     //new TrackInfoItunes(track);
                     l_piece.classNameChanged += new EventHandler<TrackInfoItunes.TrackClassNameEventArgs>(Track_classNameChanged);
@@ -8398,7 +6754,7 @@ namespace pdb.it
                     return null;
                 }
 
-                intern = create();
+                intern = create(track.Location);
                 intern.build(track);
                 // intern.classNameChanged += new EventHandler<TrackInfoItunes.TrackClassNameEventArgs>(Track_classNameChanged);
 
@@ -8635,9 +6991,9 @@ namespace pdb.it
 
         #endregion
 
-        public virtual TrackInfoItunes create()
+        public virtual TrackInfoItunes create(string location)
         {
-            return new TrackInfoItunes();
+            return new TrackInfoItunes() { Location = location };
         }
 
         # region lecture
@@ -8735,147 +7091,6 @@ namespace pdb.it
 
 
 ]]></content>
-  </file>
-  <file path="\pieceDb.iT\pdb.it.csproj">
-    <content><![CDATA[<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{CF5DB63F-4790-4351-9050-B30DED32F052}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pdb.it</RootNamespace>
-    <AssemblyName>pdb.it</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;VV</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;VV</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\pdb.it.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Release\pdb.it.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <PlatformTarget>x86</PlatformTarget>
-    <OutputPath>bin\</OutputPath>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <PlatformTarget>x86</PlatformTarget>
-    <OutputPath>bin\</OutputPath>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Interop.iTunesLib, Version=1.13.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-      <HintPath>bin\Interop.iTunesLib.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="auto\AutoPlayer.cs" />
-    <Compile Include="Conf.cs" />
-    <Compile Include="detect\ConfDetect.cs" />
-    <Compile Include="detect\DetectException.cs" />
-    <Compile Include="detect\Detector.cs" />
-    <Compile Include="ITrackBuilder.cs" />
-    <Compile Include="ItUtil.cs" />
-    <Compile Include="Loader.cs" />
-    <Compile Include="NoTrack.cs" />
-    <Compile Include="persistance\ITrackDb.cs" />
-    <Compile Include="persistance\TrackDb.cs" />
-    <Compile Include="persistance\TrackDbMem.cs" />
-    <Compile Include="persistance\TrackPersistantId.cs" />
-    <Compile Include="persistance\TracksDb.cs" />
-    <Compile Include="PlayList.cs" />
-    <Compile Include="PlayListRegister.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TrackInfoItunes.cs" />
-    <Compile Include="TrackInList.cs" />
-    <Compile Include="TrackWrapper.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pdb.ordo\pdb.ordo.csproj">
-      <Project>{30823D1D-851C-456B-AC4C-B0BEEC173361}</Project>
-      <Name>pdb.ordo</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\pdb.util\pdb.util.csproj">
-      <Project>{C2B34CA9-3BB2-464F-8691-5F5B7CB2B997}</Project>
-      <Name>pdb.util</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PieceDb.obj\pdb.obj.csproj">
-      <Project>{9B849072-2B8E-4CE4-8AD7-D173724A9644}</Project>
-      <Name>pdb.obj</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-</Project>]]></content>
   </file>
   <file path="\pieceDb.iT\TrackInfoItunes.cs">
     <content><![CDATA[using System;
@@ -8994,6 +7209,8 @@ namespace pdb.it
         {
         }
 
+        protected bool present; public bool Present { get { return present; } set { present = value; } }
+
         public void makeRead()
         {
             var track = this.track;
@@ -9049,6 +7266,54 @@ namespace pdb.it
                 }
             }
             return -1;
+        }
+
+        public static string getLocation(XmlNode xTrack)
+        {
+
+            string key = "";
+            bool nextIgnore = false;
+
+            foreach (XmlNode node in xTrack.ChildNodes)
+            {
+                string value = node.InnerText;
+                if (node.Name == "key")
+                {
+                    key = value;
+                    if (key == "Podcast")
+                    {
+                        nextIgnore = true;
+                        continue;
+                    }
+
+                    if (key == "Disabled")
+                    {
+                        nextIgnore = true; continue;
+                    }
+                    continue;
+                }
+
+
+                if (nextIgnore)
+                {
+                    nextIgnore = false;
+                    continue;
+                }
+
+
+                if (string.IsNullOrEmpty(value))
+                    continue;
+
+                switch (key)
+                {
+                    case "Location": Uri uri = new Uri(value);
+                        return uri.LocalPath.Replace(@"\\localhost\", "");
+
+
+
+                }
+            }
+            return "";
         }
 
         public virtual void build(IITFileOrCDTrack track)
@@ -9151,6 +7416,8 @@ namespace pdb.it
         {
             get
             {
+                if (!present)
+                    return new NoTrack(this);
                 if (tracktrack == null)
                 {
                     var _t = loader.getTrackTrack(this);
@@ -9164,7 +7431,7 @@ namespace pdb.it
             }
             set
             {
-                tracktrack = value; 
+                tracktrack = value;
             }
         }
 
@@ -9172,6 +7439,8 @@ namespace pdb.it
         {
             get
             {
+                if (!present)
+                    return new NoTrack(this);
                 if (track == null)
                 {
                     var t = loader.getTrack(this);
@@ -9189,7 +7458,7 @@ namespace pdb.it
             }
             set
             {
-                track = value; 
+                track = value;
             }
         }
 
@@ -9335,10 +7604,21 @@ namespace pdb.it
         {
             get
             {
+                if (present && string.IsNullOrEmpty(comment))
+                {
+                    var t = Track;
+                    if (t != null)
+                        comment = t.Comment;
+                }
                 return comment;
             }
             set
             {
+                if (!present)
+                {
+                    comment = value;
+                    return; 
+                }
                 firstClass = false;
                 if (comment != value)
                 {
@@ -9382,7 +7662,7 @@ namespace pdb.it
                 }
             }
         }
-        private bool enabled;
+        protected bool enabled;
         public bool Enabled
         {
             get
@@ -9418,7 +7698,7 @@ namespace pdb.it
                 if (playCount > 0)
                     return playedDate;
                 return DateTime.MinValue;
-            } 
+            }
         }
         protected string location;
         public string Location
@@ -9431,7 +7711,7 @@ namespace pdb.it
         public TimeSpan Duration
         {
             get { return duration; }
-            set { throw new NotImplementedException();  }
+            set { throw new NotImplementedException(); }
         }
 
 
@@ -9477,6 +7757,11 @@ namespace pdb.it
 
         public void setGrouping(string value, bool prior)
         {
+            if (!present)
+            {
+                grouping = value;
+                return; 
+            }
             if (grouping != value)
             {
                 bool _delta = false;
@@ -9554,9 +7839,15 @@ namespace pdb.it
         private int volume;
         public int Volume
         {
+
             get { return volume; }
             set
             {
+                if (!present)
+                {
+                    volume = value;
+                    return; 
+                }
                 if (volume != value)
                 {
                     int _value = loader.VolumeMin;
@@ -9637,7 +7928,7 @@ namespace pdb.it
         }
         public override bool Equals(object obj)
         {
-            if (string.IsNullOrEmpty( Location))
+            if (string.IsNullOrEmpty(Location))
                 return false;
             if (obj is IFile)
             {
