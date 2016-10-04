@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-    <file path="\pdb.podcast\Program.cs">
+ <file path="\pdb.podcast\Program.cs">
     <content><![CDATA[using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -1614,7 +1614,7 @@ namespace pdb.podcast
 }
 ]]></content>
   </file>
- <file path="\pdb.podcast\Auto\AutoBuilder.cs">
+  <file path="\pdb.podcast\Auto\AutoBuilder.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1624,6 +1624,10 @@ using pdb.podcast.Delta;
 using pdb.podcast.Tuning;
 using pdb.podcast.Report;
 using pdb.podcast.Selection;
+using pdb.podcast.Load;
+using timeSpan = pdb.util.timeSpan;
+
+
 namespace pdb.podcast.Auto
 {
 
@@ -1687,7 +1691,38 @@ namespace pdb.podcast.Auto
         // private bool 
 
 
+        private List<LimitItemLoader> loaders = new List<LimitItemLoader>();
+        public void buildLoaders()
+        {
+            loaders = new List<LimitItemLoader>();
+            source.buildLoaders(loaders, this);
 
+        }
+
+        public void go()
+        {
+            var total = new timeSpan();
+            var fd = new timeSpan();
+            var d = new timeSpan();
+            var date = new timeSpan();
+            var nb = 0;
+
+            var dict = new pdb.util.BgDictString0<TrackInfoItunes>();
+
+            while (true)
+            {
+                var _total = new timeSpan();
+                var _fd = new timeSpan();
+                var _d = new timeSpan();
+                var _date = new timeSpan();
+                var _nb = 0;
+
+                foreach (LimitItemLoader loader in loaders)
+                {
+                    loader.checkV(nb, fd, d, date); 
+                }
+            }
+        }
         private AutoBuilder(pdb.podcast.Tuning.Auto conf)
         {
             this.conf = conf;
@@ -1716,6 +1751,17 @@ namespace pdb.podcast.Auto
         {
             this.source = source;
             source.addBorderObs(this);
+            source.Auto = this;
+        }
+
+        // private static bool loaded; 
+        public static void getLoaders()
+        {
+            //if (loaded)
+            //    return;
+            //loaded = true;
+            foreach (AutoBuilder auto in list)
+                auto.buildLoaders();
         }
         private static AutoBuilder main;
         public static void build(XmlNode xAuto, DirConf source)
@@ -1771,18 +1817,18 @@ namespace pdb.podcast.Auto
                         string line = desc.ToString();
                         mem.ajouts.Add(desc);
                         mem.tajouts.Add(s);
-                        mem.dict.Add(key, desc); 
+                        mem.dict.Add(key, desc);
                         sb.AppendLine(string.Format("{0} delta {1} ajouté {2}", name, mode, line));
                     }
                 }
-                List<string> toRemove = new List<string>(); 
+                List<string> toRemove = new List<string>();
                 foreach (string key in mem.dict.Keys)
                 {
                     if (!auxDixt.ContainsKey(key))
                     {
                         var line = mem.dict[key];
                         mem.suppressions.Add(line);
-                        toRemove.Add(key); 
+                        toRemove.Add(key);
                         if (loaded.ContainsKey(key))
                         {
                             var t = loaded[key];
@@ -1793,7 +1839,7 @@ namespace pdb.podcast.Auto
                 }
 
                 foreach (string key in toRemove)
-                    mem.dict.Remove(key); 
+                    mem.dict.Remove(key);
                 if (mem.ajouts.Count > 0 || mem.suppressions.Count > 0)
                 {
                     int imax = Math.Max(mem.ajouts.Count, mem.suppressions.Count);
@@ -2874,8 +2920,8 @@ namespace pdb.podcast.Auto
 
             }
 
-            setDelta(); 
-           
+            setDelta();
+
 
         }
 
@@ -3290,7 +3336,7 @@ namespace pdb.podcast.Auto
                 }
 
                 double tot = 0;
-                bool _checked = false; 
+                bool _checked = false;
                 foreach (CauseDataValue cd in cause.datas)
                 {
                     if (cd.Virtuel)
@@ -3304,7 +3350,7 @@ namespace pdb.podcast.Auto
                     if (cd.val <= item.torg)
                         continue;
 
-                    _checked = true; 
+                    _checked = true;
 
                     var tension = item.getTension(cd.val);
                     if (!conf.selectFix)
@@ -3319,7 +3365,7 @@ namespace pdb.podcast.Auto
                     cd.Update = true;
 
                 }
-                if (tot >0 && _checked // (tot > 0 //COMMENT on peut avoir ZERO ???? et pourtant
+                if (tot > 0 && _checked // (tot > 0 //COMMENT on peut avoir ZERO ???? et pourtant
                     && (_cause == null || tot < _cause.tension))
                     _cause = new CauseDatasTension(cause, tot);
 
@@ -4166,6 +4212,156 @@ namespace pdb.podcast.Auto
 }
 ]]></content>
   </file>
+  <file path="\pdb.podcast\Auto\TrackBorderItem.cs">
+    <content><![CDATA[using pdb.podcast.Tuning;
+using System;
+using TimeSpan = pdb.util.timeSpan; 
+
+namespace pdb.podcast.Auto
+{
+    public class ItemLoaderState : FeedLimitLoaderState
+    {
+       
+        public TimeSpan d;
+        public TimeSpan date;
+      
+    }
+    public class FeedLimitLoaderState
+    {
+        public TrackInfoItunes track;
+        public TimeSpan fd;
+        public TimeSpan nb;
+    }
+    public enum borderType
+    {   
+        d,
+        fd,
+        nb,
+        maxdate,
+        c
+    }
+    public enum borderStatus : byte
+    {
+        rejectedLight = 0,
+        rejectedStrict = 1,
+        selectedLight = 2,
+        selectedStrict = 3
+    }
+
+    //[Flags]
+    //public enum border : byte
+    //{
+    //    virtuel = 0,
+    //    strict = 1,
+    //    rejected = 0,
+    //    selected = 2
+    //}
+
+    /// <summary>
+    /// Infos sur la sélection ou la non sélection d'un podcast
+    /// </summary>
+    public class TrackBorderItem
+    {
+        /// <summary>
+        /// Limite à l'orgine de l'info
+        /// </summary>
+        public readonly LimitItemBase source;
+        /// <summary>
+        /// Podcast
+        /// </summary>
+        public readonly TrackInfoItunes candidat;
+        /// <summary>
+        /// Type de paramètre pris en compte
+        /// </summary>
+        public readonly borderType type;
+        /// <summary>
+        /// Valeur actuelle pour le paramètre
+        /// </summary>
+        public readonly TimeSpan val;
+        public readonly borderStatus status;
+
+        public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, TimeSpan val, borderStatus status)
+        {
+            this.source = source;
+            this.candidat = candidat;
+            this.type = type;
+            this.val = val;
+
+            //int s = 2 * (selected ? 1 : 0) + (strict ? 1 : 0);
+            this.status = status;
+        }
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, TimeSpan ts, borderStatus status) :
+        //    this(source, candidat, type, ts.TotalMinutes, status)
+        //{
+        //}
+
+        public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, DateTime t, borderStatus status) :
+            this(source, candidat, type,  new TimeSpan(t - Conf.Date0), status)
+        {
+        }
+
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, double val, border status)
+        //    : this
+        //        (source, candidat, type, val, (borderStatus)status)
+        //{
+        //}
+
+
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, DateTime t, border status) :
+        //    this(source, candidat, type, (t - Conf.Date0).TotalDays, status)
+        //{
+        //}
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, TimeSpan ts, border status) :
+        //    this(source, candidat, type, ts.TotalMinutes, status)
+        //{
+        //}
+
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, TimeSpan val, bool selected, bool strict) :
+        //    this(source, candidat, type, val, (borderStatus)(2 * Convert.ToByte(selected) + Convert.ToByte(strict)))
+        //{
+        //}
+
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, DateTime t, bool selected, bool strict) :
+        //    this(source, candidat, type,new TimeSpan(t-Conf.Date0),selected,strict)
+        //{
+        //}
+
+        //public TrackBorderItem(LimitItemBase source, TrackInfoItunes candidat, borderType type, TimeSpan ts, bool selected, bool strict) :
+        //    this(source, candidat, type, ts.TotalMinutes, selected,strict)
+        //{
+        //}
+
+        public override bool Equals(object obj)
+        {
+            var o = obj as TrackBorderItem;
+            if (o == null)
+                return false;
+            return candidat.Equals(o.candidat);
+        }
+
+        public override int GetHashCode()
+        {
+            return candidat.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            // string statut// Selected ? "selected" : "rejected";
+            return string.Format("{0} {1} {2} {3} {4}", status, type, val, candidat, source);
+        }
+        public bool Selected { get { return status >= borderStatus.selectedLight; } }
+        public bool Virtual { get { return (byte)status % 2 == 0; } }
+    }
+
+}
+]]></content>
+  </file>
   <file path="\pdb.podcast\Load\FeedLimitItemLoader.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
@@ -4177,6 +4373,7 @@ using timeSpan = pdb.util.timeSpan;
 
 namespace pdb.podcast.Load
 {
+  
     public enum loadState
     {
         loadCandidat,
@@ -4184,11 +4381,11 @@ namespace pdb.podcast.Load
         selection,
         end
     }
-    public enum depotType
-    {
-        load,
-        rapporte
-    }
+    //public enum depotType
+    //{
+    //    load,
+    //    rapporte
+    //}
     /// <summary>
     /// Chargeur des pistes associées à un item de limite sur un dossier
     /// </summary>
@@ -4254,13 +4451,80 @@ namespace pdb.podcast.Load
         private bool _okNb; public bool OkNb { get { return _okNb; } }
 
 
-        private int index;
-        private List<TrackInfoItunes> candidats = new List<TrackInfoItunes>(); 
+        private int _indexv = -1;
+        private int _index = -1;
+
+        public int Index { get { return _index;  } }
+        int _nbv = 0;
+        int _nb;
+        timeSpan _fdv;
+        timeSpan _fd;
+        int count;
+        private TrackInfoItunes _nextCandidat;
+        private List<TrackInfoItunes> candidats = new List<TrackInfoItunes>();
         public void AddCandidat(TrackInfoItunes track)
         {
-            candidats.Add(track); 
+            candidats.Add(track);
+            count++;
         }
 
+        public void checkV(int nb, timeSpan fd)
+        {
+            //nb > _nbv && fd > _fdv
+            // 1-> je sors nb=1 fd=5 > retenu par exemple nb=0 fd = 5 ridicule mais c'est comme ça
+            // step fait un check(0,5) qui ne renvoie rien
+            // 2-> check (0,5 ) ? je fais pas indev++ car j'ai déja 5
+            //0/0   1/5    2/11    3/16
+            // |-----|------|-------|-->
+            // debut
+
+            while (true)
+            {
+                if (_nbv > nb)
+                    break;
+                if (_fdv > fd)
+                    break; 
+                _indexv++;
+                if (_indexv >= count)
+                    break;
+                _nextCandidat = candidats[_indexv];
+                _fdv += _nextCandidat.Duree;
+                _nbv++; 
+            }
+
+        }
+
+        public void reservation(int nb, timeSpan fd)
+        {
+            while (true)
+            {
+                if (_nb > nb)
+                    break;
+                if (_fd > fd)
+                    break;
+                _index++;
+                if (_index >= count)
+                    break;
+                _nextCandidat = candidats[_indexv];
+                _fd += _nextCandidat.Duree;
+                _nb++;
+            }
+        }
+        
+
+        //public FeedLimitLoaderState getNext(FeedLimitLoaderState current)
+        //{
+        //    int i = index + 1;
+        //    if (i >= candidats.Count)
+        //        return null;
+        //    var track = candidats[i]; 
+        //    var _nb = nb + 1;
+        //    var _fd = currentDuration + track.Duree;
+
+        //    var ret = new FeedLimitLoaderState() { track = track }(); 
+        //    if (_nb > current.nb)
+        //        ret.
+        //}
 
         public void phase2()
         {
@@ -4435,7 +4699,7 @@ namespace pdb.podcast.Load
             bool ret = true;
             //        string str = string.Format("{0} {1} {2} {3} {4}", limit, itemSource, (nb), currentDuration.TotalMinutes.ToString("0"), track.ToString());
             nbVirtuel = nb;
-            currentDurationVirtuel = currentDuration; 
+            currentDurationVirtuel = currentDuration;
             var nbBase = real ? nb : nbVirtuel;
 
             var _nb = nbBase + 1;
@@ -4443,7 +4707,7 @@ namespace pdb.podcast.Load
             var dur = durationBase + track.Duree;
 
             int _nbMax = load ? this.loadNbMax : this.nbMax;
-            var _durationMax = load ? this.loadDurationMax : this.durationMax; 
+            var _durationMax = load ? this.loadDurationMax : this.durationMax;
 
             if (_nb > _nbMax)
             {
@@ -4542,6 +4806,263 @@ namespace pdb.podcast.Load
 
         }
 
+        public override string ToString()
+        {
+            return string.Format("{0} {1}", album, limit); 
+        }
+
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.podcast\Load\FeedsLoader.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using pdb.podcast.Tuning;
+using pdb.util;
+using pdb.util.list;
+
+namespace pdb.podcast.Load
+{
+    public enum action
+    {
+        none,
+        loadCandidat,
+        //standAlone,
+        phase2,
+        selectionPre,
+        selectionPost,
+        writeLists,
+        writeTracksPre,
+        writeTracksPost
+    }
+    /// <summary>
+    /// Chargeur de répertoire
+    /// </summary>
+    public class FeedsLoader
+    {
+        /// <summary>
+        /// Registre des albums
+        /// </summary>
+        private Feeds feeds;
+        /// <summary>
+        /// Répertoire considéré
+        /// </summary>
+        private DirConf dir;
+
+        ///// <summary>
+        ///// Registre des Tracks
+        ///// </summary>
+        //private IDictionary<string, TrackInfoItunes> dict = new SequentialDictString<TrackInfoItunes>();
+
+        /// <summary>
+        /// Registre des loaders
+        /// </summary>
+       // private List<FeedLoader> loaders = new List<FeedLoader>();
+        private LimitsLoader limitsLoader; 
+        private Logger log;
+
+      
+
+        public FeedsLoader(DirConf dir)
+        {
+            this.feeds = dir.Feeds;
+            this.dir = dir;
+            limitsLoader = new LimitsLoader(dir); 
+            log = Logger.getLogger(dir.getPath() + "\\dir", false); 
+        }
+
+        public LimitsLoader LimitsLoader { get { return limitsLoader;  } }
+
+
+        public void Action(action action)
+        {
+            switch (action)
+            {
+                case action.loadCandidat: log.log("{0} Récupération des candidats", dir);
+                    limitsLoader.loadCandidats(); 
+                     break;
+               // case Load.action.standAlone: standAlone(); break;
+                case action.phase2: limitsLoader.phase2(); break;
+                case action.selectionPre: limitsLoader.SelectionPre(); break;
+                case action.selectionPost: limitsLoader.SelectionPost(); break;
+                case action.writeLists: limitsLoader.WriteLists(); break;
+                case action.writeTracksPre: limitsLoader.WriteTracksPre(); break;
+                case action.writeTracksPost: limitsLoader.WriteTracksPost(); break; 
+                default:
+                    break;
+            }
+        }
+
+    
+
+        ///// <summary>
+        ///// Constitution de la liste
+        ///// </summary>
+        //private void LoadCandidats()
+        //{
+        //    // 1. récupérer les candidat (logique locale Feed (nb, feedDuration...); 
+        //    //log.log("****************************************************************************************");
+        //    //log.log("Récupération des candidats"); 
+        //    //log.log("****************************************************************************************");
+            
+        //    log.log( "{0} Récupération des candidats", dir);
+        //    limitsLoader.loadCandidats(); 
+        //    //string feedName = null;
+        //    //bool histo = dir.Histo;
+        //    //bool? histoAll = dir.HistoAll;
+        //    //if (histo)
+        //    //    feedName = dir.Name;
+
+        //    //var logList = new List<TrackInfoItunes>();
+
+        //    //foreach (var feed in feeds)
+        //    //{
+        //    //    if (true.Equals(histoAll) || !histo || (histo && false.Equals(histoAll) && feed.Name.Equals(feedName)))
+        //    //    {
+        //    //        var feedLoader = getLoader(feed.Name); // new FeedLoader(dir, feed, this, false);
+        //    //        feedLoader.loadCandidats();
+        //    //    }
+        //    //}
+        //}
+
+       
+
+        //private void standAlone()
+        //{
+        //    log.log("{0} standAlone", dir); 
+        //    bool dirHisto = dir.Histo;
+
+
+
+        //    for (int i = dir.Cascading ? Limits.NB - 1 : 0; ((i >= 0 && dir.Cascading) || (i < Limits.NB && !dir.Cascading)); i = dir.Cascading ? i - 1 : i + 1)
+        //    {
+        //        var limit = dir.Limites[i];
+        //        foreach (LimitItem item in limit.Items)
+        //        {
+        //            int levelMin = limit.Level;
+        //            int ratingMin = levelMin * 20;
+        //            int duration = item.Duration;
+        //            var DurationMax = TimeSpan.FromMinutes(duration);
+        //            TimeSpan currentDuration = new TimeSpan();
+        //            //bool durationLimitAtteinte = false;
+
+        //            if (item.Nb == 0 || item.FeedDuration == 0 || item.Duration == 0)
+        //                continue;
+
+
+        //            var _depot = new SequentialDictString<TrackInfoItunes>();
+        //            depot(_depot, item, depotType.load);
+
+        //            var list = _depot.List;
+        //            if (dirHisto)
+        //                list.Sort(new PodCastComparer());
+        //            else
+        //                list.Sort(new PodCastComparerInv());
+
+        //            foreach (TrackInfoItunes candidat in list)
+        //            {
+        //                if (candidat.Rating < ratingMin)
+        //                    continue;
+        //                if (dir.Info.HasValue)
+        //                {
+        //                    bool bInfo = dir.Info.Value;
+        //                    if (candidat.Info != bInfo)
+        //                        continue;
+        //                }
+
+        //                if (dir.Rare.HasValue)
+        //                {
+        //                    bool bRare = dir.Rare.Value;
+        //                    if (candidat.Rare != bRare)
+        //                        continue;
+        //                }
+
+        //                if (!control(candidat, item,false))
+        //                    continue;
+
+        //                // enregistrement pour stockage et stats
+        //              //  dir.recordTrackStandAlone(candidat, item);
+        //                currentDuration += candidat.Duration;
+
+
+
+
+        //                candidat.select(selectMode.standAlone, item);
+
+        //                //  feeds.recordTrack(candidat, item);
+
+        //                if (currentDuration > DurationMax)
+        //                {
+        //                    //if (!durationLimitAtteinte)
+        //                    //{
+        //                    //Logger.getLogger(dir.getPath() + "\\dir", false).log("duration {0}", (currentDuration + candidat.Duration).TotalMinutes.ToString("0"));
+        //                    //item.DurationLimitAtteinte = true;
+        //                    //}
+        //                    //durationLimitAtteinte = true;
+        //                    break;
+        //                }
+
+        //            }
+
+
+        //        }
+        //    }
+        //}
+
+
+
+        //private FeedLoader getLoader(string album)
+        //{
+        //    var loader = loaders.Find(l => l.feed.Name == album);
+        //    if (loader == null)
+        //    {
+        //        loader = new FeedLoader(dir, feeds[album], this);
+        //        loaders.Add(loader);
+        //    }
+        //    return loader;
+        //}
+
+        //private void depot(IDictionary<string, TrackInfoItunes> depot, LimitItem item, depotType type)
+        //{
+        //    foreach (var loader in loaders)
+        //    {
+        //        loader.depot(depot, item, type);
+        //    }
+        //}
+
+
+
+        public void recordTrackFromChild(TrackInfoItunes track, LimitItem itemSource, bool transmitTotal)
+        {
+           // getLoader(track.Album).recordTrackFromChild(track, itemSource);
+            limitsLoader.recordTrackFromChild(track, itemSource, transmitTotal); 
+        }
+
+    
+
+
+        //private bool control(TrackInfoItunes track, LimitItem item, bool select)
+        //{
+        //    //var loader = getLoader(track.Album);
+        //    //return loader.control(track, item,select);
+        //}
+
+        ///// <summary>
+        ///// Enregistrement d'un candidat 1ere phase
+        ///// </summary>
+        ///// <param name="track"></param>
+        //public void recordCandidat(TrackInfoItunes track)
+        //{
+        //    string location = track.Location;
+        //    if (string.IsNullOrEmpty(location))
+        //        return;
+        //    if (!dict.ContainsKey(location))
+        //    {
+        //        dict.Add(location, track);
+        //    }
+        //}
+
     }
 }
 ]]></content>
@@ -4561,7 +5082,7 @@ using pdb.podcast.Selection;
 
 namespace pdb.podcast.Load
 {
-    class LimitItemLoader
+   public class LimitItemLoader
     {
         private static bool _selection;
         public static bool ModeSelection { get { return _selection; } set { _selection = value; } }
@@ -4601,6 +5122,17 @@ namespace pdb.podcast.Load
 
             trackDurationMax = timeSpan.FromMinutes(limit.Td);
             trackDurationMin = timeSpan.FromMinutes(limit.TdMin);
+        }
+
+
+        timeSpan _durationv;
+        timeSpan _datev; 
+        public void checkV(int nb, timeSpan fd, timeSpan d, timeSpan date )
+        {
+            foreach (FeedLimitItemLoader loader in loaders.Values)
+            {
+                loader.checkV(nb, fd); 
+            }
         }
 
         public void loadCandidats(List<TrackInfoItunes> _loaded)
@@ -5379,10 +5911,810 @@ namespace pdb.podcast.Load
         }
 
         public LimitItem Item { get { return limit; } }
+        public override string ToString()
+        {
+            return limit.ToString(); 
+        }
 
     }
 }
 ]]></content>
+  </file>
+  <file path="\pdb.podcast\Load\LimitLoader.cs">
+    <content><![CDATA[using pdb.podcast.Tuning;
+using System.Collections.Generic;
+
+namespace pdb.podcast.Load
+{
+    public class LimitLoader
+    {
+        private Limit limit;
+        private LimitsLoader parent;
+        private List<LimitItemLoader> items = new List<LimitItemLoader>();
+        int ratingMin; 
+        public LimitLoader(LimitsLoader parent, Limit limit)
+        {
+            this.parent = parent; 
+            this.limit = limit;
+            ratingMin = limit.Level * 20;
+            foreach (LimitItem item in limit.Items)
+            {
+                items.Add(new LimitItemLoader(parent, item)); 
+            }
+        }
+        public void getLoaders(List<LimitItemLoader> list)
+        {
+            foreach (LimitItemLoader item in items)
+            {
+                list.Add(item); 
+            }
+        }
+
+        public void loadCandidats(List<TrackInfoItunes> loaded)
+        {
+            //if (limit.Level == 5)
+            //{
+            //    int toto = 0; 
+            //}
+
+            var _loaded = loaded.FindAll(t => t.Rating >= ratingMin);
+
+            foreach (LimitItemLoader item in items)
+            {
+                item.loadCandidats(_loaded); 
+            }
+
+        }
+
+        public void phase2()
+        {
+            foreach (var item in items)
+            {
+                item.phase2();
+            }
+        }
+
+        /// <summary>
+        /// Enregistrement d'un candidat sélectionné sur une limite supérieure
+        /// </summary>
+        /// <param name="track"></param>
+        public void recordGuest(TrackInfoItunes track, LimitItem itemSource)
+        {
+            if (track.Rating < ratingMin)
+                return; 
+            foreach (var item in items)
+            {
+                item.recordGuest(track, itemSource);
+            }
+        }
+
+        public void Selection()
+        {
+            //if (limit.Level == 5)
+            //{
+            //    int toto = 0;
+            //}
+            foreach (LimitItemLoader item in items)
+            {
+                item.Selection(); 
+            }
+        }
+
+        public void recordTrackFromChild(TrackInfoItunes track, LimitItem itemSource, bool transmitTotal)
+        {
+            if (track.Rating < ratingMin)
+                return;
+            //if (limit.Level == 5)
+            //{
+            //    int toto = 0;
+            //}
+            foreach (LimitItemLoader item in items)
+            {
+                item.recordTrackFromChild(track, itemSource,transmitTotal);
+            }
+        }
+
+        public List<LimitItemLoader> Items { get { return items; } }
+        public Limit Limit { get { return limit; } }
+
+        public override string ToString()
+        {
+            return limit.ToString(); 
+        }
+      
+    }
+}
+]]></content>
+  </file>
+  <file path="\pdb.podcast\Load\LimitsLoader.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using pdb.podcast.Tuning;
+using pdb.util.list;
+using pdb.util;
+using pdb.podcast.Report;
+using System.Xml;
+using pdb.podcast.Selection;
+
+namespace pdb.podcast.Load
+{
+    public interface IWriter
+    {
+        void StartElement(string elt);
+        void SetAttribute(string name, object value);
+        void EndElement();
+    }
+    public class WriterXml : IWriter
+    {
+        private XmlWriter writer;
+        public WriterXml(XmlWriter writer)
+        {
+            this.writer = writer;
+        }
+        public void StartElement(string elt)
+        {
+            writer.WriteStartElement(elt);
+        }
+
+        public void SetAttribute(string name, object value)
+        {
+            writer.WriteAttributeString(name, value.ToString());
+        }
+
+        public void EndElement()
+        {
+            writer.WriteEndElement();
+        }
+    }
+
+    public class WriterHtml : IWriter
+    {
+        private ITextWriter writer;
+        int level;
+        void beginLine()
+        {
+            writer.AppendLine();
+            for (int i = 0; i < level; i++)
+                writer.Append("\t");
+        }
+        public WriterHtml(ITextWriter writer)
+        {
+            this.writer = writer;
+        }
+        public void StartElement(string elt)
+        {
+            StartElement(elt, null);
+        }
+
+        private void StartElement(string elt, string class_)
+        {
+            beginLine();
+            if (string.IsNullOrEmpty(class_))
+                writer.Append("<div>");
+            else
+            {
+                writer.Append("<div class='");
+                writer.Append(class_);
+                writer.Append("'>");
+            }
+            if (elt.Length > 1)
+            {
+                writer.Append(elt);
+                writer.Append("&nbsp;");
+            }
+            level++;
+        }
+
+
+        public void Start(string elt)
+        {
+            StartElement(elt, "tree");
+        }
+
+        public void SetAttribute(string name, object value)
+        {
+            if (name == "track")
+            {
+                writer.Append("<span class='track'>");
+                writer.Append(value);
+                writer.Append("</span>");
+
+            }
+            else if (name == "album")
+            {
+                writer.Append("<span class='album'>");
+                writer.Append(value);
+                writer.Append("</span>");
+            }
+            else
+            {
+                writer.Append(name);
+                writer.Append("=");
+                writer.Append(value);
+            }
+            writer.Append("&nbsp");
+
+        }
+
+        public void EndElement()
+        {
+            level--;
+            beginLine();
+            writer.Append("</div>");
+        }
+    }
+
+    public
+    class LimitsLoader
+    {
+        private DirConf dir;
+        private Limits limit;
+        // private IDictionary<string, TrackInfoItunes> loaded;
+        private LimitLoader[] limites = new LimitLoader[Limits.NB];
+        public loadState state;
+        private Logger log;
+        private static IWriter writer;
+        public LimitsLoader(DirConf dir)
+        {
+            this.dir = dir;
+            this.limit = dir.Limites;
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                limites[i] = new LimitLoader(this, limit[i]);
+            }
+            log = Logger.getLogger(dir.getPath() + "\\dir", null, false);
+        }
+
+        public void getLoaders(List<LimitItemLoader> list)
+        {
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                limites[i].getLoaders(list); 
+            }
+        }
+
+        public void loadCandidats()
+        {
+            try
+            {
+                var feeds = dir.Feeds; 
+                string feedName = null;
+                bool histo = dir.Histo;
+                bool? histoAll = dir.HistoAll;
+                if (histo && false.Equals(histoAll))
+                    feedName = dir.Name;
+
+                bool? dirInfo = dir.Info;
+                bool? dirRare = dir.Rare;
+
+                var _loaded = feeds.Loaded;
+                List<TrackInfoItunes> loaded = new List<TrackInfoItunes>();
+
+
+
+                foreach (TrackInfoItunes track in _loaded)
+                {
+
+                    if (feedName != null && track.Album != feedName)
+                        continue;
+
+                    if (dirInfo.HasValue && dirInfo.Value != track.Info)
+                        continue;
+
+                    if (dirRare.HasValue && dirRare.Value != track.Rare)
+                        continue;
+                    loaded.Add(track);
+                }
+
+                if (histo)
+                    loaded.Sort(new PodCastComparer());
+                else
+                    loaded.Sort(new PodCastComparerInv());
+
+
+
+                for (int i = 0; i < Limits.NB; i++)
+                {
+                    limites[i].loadCandidats(loaded);
+                }
+            }
+            finally
+            {
+                state = loadState.selection;
+            }
+        }
+
+        private bool recordGuests;
+        public void phase2()
+        {
+            state = loadState.selection;
+            if (dir.Cascading)
+                recordGuests = true;
+            foreach (LimitLoader item in limites)
+            {
+                item.phase2();
+            }
+        }
+
+        public void recordLimitItemCandidat(TrackInfoItunes track, LimitItem item)
+        {
+
+            if (!recordGuests)
+                return;
+
+
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                limites[i].recordGuest(track, item);
+            }
+        }
+
+        public void recordTrackFromChild(TrackInfoItunes track, LimitItem itemSource, bool transmitTotal)
+        {
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                limites[i].recordTrackFromChild(track, itemSource, transmitTotal);
+            }
+        }
+
+
+        public void WriteLists()
+        {
+            if (dir.Parent == null || Conf.WritePlayLists)
+            {
+                // var preSel = feeds.PreSel;
+                var list = dir.getListe();
+
+                var limits = dir.Limites;
+                var usegenPrior = Conf.GenUsePrior;
+                var exclugenPrior = Conf.GenExcluPrior;
+
+                for (int i = 0; i < Limits.NB; i++)
+                {
+                    var limit = limites[i];
+                    List<TrackInfoItunes> items;
+                    foreach (LimitItemLoader item in limit.Items)
+                    {
+                        // var index = limit.index(item);
+                        if (Conf.WriteItems)
+                        {
+                            items = item.exclu.List; // list.FindAll(t => t.containsSelect(item));
+                            buildList(item.Item.ID, items, "_sel");
+                        }
+
+                        if (Conf.WritePreSel)
+                        {
+                            items = item.standAlone.List; // preSel.FindAll(t => t.containsStandAlone(item));
+                            buildList(item.Item.ID, items, "_sel0");
+                        }
+                        if (Conf.WriteUse)
+                        {
+                            items = item.use;
+                            buildList(item.Item.ID, usegenPrior, items, "_use");
+                        }
+                        if (Conf.WriteExclu)
+                        {
+                            var limite = item.Item;
+                            items = item.use.FindAll(t => t.Exclu == limite);
+                            buildList(item.Item.ID, exclugenPrior, items, "_exclu");
+                        }
+
+                    }
+                }
+
+                //if (dir.Parent == null)
+                //{
+                if (dir.Parent == null)
+                {
+
+                    var lfolders = dir.Folders;
+
+                    buildListPrior("_auto", list, lfolders);
+
+                    var lHisto = list.FindAll(t => t.Histo);
+                    buildList("_histo", lHisto, lfolders);
+
+                    var lPasHisto = list.FindAll(t => !t.Histo);
+                    buildList("_pasHisto", lPasHisto, lfolders);
+
+                    var lSerie = list.FindAll(t => t.Serial);
+                    buildList("_serie", lSerie, lfolders);
+                }
+                // }
+            }
+        }
+
+
+
+        private static void buildList(string name, List<TrackInfoItunes> list, string folder)
+        {
+            Program.buildList(name, list, int.MaxValue, folder);
+        }
+
+        private static void buildList(string name, int prior, List<TrackInfoItunes> list, string folder)
+        {
+            Program.buildList(name, list, prior, folder);
+        }
+
+        private static void buildList(string name, List<TrackInfoItunes> list, List<string> folders)
+        {
+            Program.buildList(name, list, folders);
+        }
+        private static void buildListPrior(string name, List<TrackInfoItunes> list, List<string> folders)
+        {
+            Program.buildList(name, list, 0, folders);
+        }
+
+
+
+        private void writeStat(GroupStat stat, bool? onlyUse)
+        {
+            writeStat(stat.Total, onlyUse);
+        }
+
+        private void writeStat(DoubleStat stat, bool? onlyUse)
+        {
+            if (onlyUse == null)
+                return;
+            string strStat = "";
+            if (true == onlyUse)
+                strStat = stat.getUseValues();
+            else
+                strStat = stat.getStats();
+            writer.SetAttribute("stats", strStat);
+        }
+
+        private void writeTrackList(List<TrackInfoItunes> list, bool includeAlbum, bool includeLevel, bool includeItem)
+        {
+            var conf = Conf.Html;
+            int nbmax = conf.trackCause;
+            int nb = 0; 
+            foreach (TrackInfoItunes track in list)
+            {
+                nb++; 
+                writer.StartElement("t");
+                writer.SetAttribute("date", track.Pub);
+                if (includeItem)
+                {
+                    writer.SetAttribute("i", track.GetProvider());
+                    if (conf.trackItemDetail)
+                    {
+                        var lim = track.Provider;
+                        if (lim != null)
+                        {
+                            var sb = new StringBuilder();
+                            lim.writeStatHeader(sb);
+                            lim.Stat.Total.buildValues(sb);
+                            writer.SetAttribute("stats", sb.ToString());
+                        }
+                    }
+                    
+                }
+
+                if (includeAlbum)
+                    writer.SetAttribute("album", track.Album);
+                if (includeLevel)
+                    writer.SetAttribute("l", (track.Rating / 20).ToString());
+                writer.SetAttribute("track", track.Name);
+                if (nb <= nbmax)
+                {
+                    WriteCause(dir.CauseRegister.Get(track),true,true);
+                    WriteCause(dir.CauseRegister.Get(track), true, false);
+                    WriteCause(dir.CauseRegister.Get(track), false, true);
+                    WriteCause(dir.CauseRegister.Get(track), false,false);
+
+                }
+                writer.EndElement();
+            }
+        }
+
+        private List<TrackInfoItunes> getItems(DirConf dir, DoubleStat stat)
+        {
+            var items = new List<TrackInfoItunes>(stat.Use.List);
+            if (dir.Histo)
+                items.Sort(new PodCastComparer());
+            else
+                items.Sort(new PodCastComparerInv());
+            return items;
+
+        }
+
+        internal void writeTracks(DirConf dir, GroupStat stat, bool? onlyUseStat, bool includeTrackItem)
+        {
+            writeStat(stat, onlyUseStat);
+
+            var items = getItems(dir, stat.Total);
+            if (items.Count == 0)
+                return;
+
+            int nbLevel = 0;
+
+
+
+            #region tracks
+            writer.StartElement("tracks");
+
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                var soutot = stat.SousTotaux[i];
+                if (soutot.Empty)
+                    continue;
+                nbLevel++;
+                if (nbLevel > 1)
+                    break;
+            }
+            if (nbLevel > 1)
+            {
+                #region levels
+                writer.StartElement("levels");
+                for (int i = 0; i < Limits.NB; i++)
+                {
+                    var soutot = stat.SousTotaux[i];
+                    if (soutot.Empty)
+                        continue;
+                    #region level
+                    writer.StartElement("level");
+                    writer.SetAttribute("level", i.ToString());
+                    writeStat(soutot, true);
+                    var subItems = getItems(dir, soutot);
+                    #region subItems
+                    writeTrackList(subItems, true, false, includeTrackItem);
+
+                    #endregion
+
+                    writer.EndElement();
+                    #endregion
+
+                }
+                writer.EndElement();
+                #endregion
+            }
+
+            writeTrackList(items, true, true, includeTrackItem);
+
+            writer.EndElement();
+            #endregion
+
+
+            if (false != dir.HistoAll)
+            {
+                int nbAlbum = 0;
+                foreach (FeedLimitItemStat f in stat.Feed.getFeeds())
+                {
+                    var listInAlbum = items.FindAll(t => t.Album == f.Album);
+                    if (listInAlbum.Count == 0)
+                        continue;
+                    nbAlbum++;
+                    if (nbAlbum > 1)
+                        break;
+                }
+                if (nbAlbum > 1)
+                {
+                    #region albums
+                    writer.StartElement("albums");
+                    foreach (FeedLimitItemStat f in stat.Feed.getFeeds())
+                    {
+                        var listInAlbum = items.FindAll(t => t.Album == f.Album);
+                        if (listInAlbum.Count == 0)
+                            continue;
+                        #region album
+                        writer.StartElement("album");
+                        writer.SetAttribute("name", f.Album);
+
+                        writeStat(f.Totaux, true);
+                        writeTrackList(listInAlbum, false, true, includeTrackItem);
+
+                        writer.EndElement();
+                        #endregion
+
+                    }
+                    writer.EndElement();
+                    #endregion
+                }
+            }
+        }
+        public static IWriter Writer { set { writer = value; } }
+        public void WriteTracksPre()
+        {
+            if (writer is WriterHtml && dir.Parent == null)
+            {
+                (writer as WriterHtml).Start("dir");
+            }
+            else
+                writer.StartElement("dir");
+            writer.SetAttribute("name", this.dir.Name);
+
+
+
+
+            var dirStat = dir.Stat;
+            if (dirStat == null)
+                return;
+
+            writeTracks(dir, dir.Conteneur.Tracks, true, true);
+
+            var limits = dir.Limites;
+
+
+            bool hasLimit = false;
+            #region limites
+            for (int i = 0; i < Limits.NB; i++)
+            {
+                var limit = limites[i];
+                bool hasLimitItem = false;
+
+                var limite = limit.Limit;
+                var limitStat = limite.Stat;
+                if (limitStat == null)
+                    continue;
+                if (limitStat.Total.Empty)
+                    continue;
+
+
+                if (!hasLimit)
+                {
+                    writer.StartElement("limites");
+                    writeTracks(dir, dir.Stat, true, true);
+                }
+                hasLimit = true;
+
+                #region limite
+                writer.StartElement("limite");
+                writer.SetAttribute("level", i.ToString());
+
+                writeTracks(dir, limitStat, true, true);
+
+
+                #region items
+                foreach (LimitItemLoader item in limit.Items)
+                {
+                    var lim = item.Item;
+                    var items = item.use;
+                    if (items.Count == 0)
+                        continue;
+                    if (!hasLimitItem)
+                        writer.StartElement("items");
+                    hasLimitItem = true;
+
+                    #region item
+                    writer.StartElement("i");
+                    writer.SetAttribute("name", lim.ToString().Replace(dir.getPath(), ""));
+                    var sb = new StringBuilder();
+                    lim.writeStatHeader(sb);
+                    lim.Stat.Total.buildValues(sb);
+                    writer.SetAttribute("stats", sb.ToString());
+
+                    writeTracks(dir, lim.Stat, null, false);
+
+                    writer.EndElement();
+                    #endregion
+                }
+                if (hasLimitItem)
+                    writer.EndElement();
+                #endregion
+                writer.EndElement();
+                #endregion
+
+            }
+            if (hasLimit)
+                writer.EndElement();
+            #endregion
+
+
+        }
+
+        private void WriteCause(Causes causes, bool strict, bool ok)
+        {
+            //  writer.StartElement("causes");
+            foreach (CauseItem cause in causes.getCauses(strict,ok, ok)) 
+            {
+                string str = "cause"; 
+                if (strict)
+                    str+="strict";
+                if (!ok)
+                    str += "nok"; 
+                writer.StartElement(str);
+
+            
+                writer.SetAttribute("type", cause.type);
+                writer.SetAttribute("val", cause.val);
+
+
+                var lim = cause.limit as LimitItem;
+
+
+                #region item
+                //  writer.StartElement("i");
+                writer.SetAttribute("name", lim.ToString());
+                if (Conf.Html.trackCauseItemDetail)
+                {
+                    var sb = new StringBuilder();
+                    lim.writeStatHeader(sb);
+                    lim.Stat.Total.buildValues(sb);
+                    writer.SetAttribute("stats", sb.ToString());
+                }
+
+                //   writer.EndElement();
+                #endregion
+
+
+                writer.EndElement();
+            }
+            //     writer.EndElement();
+        }
+        public void WriteTracksPost()
+        {
+            if (Conf.Html.writeCause >0)
+            {
+                if (dir.Parent == null)
+                {
+                    int nbMax = Conf.Html.writeCause;
+                    int nb = 0; 
+                    #region nonretenus
+                    writer.StartElement("exclus");
+                    var list =  dir.CauseRegister.getList(true);
+                    foreach (Causes causes in list)
+                    {
+                        nb++;
+                        if (nb > nbMax)
+                            break; 
+                        var track = causes.candidat;
+                        writer.StartElement("t");
+                        writer.SetAttribute("date", track.Pub);
+                        writer.SetAttribute("album", track.Album);
+                        writer.SetAttribute("l", (track.Rating / 20).ToString());
+                        writer.SetAttribute("track", track.Name);
+
+                        WriteCause(causes,true,true);
+                        WriteCause(causes, true, false);
+
+                        WriteCause(causes, false, true);
+                        WriteCause(causes, false,false);
+                        writer.EndElement();
+                    }
+                    writer.EndElement();
+                    #endregion
+                }
+            }
+            writer.EndElement();
+
+        }
+
+        public void SelectionPre()
+        {
+            if (dir.SelectionPre)
+                selection();
+        }
+
+        public void SelectionPost()
+        {
+            if (!dir.SelectionPre)
+                selection();
+        }
+
+        private void selection()
+        {
+
+            log.log("{0} Selection", dir);
+
+            for (int i = dir.Cascading ? Limits.NB - 1 : 0; ((i >= 0 && dir.Cascading) || (i < Limits.NB && !dir.Cascading)); i = dir.Cascading ? i - 1 : i + 1)
+            {
+                var limit = limites[i];
+                limit.Selection();
+
+            }
+
+        }
+
+        public override string ToString()
+        {
+            return dir.ToString(); 
+        }
+
+    }
+}]]></content>
   </file>
   <file path="\pdb.podcast\Selection\CauseItem.cs">
     <content><![CDATA[using pdb.podcast.Auto;
@@ -5982,6 +7314,8 @@ namespace pdb.podcast.Tuning
             root.build(null, xDir); 
             buildDirChilds(xDir, root);
 
+            AutoBuilder.getLoaders(); 
+
             XmlElement xMove = l_xmlConf.NodeLookUp("move");
             move = new Move(xMove);
 
@@ -6504,6 +7838,19 @@ namespace pdb.podcast.Tuning
 
         }
 
+        public void buildLoaders(List<LimitItemLoader> list, AutoBuilder auto)
+        {
+            if (auto != Auto)
+                return;
+            var loader = Loader;
+            var fl = loader.LimitsLoader;
+            fl.getLoaders(list);
+            foreach (DirConf sub in childs)
+            {
+                sub.buildLoaders(list, auto);
+            }
+        }
+
         /// <summary>
         /// Enregistrement d'une piste
         /// </summary>
@@ -6514,7 +7861,7 @@ namespace pdb.podcast.Tuning
             if (offset > DateTime.MinValue)
             {
                 track.Offset = offset;
-                offset = offset.AddDays(1); 
+                offset = offset.AddDays(1);
             }
             conteneur.recordTrack(track, limit);
             if (parent != null)
@@ -6890,6 +8237,23 @@ namespace pdb.podcast.Tuning
             return conteneur.Tracks.Total.Use.getEmpreinte();
         }
 
+
+        private AutoBuilder auto;
+        public AutoBuilder Auto
+        {
+            get
+            {
+                if (auto != null)
+                    return auto;
+                if (parent != null)
+                    return parent.Auto;
+                return null;
+            }
+            set
+            {
+                auto = value;
+            }
+        }
         #region IBorder
         private List<AutoBuilder> borderObs = new List<AutoBuilder>();
         public void addBorderObs(AutoBuilder auto)
@@ -7574,1442 +8938,4 @@ namespace pdb.podcast.Tuning
 }
 ]]></content>
   </file>
-  <file path="\pdb.util\Medianne.cs">
-    <content><![CDATA[using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-
-namespace pdb.util
-{
-    public enum selectedCoeff
-    {
-        none,
-        noCoeff,
-        main,
-        min
-    }
-
-    public enum medianneMode
-    {
-        none = 0,
-        strict = 1,
-        light = 2,
-        moy = 3
-
-    }
-    public enum removeLast
-    {
-        non = 0,
-        unselected = 1,
-        virtuel = 2,
-        tous = 3
-    }
-
-    public enum modeMin
-    {
-        /// <summary>
-        /// On ne gère pas
-        /// </summary>
-        non = 0,
-        /// <summary>
-        /// Morceaux supérieurs à la limite ( pas d'influence sur le résultat)
-        /// </summary>
-        orphelin = 1,
-        /// <summary>
-        /// Morceaux cochés et notés
-        /// </summary>
-        toujours = 2
-
-    }
-
-    public class HistoStat
-    {
-        public HistoStatItem min;
-        public HistoStatItem max;
-
-        public HistoStat()
-        {
-            min = new HistoStatItem(int.MaxValue);
-            max = new HistoStatItem(-1);
-        }
-        public HistoStat(decimal val)
-        {
-            min = new HistoStatItem(val);
-            max = new HistoStatItem(val);
-        }
-
-        //private string desc(decimal d)
-        //{
-        //    if (d < 0)
-        //        return "";
-        //    if (d >= int.MaxValue)
-        //        return "";
-        //    return d.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
-        //}
-
-        public override string ToString()
-        {
-            //return string.Format("{0}({1}) {2}({3})", desc(min.absolute), desc(min.relative), desc(max.absolute), desc(max.relative)); 
-            return string.Format("{0} {1}", min, max);
-        }
-    }
-
-    public class HistoStatItem
-    {
-        public decimal relative;
-        public decimal absolute;
-        public HistoStatItem()
-        {
-            relative = -1;
-            absolute = -1;
-        }
-        public HistoStatItem(decimal val)
-        {
-            relative = val;
-            absolute = val;
-        }
-
-        public static string desc(decimal d)
-        {
-            if (d < 0)
-                return "";
-            if (d >= int.MaxValue)
-                return "";
-            return d.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-            sb.Append(desc(absolute));
-            if (absolute != relative)
-            {
-                sb.Append("(");
-                sb.Append(desc(relative));
-                sb.Append(")");
-            }
-            return sb.ToString();
-        }
-
-
-    }
-
-    [Serializable]
-    public class ConfMedianne : TuningBase
-    {
-        public medianneMode type;
-        public decimal medianne = 0.5m;
-        public bool quasi;
-
-        public bool enabled;
-
-
-
-        public bool removeFirst;
-        public bool deleteFirst;
-        public removeLast removeLast;
-
-        public decimal expEnabled = 0m;
-
-        public decimal zero = 0m;
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool removeEnabled;
-
-
-
-
-        public modeMin cmpMin;
-
-        private ConfMedianneVirt _main;
-        private ConfMedianneVirt _min;
-
-        public ConfMedianneVirt Main { get { return _main; } }
-        public ConfMedianneVirt Min { get { return _min; } }
-        public ConfMedianne()
-        {
-            _main = new ConfMedianneVirt();
-            _min = new ConfMedianneVirt();
-
-        }
-
-        public void makeIdem()
-        {
-            _min = _main;
-        }
-
-        public void duplicateMainIf()
-        {
-            if (_min == _main)
-                _min = new ConfMedianneVirt(_main);
-        }
-        public ConfMedianne(ConfMedianne o)
-        {
-            type = o.type;
-            medianne = o.medianne;
-            quasi = o.quasi;
-
-            enabled = o.enabled;
-
-
-
-            removeFirst = o.removeFirst;
-            deleteFirst = o.deleteFirst;
-            removeLast = o.removeLast;
-
-            expEnabled = o.expEnabled;
-
-            zero = o.zero;
-            removeEnabled = o.removeEnabled;
-
-
-
-            cmpMin = o.cmpMin;
-
-            _main = new ConfMedianneVirt(o._main);
-            _min = new ConfMedianneVirt(o._min);
-
-        }
-
-        public ConfMedianne(XmlElement parent, XmlElement child)
-            : base(parent, child)
-        {
-            var strType = "";
-            builds("type", v => strType = v);
-            type = (medianneMode)Enum.Parse(typeof(medianneMode), strType, true);
-            builddec("medianne", v => medianne = v);
-            buildb("quasi", v => quasi = v);
-            buildb("enabled", v => enabled = v);
-            buildb("removeFirst", v => removeFirst = v);
-            buildb("deleteFirst", v => deleteFirst = v);
-            builddec("expEnabled", v => expEnabled = v);
-            builddec("zero", v => zero = v);
-            buildb("removeEnabled", v => removeEnabled = v);
-            string _modeMin = "";
-            builds("cmpMin", v => _modeMin = v);
-            if (!string.IsNullOrEmpty(_modeMin))
-                cmpMin = (modeMin)Enum.Parse(typeof(modeMin), _modeMin, true);
-
-            string _removeLast = null;
-            builds("removeLast", v => _removeLast = v);
-            removeLast = (removeLast)Enum.Parse(typeof(removeLast), _removeLast, true);
-
-            _main = null;
-            _min = null;
-            var subs = XMLTool.NodeLookUp(child, "virts");
-            if (subs != null)
-            {
-                foreach (XmlNode _n in subs.ChildNodes)
-                {
-                    if (_n is XmlElement)
-                    {
-                        if (_main == null)
-                        {
-                            _main = new ConfMedianneVirt(child, _n as XmlElement);
-
-                        }
-                        else if (_min == null)
-                        {
-                            _min = new ConfMedianneVirt(child, _n as XmlElement);
-                        }
-                    }
-                }
-                if (_min == null && _main != null)
-                    _min = new ConfMedianneVirt(_main);
-            }
-        }
-
-        public override void save(XmlWriter w)
-        {
-            base.save(w);
-            writeStart("cmp");
-            write("type", type);
-            write("medianne", medianne);
-            write("quasi", quasi);
-            write("enabled", enabled);
-            write("removeFirst", removeFirst);
-            write("deleteFirst", deleteFirst);
-            write("expEnabled", expEnabled);
-            write("zero", zero);
-            write("removeEnabled", removeEnabled);
-            write("cmpMin", cmpMin);
-            write("removeLast", removeLast);
-
-            writeStart("virts");
-            _main.save(w);
-            _min.save(w);
-            writeEnd();
-
-            writeEnd();
-
-
-
-        }
-
-
-        public void auto(selectedCoeff motif)
-        {
-            if (!enabled)
-                return;
-            if (motif == selectedCoeff.none)
-                return;
-            var coeffPrisEncompte = motif > selectedCoeff.noCoeff;
-            if (_min == _main || _min.coeffVirt == 1m)
-            {
-                _main.calcAuto(coeffPrisEncompte, 1);
-            }
-            else
-            {
-                if (coeffPrisEncompte)
-                {
-                    if (motif == selectedCoeff.main)
-                        _main.calcAuto(true, 1);
-                    if (motif == selectedCoeff.min)
-                        _min.calcAuto(true, 1);
-                }
-                else
-                {
-                    _main.calcAuto(false, 1);
-                    _min.calcAuto(false, 1);
-                }
-            }
-        }
-    }
-
-    [Serializable]
-    public class ConfMedianneVirt : TuningBase
-    {
-        [NonSerialized]
-        const string PATH_DYN = "..\\dynamic";
-        private string Path { get { return string.Format("{0}{1}", DIR_CONF, fdata); } }
-        private string PathDiff { get { return string.Format("{0}{1}", DIR_CONF, fdiff); } }
-        private string PathDiffTmp { get { return string.Format("{0}{1}", DIR_CONF, fdiffTmp); } }
-        // private string PathLastFull { get { return string.Format("{0}{1}", DIR_CONF, flast); } }
-        const string PATH_DYN_DIFF = "..\\dynamic_diff";
-
-        const decimal EPSILON = 0.001m;
-        const int NB_HISTO = 1000000;
-        public int safe;
-        public decimal coeffVirt = 1m;
-
-        //private bool firstSave = true;
-        //private static bool modeDiff;
-        //public static bool ModeDiff
-        //{
-        //    get { return modeDiff; }
-        //    set
-        //    {
-        //        modeDiff = value;
-        //    }
-        //}
-
-        public string name;
-
-
-        /// <summary>
-        /// lié au mode db
-        /// </summary>
-        public dbMode mode;
-        /// <summary>
-        /// fichier ou est consigné l'historique courant
-        /// </summary>
-        public string fdata;
-        /// <summary>
-        /// fichier ou est consigné l'incrémental de l'historique
-        /// </summary>
-        public string fdiff;
-        /// <summary>
-        /// fichier ou est consigné l'incrémental de l'historique en mode full en vue de la sauvegarfe
-        /// </summary>
-        public string fdiffTmp;
-        ///// <summary>
-        ///// fichier ou est consigné la dernière sauvegarde full de l'historique
-        ///// </summary>
-        //public string flast;
-
-        public int indexDiff = 0;
-
-        public bool virtOnlyDisabled;
-        public bool noAddEnd;
-        public bool noAddAll;
-        public bool virtAlignSelected;
-        public bool virtAlignPrec;
-        public bool coeffVirtAuto;
-        public bool coeffVirtAdjust;
-
-        public bool removeEpsilon;
-
-        public bool forceCoeffVirt;
-        public bool lissage;
-        public bool cumul;
-
-        public bool reSort;
-        public bool noAdd;
-
-
-        public bool auto;
-        public decimal dcoeffp;
-        public decimal dcoeffm;
-
-        public int serialp = 1;
-        public int serialm = 1;
-        /// <summary>
-        /// atténuation progressive des coeffs
-        /// </summary>
-        public decimal dconvergence;
-
-        public decimal dconvdeltap = 1m;
-        public decimal dconvdeltam = 1m;
-
-        /// <summary>
-        /// anti atténuation
-        /// </summary>
-        public decimal danticonvergence = 1m;
-        public decimal danticonvdeltap = 1m;
-        public decimal danticonvdeltam = 1m;
-        private bool _linkconv;
-        private decimal linkProduct;
-        private List<decimal> histo = new List<decimal>();
-        //  private List<decimal> histoDiff = new List<decimal>();
-        public bool linkconv { get { return _linkconv; } set { _linkconv = value; calcProduct(); } }
-
-        private void calcProduct()
-        {
-            this.linkProduct = calcProduct(this.dcoeffp, this.dconvergence);
-        }
-
-        public decimal calcProduct(decimal dcoeffp, decimal dconvergence)
-        {
-            var linkProduct = this.linkProduct;
-            try
-            {
-                linkProduct = dcoeffp / dconvergence;
-                // 1 0,9 -> 10
-                // 0.1 0,99 
-            }
-            catch
-            {
-            }
-
-            return linkProduct;
-        }
-
-        private void calcConv()
-        {
-            this.dconvergence = calcConv(this.dcoeffp, this.linkProduct);
-        }
-
-        public decimal LinkProduct
-        {
-            get
-            {
-                if (linkProduct == 0m)
-                    calcProduct();
-                return linkProduct;
-            }
-            set
-            {
-                linkProduct = value;
-                calcConv();
-
-            }
-        }
-
-        public decimal calcConv(decimal dcoeffp, decimal linkProduct)
-        {
-            var dconvergence = this.dconvergence;
-            try
-            {
-                // 1- conv = coeff / prod
-                dconvergence = dcoeffp / linkProduct; //1/10
-            }
-            catch
-            {
-
-            }
-            return dconvergence;
-        }
-
-        private bool? lastAutoDirection;
-        private int _nbSameDirection;
-
-        public ConfMedianneVirt()
-        { }
-        public ConfMedianneVirt(ConfMedianneVirt o)
-        {
-            name = o.name;
-            mode = o.mode;
-            fdata = o.fdata;
-            fdiff = o.fdiff;
-            fdiffTmp = o.fdiffTmp;
-            //  flast = o.flast;
-            safe = o.safe;
-            coeffVirt = o.coeffVirt;
-            virtOnlyDisabled = o.virtOnlyDisabled;
-            noAddEnd = o.noAddEnd;
-            noAddAll = o.noAddAll;
-            virtAlignSelected = o.virtAlignSelected;
-            virtAlignPrec = o.virtAlignPrec;
-            coeffVirtAuto = o.coeffVirtAuto;
-            coeffVirtAdjust = o.coeffVirtAdjust;
-            removeEpsilon = o.removeEpsilon;
-            forceCoeffVirt = o.forceCoeffVirt;
-            lissage = o.lissage;
-            cumul = o.cumul;
-            reSort = o.reSort;
-            noAdd = o.noAdd;
-            auto = o.auto;
-            dcoeffp = o.dcoeffp;
-            dcoeffm = o.dcoeffm;
-            dconvergence = o.dconvergence;
-            dconvdeltap = o.dconvdeltap;
-            dconvdeltam = o.dconvdeltam;
-            danticonvergence = o.danticonvergence;
-            danticonvdeltap = o.danticonvdeltap;
-            danticonvdeltam = o.danticonvdeltam;
-            _linkconv = o._linkconv;
-            serialp = o.serialp;
-            serialm = o.serialm;
-            _nbSameDirection = o._nbSameDirection;
-            histo = new List<decimal>(o.histo);
-        }
-        public ConfMedianneVirt(XmlElement parent, XmlElement child)
-            : base(parent, child)
-        {
-            var str = "";
-            builds("mode", v => str = v);
-            if (!string.IsNullOrEmpty(str))
-                mode = (dbMode)Enum.Parse(typeof(dbMode), str);
-            builds("name", v => name = v);
-            builds("fdata", v => fdata = v);
-            builds("fdiff", v => fdiff = v);
-            builds("fdiffTmp", v => fdiffTmp = v);
-            // builds("flast", v => flast = v);
-            builddec("coeffVirt", v => coeffVirt = v);
-            buildi("safe", v => safe = v);
-
-            buildb("virtOnlyDisabled", v => virtOnlyDisabled = v);
-            buildb("noAddEnd", v => noAddEnd = v);
-            buildb("noAddAll", v => noAddAll = v);
-            buildb("virtAlignSelected", v => virtAlignSelected = v);
-            buildb("virtAlignPrec", v => virtAlignPrec = v);
-            buildb("coeffVirtAuto", v => coeffVirtAuto = v);
-            buildb("coeffVirtAdjust", v => coeffVirtAdjust = v);
-
-            buildb("removeEpsilon", v => removeEpsilon = v);
-            buildb("forceCoeffVirt", v => forceCoeffVirt = v);
-            buildb("lissage", v => lissage = v);
-            buildb("cumul", v => cumul = v);
-            buildb("reSort", v => reSort = v);
-            buildb("noAdd", v => noAdd = v);
-            buildb("auto", v => auto = v);
-            builddec("dcoeffp", v => dcoeffp = v);
-            builddec("dcoeffm", v => dcoeffm = v);
-            builddec("dconvergence", v => dconvergence = v);
-            builddec("dconvdeltap", v => dconvdeltap = v);
-            builddec("dconvdeltam", v => dconvdeltam = v);
-
-            builddec("danticonvergence", v => danticonvergence = v);
-            builddec("danticonvdeltap", v => danticonvdeltap = v);
-            builddec("danticonvdeltam", v => danticonvdeltam = v);
-            buildb("linkconv", v => _linkconv = v);
-            buildi("serialp", v => serialp = v);
-            buildi("serialm", v => serialm = v);
-            buildi("serial", v => _nbSameDirection = v);
-
-            var xhisto = XMLTool.NodeLookUp(child, "histo");
-            if (xhisto != null)
-            {
-                foreach (XmlElement sub in xhisto.ChildNodes)
-                {
-                    histo.Add(Convert.ToDecimal(sub.InnerText));
-                }
-            }
-            else
-            {
-                if (File.Exists(Path))
-                {
-                    foreach (var line in File.ReadAllLines(Path))
-                    {
-                        if (string.IsNullOrEmpty(line))
-                            continue;
-                        histo.Add(Convert.ToDecimal(line));
-                    }
-                    indexDiff = histo.Count;
-
-                    //if (histo.Count >0 )
-                    //    coeffVirt = getCoeff(histo[histo.Count -1]);
-
-
-                }
-
-                if (File.Exists(PathDiff))
-                {
-                    var histoDiff = new List<decimal>();
-
-                    foreach (var line in File.ReadAllLines(PathDiff))
-                    {
-                        if (string.IsNullOrEmpty(line))
-                            continue;
-                        histoDiff.Add(Convert.ToDecimal(line));
-                    }
-
-                    if (mode == dbMode.full)
-                    {
-                        histo.AddRange(histoDiff);
-                        indexDiff = histo.Count;
-                    }
-                    else
-                    {
-                        indexDiff = histo.Count - histoDiff.Count;
-                    }
-
-                }
-
-
-
-                if (mode == dbMode.full && File.Exists(PathDiff))
-                    File.Delete(PathDiff);
-
-                if (histo.Count > 0)
-                {
-                    int index = histo.Count - 1;
-                    decimal current = histo[index];
-                    coeffVirt = getCoeff(current);
-                    bool? sens = null;
-                    int nbSerie = 0;
-                    decimal delta = 0m;
-
-                    var rr = 0m;
-                    if (dcoeffp > 0)
-                        rr = dcoeffm / dcoeffp;
-                    if (rr > 0)
-                    {
-                        while (true)
-                        {
-                            index--;
-                            if (index < 0)
-                                break;
-                            var aux = histo[index];
-                            var _sens = current > aux;
-                            if (sens == null)
-                            {
-                                sens = _sens;
-                                lastAutoDirection = !_sens;
-                                delta = current - aux;
-                            }
-
-
-                            if (sens != _sens)
-                                break;
-                            current = aux;
-                            nbSerie++;
-
-                        }
-
-                        _nbSameDirection = nbSerie;
-                        dcoeffp = Math.Abs(delta); dcoeffm = dcoeffp * rr;
-
-                    }
-                }
-            }
-
-
-            //if (histoDiff.Count > 0)
-            //    coeffVirt = getCoeff(histo[histo.Count - 1]); 
-
-        }
-
-        public override void save(XmlWriter w)
-        {
-            base.save(w);
-            writeStart("v");
-            write("name", name);
-            write("mode", mode);
-            write("fdata", fdata);
-            write("fdiff", fdiff);
-            write("fdiffTmp", fdiffTmp);
-
-            write("coeffVirt", coeffVirt);
-            write("safe", safe);
-
-            write("virtOnlyDisabled", virtOnlyDisabled);
-            write("noAddEnd", noAddEnd);
-            write("noAddAll", noAddAll);
-            write("virtAlignSelected", virtAlignSelected);
-            write("virtAlignPrec", virtAlignPrec);
-            write("coeffVirtAuto", coeffVirtAuto);
-            write("coeffVirtAdjust", coeffVirtAdjust);
-
-            write("removeEpsilon", removeEpsilon);
-            write("forceCoeffVirt", forceCoeffVirt);
-            write("lissage", lissage);
-            write("cumul", cumul);
-            write("reSort", reSort);
-            write("noAdd", noAdd);
-            write("auto", auto);
-            write("dcoeffp", dcoeffp);
-            write("dcoeffm", dcoeffm);
-            write("dconvergence", dconvergence);
-            write("dconvdeltap", dconvdeltap);
-            write("dconvdeltam", dconvdeltam);
-
-            write("danticonvergence", danticonvergence);
-            write("danticonvdeltap", danticonvdeltap);
-            write("danticonvdeltam", danticonvdeltam);
-            write("linkconv", linkconv);
-            write("serialp", serialp);
-            write("serialm", serialm);
-            write("serial", _nbSameDirection);
-            //writeStart("histo");
-            //foreach (decimal h in histo)
-            //{
-            //    w.WriteStartElement("h");
-            //    w.WriteString(h.ToString("0.###"));
-            //    w.WriteEndElement();
-            //}
-            //writeEnd();
-
-            var sb = new StringBuilder();
-            var sbDiff = new StringBuilder();
-
-
-
-
-            //if (modeDiff)
-            //{
-            //    histoDiff = null;
-            //}
-            //else
-            //{
-            //    if (histoDiff != null)
-            //    {
-            //        histo.AddRange(histoDiff);
-            //        histoDiff = null;
-            //    }
-
-            //    if (File.Exists(PathDiff))
-            //        File.Delete(PathDiff);
-            //}
-
-            int count = histo.Count;
-            for (int i = 0; i < count; i++)
-            {
-                var line = histo[i].ToString("0.######");
-                sb.AppendLine(line);
-                if (i >= indexDiff)
-                    sbDiff.AppendLine(line);
-            }
-
-
-            if (!string.IsNullOrEmpty(fdata))
-            {
-                AsyncFileWriter.Instance.post(Path, sb.ToString());
-                if (mode == dbMode.diff)
-                    AsyncFileWriter.Instance.post(PathDiff, sbDiff.ToString());
-                else
-                    AsyncFileWriter.Instance.post(PathDiffTmp, sbDiff.ToString());
-
-
-                if (mode == dbMode.full && File.Exists(PathDiff))
-                    File.Delete(PathDiff);
-            }
-
-
-            writeEnd();
-        }
-
-        public int Serial { get { return _nbSameDirection; } set { _nbSameDirection = value; } }
-
-        public void calcAuto(bool selectedByCoeff, int nb)
-        {
-            if (!auto)
-                return;
-            var last = lastAutoDirection;
-            lastAutoDirection = selectedByCoeff;
-
-            if (last.HasValue && last != selectedByCoeff)
-                _nbSameDirection = 0;
-
-            if (selectedByCoeff)
-                _nbSameDirection--;
-            else
-                _nbSameDirection++;
-            var lastProduct = linkProduct;
-            var rr = 0m;
-            if (dcoeffp > 0)
-                rr = dcoeffm / dcoeffp;
-
-            var c0 = dcoeffp;
-            /// au debut dconvergence à effet  fort 0.9 doit arriver à 0.999
-            /// // quand j'applique la convergence, je fait baisser son effet
-            /// 
-
-
-            if (dconvergence > 0 && last.HasValue)
-            {
-                var aux = dconvergence;
-                if (last != selectedByCoeff)
-                {
-                    if (!selectedByCoeff)
-                    {
-
-                        //dcoeffp *= dconvergence;
-                        //dcoeffm *= dconvergence;
-                        //if (dcoeffp < EPSILON) dcoeffp = EPSILON;
-                        //if (dcoeffm < EPSILON) dcoeffm = EPSILON;
-
-                        // la convergence est maintenant directement le % de baisse
-                        //0.1 -> 0.9  ==> 1.1
-                        var r = 1 + dconvergence;
-                        dcoeffp /= r;
-                        dcoeffm /= r;
-
-                        if (dcoeffp < EPSILON)
-                        { dcoeffp = EPSILON; if (rr > 0m) dcoeffm = rr * dcoeffp; }
-                        if (dcoeffm < EPSILON)
-                        { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
-                       
-                            makeDelta(true, dcoeffp, nb);
-
-                        //   _nbSameDirection = 0;
-                        //  lastAutoDirection = null;
-
-                    }
-                    else
-                    {
-                        var r = 1 + dconvergence;
-                        var h = dcoeffp * dconvergence / (1 + dconvergence); 
-                        makeDelta(false, dcoeffp - h, nb); 
-                        // ex 10, je veux arriver à 0.1
-                    }
-
-                    if (_linkconv)
-                        calcConv();
-                    else
-                    {
-
-                        //  var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
-                        dconvergence /= (1 + dconvdeltam); // 0.09 // 0.81
-                        //  dconvergence = 1 - delta; // 0.9 -> 0.91 // 0.1-> 0.19
-                    }
-
-
-                    danticonvergence /= (1 + danticonvdeltam);
-                    //var delta = 1 - danticonvergence; 
-                    //delta *= (1- danticonvdeltam) ;
-                    //danticonvergence = delta - 1; 
-                    // if (danticonvergence < 1m) danticonvergence = 1;
-
-                    //delta = danticonvergence - 1; // 0.1
-                    //delta *= danticonvdeltam;  //0.09; 
-                    //    danticonvergence = 1+delta; // 1.1 -> 1.09
-
-
-
-
-                }
-                else
-                {
-                    bool applyanti = false;
-                    if (selectedByCoeff && -_nbSameDirection > serialm)
-                        applyanti = true;
-                    else if (!selectedByCoeff && _nbSameDirection > serialp)
-                        applyanti = true;
-                    if (applyanti)
-                    {
-                        var limit = dcoeffp + EPSILON;
-                        dcoeffp *= (1 + danticonvergence);
-                        dcoeffm *= (1 + danticonvergence);
-                        danticonvergence *= (1 + danticonvdeltap);
-
-
-
-                        if (danticonvergence > 0 && limit > dcoeffp)
-                        {
-                            dcoeffp = limit;
-                        }
-
-                        if (rr > 0)
-                            dcoeffm = rr * dcoeffp;
-
-                    }
-                    if (_linkconv)
-                        calcConv();
-                    else if (applyanti)
-                    {
-                        dconvergence *= (1 + dconvdeltap);
-                        //   var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
-                        //var delta = 1 - dconvergence; //0.1 -> 0.9  0.5->0.5
-                        //delta /= (1+ dconvdeltap); // 0.81 0.25
-                        //dconvergence = 1 - delta;  // 0.18 0.75
-                        // dconvergence *= dconvdeltap; // 0.11 // 0.99
-                        //    dconvergence = 1 - delta; // 0.9 -> 0.89 // 0.01
-                        if (dconvergence > 1 - EPSILON)
-                            dconvergence = 1 - EPSILON;
-                        if (dconvergence < EPSILON)
-                            dconvergence = EPSILON;
-                    }
-
-                    if (selectedByCoeff)
-                        makeDelta(false, dcoeffm, nb);
-                    else
-                        makeDelta(true, dcoeffp, nb);
-
-
-
-
-
-                }
-                misc.log("convergence {0:0.##}->{1:0.######}", c0, dcoeffp);
-                misc.log("evol convergence {0:0.######}->{1:0.######}", aux, dconvergence);
-            }
-
-
-
-
-
-        }
-
-        public decimal CoeffT { get { return (decimal)Math.Pow((double)coeffVirt, safe); } }
-        private decimal getCoeff(decimal coeffT) { return (decimal)Math.Pow((double)coeffT, (1.0 / (double)safe)); }
-
-        private void makeDelta(bool sens, decimal delta, int nb)
-        {
-            try
-            {
-                decimal coeffT = CoeffT;
-                while (histo.Count >= NB_HISTO)
-                    histo.RemoveAt(0);
-
-
-                string montee = sens ? "up" : "down";
-                var c0 = coeffT;
-                if (sens)
-                {
-                    for (int i = 0; i < nb; i++)
-                        coeffT += delta;
-                }
-                else
-                {
-                    for (int i = 0; i < nb; i++)
-                        coeffT -= delta;
-                }
-                if (coeffT < 1)
-                    coeffT = 1;
-
-                var coeff = getCoeff(coeffT); // (decimal)Math.Pow((double)coeffT, (1.0 / (double)safe));
-
-                misc.log("{0} {1:0.######} {2:0.######}->{3:0.######}", montee, delta, c0, coeffT);
-
-                coeffVirt = coeff;
-                histo.Add(coeffT);
-            }
-            catch
-            {
-            }
-
-
-        }
-
-        public HistoStat calcStat(selectedCoeff motif, int nb)
-        {
-            var stat = new HistoStat();
-            int _nb = 0;
-            int count = histo.Count;
-            for (int i = count - 1; i >= 0; i--)
-            {
-                var h = histo[i];
-
-                // min 
-                if (h < stat.min.absolute)
-                    stat.min.absolute = h;
-                // calcul du plus faible qui n'a pas fonctionné
-
-                if (h < stat.min.relative)
-                {
-                    if (i + 1 < count)
-                    {
-                        var suivant = histo[i + 1];
-                        if (suivant < h)
-                            stat.min.relative = h;
-                    }
-                    else
-                    {
-                        if (motif > selectedCoeff.noCoeff || motif == selectedCoeff.none)
-                            stat.min.relative = h;
-                    }
-                }
-
-                //max
-                if (h > stat.max.absolute)
-                    stat.max.absolute = h;
-                // calcul du max qui fonctionne
-                if (h > stat.max.relative)
-                {
-                    if (i + 1 < count)
-                    {
-                        var suivant = histo[i + 1];
-                        if (suivant > h)
-                            stat.max.relative = h;
-                    }
-                    else
-                    {
-                        if (motif <= selectedCoeff.noCoeff)
-                            stat.max.relative = h;
-                    }
-                }
-
-                _nb++;
-                if (_nb >= nb)
-                    break;
-            }
-
-            return stat;
-        }
-
-        private decimal calcMin(int nb, bool sens)
-        {
-            decimal min = CoeffT;
-            int _nb = 0;
-            int count = histo.Count;
-            for (int i = count - 1; i >= 0; i--)
-            {
-                var h = histo[i];
-
-                if ((sens && h > min) || (!sens && h < min))
-                {
-                    // calcul du max qui fonctionne
-                    if (sens)
-                    {
-                        if (i + 1 < count)
-                        {
-                            var suivant = histo[i + 1];
-                            if (suivant > h)
-                                min = h;
-                        }
-                    }
-                    // calcul du plus faible qui n'a pas fonctionné
-                    else
-                        if (i + 1 < count)
-                        {
-                            var suivant = histo[i + 1];
-                            if (suivant < h)
-                                min = h;
-                        }
-                }
-
-                _nb++;
-                if (_nb >= nb)
-                    break;
-            }
-            return min;
-        }
-
-        public decimal coeffTMin(int nb)
-        {
-            return calcMin(nb, false);
-        }
-
-        public decimal coeffTMax(int nb)
-        {
-            return calcMin(nb, true);
-        }
-
-
-
-    }
-    public class CalcMedianne
-    {
-        const decimal PRECISION = 0.0000001m;
-        private static int index;
-        public static int Index { get { return index; } }
-
-
-        public static DecimalIndex getMedianne(IEnumerable list, decimal coeffMedianne)
-        {
-            var _list = new List<decimal>();
-            foreach (object o in list)
-            {
-                _list.Add(Convert.ToDecimal(o));
-            }
-            return getMedianne(_list, coeffMedianne);
-        }
-
-        public static DecimalIndex getMedianne(IList<decimal> list, decimal coeffMedianne)
-        {
-            return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
-        }
-
-        //public static DecimalIndex getMedianneLight(IList<decimal> list, ConfMedianne mode)
-        //{
-
-        //    DecimalIndex ret = new DecimalIndex();
-        //    var medianne = getMedianne_(list, mode.medianne);
-        //    ret.d = medianne;
-        //    ret.index = index;
-        //    if (list.Count == 1)
-        //        return ret;
-
-        //    int indexV = 0;
-
-        //    int count = list.Count;
-
-        //    if (mode.safe > 0)
-        //    {
-
-        //        int i0 = count - 1;
-
-        //        for (int i = 0; i < count; i++)
-        //        {
-        //            if (list[i] == 0m)
-        //            {
-        //                i0 = i;
-        //                break;
-        //            }
-        //        }
-        //        if (i0 == 0)
-        //            return ret;
-
-        //        //for (int i00 = 1; i00 <= i0; i00++)
-        //        //{
-        //        //    decimal coeff = (decimal)i00 / (decimal)i0;
-        //        List<decimal> _list = new List<decimal>(list);
-        //        //for (int i = i00; i < count; i++)
-        //        //    _list[i] = 0m;
-        //        //liste partielle originale
-        //        //  List<decimal> _list0 = new List<decimal>(_list);
-        //        int _count = Math.Min(count, i0 + mode.safe);
-        //        decimal[] virt = new decimal[_count];
-        //        for (int i = 0; i < i0; i++)
-        //        {
-        //            decimal _coeff = 1m;
-        //            decimal _base = _list[i];
-        //            for (int j = i + 1; j < _count; j++)
-        //            {
-        //                _coeff /= mode.coeffVirt;
-        //                virt[j] += _base * _coeff;
-        //            }
-        //        }
-
-        //        decimal value = int.MaxValue;
-        //        int ii = 0;
-        //        for (ii = 1; ii < count && ii < _count; ii++)
-        //        {
-        //            value = _list[ii];
-        //            var calc = virt[ii];
-        //            if (value < calc)
-        //            {
-        //                if (mode.lissage || value == 0m)
-        //                {
-        //                    value = calc;
-        //                    _list[ii] = value;
-        //                }
-
-        //            }
-        //            else
-        //                indexV = ii;
-        //        }
-        //        if (mode.removeEpsilon)
-        //        {
-        //            // j'ai 5 virtuel alors que j'ai deux safe
-        //            ///xx---
-        //            int nb = 0;
-        //            for (int i = indexV + 1; i < _count; i++)
-        //            {
-        //                nb++;
-        //                if (nb <= mode.safe)
-        //                    continue;
-        //                _list[i] = 0m;
-        //            }
-
-        //        }
-
-        //        if (mode.reSort)
-        //        {
-        //            _list.Sort();
-        //            _list.Reverse();
-        //        }
-
-        //        //for (int i = 0; i < nbAdd; i++)
-        //        //    _list.RemoveAt(0); 
-
-
-        //        var retAux = calcmedianneVirt(_list, mode.medianne, mode.quasi);
-        //        //retAux.d *= coeff;
-        //        if (retAux > ret)
-        //        {
-        //            ret = retAux;
-        //            //  ret.index += nbAdd; 
-        //        }
-        //        //}
-
-
-        //    }
-        //    else
-        //        ret = calcmedianneVirt(list, mode.medianne, mode.quasi);
-
-        //    //  ret = getRapport(ret);
-
-
-        //    return ret;
-        //}
-
-
-        public static DecimalIndex getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi, int nbVirt)
-        {
-            DecimalIndex ret = new DecimalIndex();
-            var medianne = getMedianne_(list, coeffMedianne);
-            ret.d = medianne;
-            ret.index = index;
-            if (list.Count == 1)
-                return ret;
-
-            int count = list.Count;
-
-
-            // decimal ret = medianne; //int.MinValue;
-
-            if (nbVirt > 0)
-            {
-
-                int i0 = count - 1;
-
-                for (int i = 0; i < count; i++)
-                {
-                    if (list[i] == 0m)
-                    {
-                        i0 = i;
-                        break;
-                    }
-                }
-                if (i0 == 0)
-                    return ret;
-
-                for (int i00 = 1; i00 <= i0; i00++)
-                {
-                    decimal coeff = (decimal)i00 / (decimal)i0;
-                    List<decimal> _list = new List<decimal>(list);
-                    for (int i = i00; i < count; i++)
-                        _list[i] = 0m;
-                    int _count = Math.Min(count, i00 + nbVirt);
-                    decimal[] virt = new decimal[_count];
-                    for (int i = 0; i < i00; i++)
-                    {
-                        decimal _coeff = 1m;
-                        decimal _base = _list[i];
-                        for (int j = i + 1; j < _count; j++)
-                        {
-                            _coeff /= 10m;
-                            virt[j] += _base * _coeff;
-                        }
-                    }
-                    // decimal prec = -1m;  
-                    int _nbVirt = 0;
-                    decimal value = int.MaxValue;
-                    int ii = 0;
-                    for (ii = 1; ii < count && ii < _count; ii++)
-                    {
-                        //   prec = value;
-                        value = _list[ii];
-                        var calc = virt[ii];
-                        if (value < calc)
-                        {
-                            if (_nbVirt >= nbVirt)
-                                break;
-                            _nbVirt++;
-                            value = calc;  //Math.Min(prec, calc);
-                            _list[ii] = value;
-
-                        }
-                        else
-                            _nbVirt = 0;
-                    }
-                    for (int i = ii; i < count && i < _count; i++)
-                    {
-                        _list[i] = 0m;
-                    }
-                    //_list.Sort();
-                    //_list.Reverse(); 
-
-
-
-                    var retAux = calcmedianneVirt(_list, coeffMedianne, quasi);
-                    retAux.d *= coeff;
-                    if (retAux > ret)
-                        ret = retAux;
-                }
-
-
-            }
-            else
-                ret = calcmedianneVirt(list, coeffMedianne, quasi);
-
-            //  ret = getRapport(ret);
-
-            //if (ret < medianne)
-            //    ret = medianne;
-            return ret;
-        }
-
-        private static decimal getLn(decimal rapport)
-        {
-            if (rapport <= 0)
-                return 0m;
-            return Convert.ToDecimal(10 + Math.Log10((double)rapport));
-        }
-        private static decimal getRapport(decimal ln)
-        {
-            return Convert.ToDecimal(Math.Pow(10, (double)ln - 10));
-        }
-
-        private static DecimalIndex calcmedianneVirt(IList<decimal> _list, decimal coeffMedianne, bool quasi)
-        {
-
-            int count = _list.Count;
-
-            DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
-            for (int i = 0; i < count; i++)
-            {
-                if (i > 0)
-                {
-
-                    _list.RemoveAt(count - i);
-                }
-
-                var aux = getMedianne_(_list, coeffMedianne);
-                if (aux == 0m)
-                    continue;
-                // aux = getLn(aux);
-                //decimal coeff = 1; 
-                //if (count >2)
-                //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
-                decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
-                if (quasi)
-                    coeff *= coeff;
-                aux = aux * coeff;
-                if (aux > ret.d)
-                {
-                    ret.d = aux;
-                    ret.index = index;
-                }
-
-                if (_list[count - i - 1] > 0m)
-                    break;
-
-
-            }
-
-            //     if (ret == int.MinValue)
-            //         return 0m;
-            return ret;
-        }
-
-
-        public static decimal getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi)
-        {
-            if (list.Count == 1)
-                return getMedianne_(list, coeffMedianne);
-            decimal ret = 0m;
-            int count = list.Count;
-
-            List<decimal> _list = new List<decimal>(list);
-            // ret = getMedianne_(_list, coeffMedianne);
-            decimal nb = 0m;
-            for (int i = 0; i < count - 1; i++)
-            {
-                if (i > 0)
-                    _list.RemoveAt(count - i);
-                var aux = getMedianne_(_list, coeffMedianne);
-                decimal coeff = count - 1 - i;
-                if (quasi)
-                    coeff *= coeff;
-                ret += aux * coeff;
-                nb += coeff;
-
-
-            }
-            ret /= nb;
-
-
-            return ret;
-        }
-        private static decimal getMedianne_(IList<decimal> list, decimal coeffMedianne)
-        {
-            index = 0;
-            if (list == null)
-                throw new ArgumentException("liste nulle");
-            int count = list.Count;
-            if (count == 0)
-                throw new ArgumentException("liste vide");
-            if (coeffMedianne < 0 || coeffMedianne > 1)
-                throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
-            if (count == 1)
-                return list[0];
-            if (coeffMedianne == 0)
-                return list[0];
-            if (coeffMedianne == 1)
-            {
-                index = count - 1;
-                return list[count - 1];
-            }
-
-            var medianne = coeffMedianne * (count - 1);
-
-            index = (int)medianne;
-            int i1 = index + 1;
-            var val0 = list[index];
-            var val1 = list[i1];
-            if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
-                return val0;
-            if (Math.Abs(medianne - i1) < PRECISION)
-            {
-                index = i1;
-                return val1;
-            }
-
-            var pente = (val1 - val0);
-            var dx = medianne - index;
-            var dy = pente * dx;
-            return val0 + dy;
-
-        }
-
-        //public static int getEquiv(IList<double> listRef, double target, int i0, int i1)
-        //{
-        //    var val0 = listRef[i0]; 
-        //     var val1 = listRef[i1]; 
-        //    if (i1 - i0 == 1)
-        //    {
-        //        // on prend le plus proche
-        //        var delta0 = target - val0;
-        //        var delta1 = val1 - target; 
-
-        //        if (delta0 <= delta1)
-        //            return i0;
-        //        return i1; 
-        //    }
-
-        //    int imiddle = (i0 + i1) / 2;
-        //    if (imiddle == i0)
-        //        imiddle++; 
-        //    var vmiddle = listRef[imiddle];
-
-        //    if (vmiddle == target)
-        //        return imiddle;
-        //    if (Math.Abs(vmiddle - target) < PRECISION)
-        //        return imiddle;
-
-        //    if (vmiddle < target)
-        //        return getEquiv(listRef, target, imiddle, i1);
-        //    return getEquiv(listRef, target, i0, imiddle); 
-
-
-        //}
-    }
-}]]></content>
-  </file>
- </db>
+</db>
