@@ -1,173 +1,4 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-   <file path="\pdb.podcast\Report\Stat.cs">
-    <content><![CDATA[using System;
-using System.IO;
-using pdb.util;
-using System.Collections.Generic;
-
-namespace pdb.podcast.Report
-{
-    /// <summary>
-    /// Stats total : nb d'éléments, durée, taille
-    /// </summary>
-    public class Stat : IComparable<Stat>
-    {
-        private int nb;
-        /// <summary>
-        /// taille en octets
-        /// </summary>
-        private long _size;
-        private timeSpan ts;
-        private TrackInfoItunes first;
-        private TrackInfoItunes last;
-        private List<TrackInfoItunes> list = new List<TrackInfoItunes>();
-
-        const double Ko = 1024.0;
-        const double Mo = Ko * Ko;
-
-
-        public TimeSpan Ts { get { return ts; } }
-        public long Size { get { return _size; } }
-        public int Nb { get { return nb; } }
-        public TrackInfoItunes Last { get { return last; } }
-
-        public double getTotalSize()
-        {
-            return _size / Mo;
-        }
-
-        public string getEmpreinte()
-        {
-            return string.Format("{0}|{1}", nb, (long)(_size / (long)Ko));
-        }
-
-
-        /// <summary>
-        /// Rapport
-        /// </summary>
-        /// <param name="sb"></param>
-        public void rapport(ITextWriter sb)
-        {
-            if (nb == 0)
-                return;
-
-
-            sb.Append(ts.TotalMinute.ToString("0000"));
-            sb.Append("/");
-            double size = getTotalSize();
-            sb.Append(size.ToString("0000"));
-            sb.Append(" ");
-            sb.Append(nb);
-            sb.Append(" elt.");
-
-            rapportDates(sb);
-
-        }
-
-        public void rapportDates(ITextWriter sb)
-        {
-            if (nb == 0)
-                return;
-            sb.Append(" ");
-            sb.Append(first.ToString());
-            if (last != null && last != first)
-            {
-                sb.Append(" |-> ");
-                sb.Append(last.ToString());
-            }
-        }
-
-        public static double getSizeinMo(TrackInfoItunes track)
-        {
-            var file = FileRegister.Check(track.Location);
-            return file.Length / Mo;
-        }
-
-        /// <summary>
-        /// Prise en compte d'un élément : cumul des valeurs  nb d'éléments, durée, taille
-        /// </summary>
-        /// <param name="track"></param>
-        public void recordTrack(TrackInfoItunes track)
-        {
-
-          //  var file = FileRegister.Check(track.Location); //new FileInfo(track.Location);
-            _size += track.Size;
-            ts += track.Duree;
-            if (first == null)
-            {
-                first = track;
-                last = track;
-            }
-
-            if (track.Pub >= last.Pub)
-                last = track;
-            if (track.Pub < first.Pub)
-                first = track;
-            nb++;
-            list.Add(track);
-
-        }
-
-        public int CompareTo(Stat other)
-        {
-            return _size.CompareTo(other._size);
-        }
-
-        public List<TrackInfoItunes> List { get { return list; } }
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.podcast\Report\StatFloat.cs">
-    <content><![CDATA[using System;
-using System.IO;
-using pdb.util;
-
-namespace pdb.podcast.Report
-{
-    class StatFloat
-    {
-        private float nb;
-        private long _size;
-        private TimeSpan ts;
-
-
-        public TimeSpan Ts { get { return ts; } }
-        public long Size { get { return _size; } }
-        public float Nb { get { return nb; } }
-
-        public void recordTrack(TrackInfoItunes track)
-        {
-            recordTrack(track, 1); 
-        }
-
-        /// <summary>
-        /// Prise en compte d'un élément : cumul des valeurs  nb d'éléments, durée, taille
-        /// </summary>
-        /// <param name="track"></param>
-        public void recordTrack(TrackInfoItunes track, int coeff)
-        {
-            var file = FileRegister.Check(track.Location); //new FileInfo(track.Location);
-           // FileInfo file = new FileInfo(track.Location);
-            _size += file.Length / (long)coeff;
-
-            double ms = track.Duree.Value;
-            ms /= (double)coeff;
-            ts += TimeSpan.FromSeconds(ms);
-
-            nb += 1f / (float)coeff;
-
-        }
-
-        public int CompareTo(StatFloat other)
-        {
-            return _size.CompareTo(other._size);
-        }
-
-    }
-}
-]]></content>
-  </file>
   <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
 using System.Collections;
@@ -176,7 +7,7 @@ using System.Xml;
 using System.IO;
 
 namespace pdb.util
-{ 
+{
     public enum selectedCoeff
     {
         none,
@@ -550,6 +381,7 @@ namespace pdb.util
 
         public int serialp = 1;
         public int serialm = 1;
+        public int serialAlt = 1;
         /// <summary>
         /// atténuation progressive des coeffs
         /// </summary>
@@ -629,6 +461,8 @@ namespace pdb.util
 
         private bool? lastAutoDirection;
         private int _nbSameDirection;
+        private int _nbSameDirectionBox;
+        private int _nbAlt;
 
         public ConfMedianneVirt()
         { }
@@ -667,7 +501,10 @@ namespace pdb.util
             _linkconv = o._linkconv;
             serialp = o.serialp;
             serialm = o.serialm;
+            serialAlt = o.serialAlt;
             _nbSameDirection = o._nbSameDirection;
+            _nbSameDirectionBox = o._nbSameDirectionBox;
+            _nbAlt = o._nbAlt;
             histo = new List<decimal>(o.histo);
         }
         public ConfMedianneVirt(XmlElement parent, XmlElement child)
@@ -712,7 +549,11 @@ namespace pdb.util
             buildb("linkconv", v => _linkconv = v);
             buildi("serialp", v => serialp = v);
             buildi("serialm", v => serialm = v);
+            buildi("serialAlt", v => serialAlt = v);
             buildi("serial", v => _nbSameDirection = v);
+            buildi("serialBox", v => _nbSameDirectionBox = v);
+            buildi("serialAltC", v => _nbAlt = v);
+
 
             var xhisto = XMLTool.NodeLookUp(child, "histo");
             if (xhisto != null)
@@ -792,10 +633,10 @@ namespace pdb.util
                             if (sens == null)
                             {
                                 sens = _sens;
-                                lastAutoDirection = !_sens; 
+                                lastAutoDirection = !_sens;
                                 delta = current - aux;
                             }
-                            
+
 
                             if (sens != _sens)
                                 break;
@@ -805,13 +646,13 @@ namespace pdb.util
                         }
 
                         _nbSameDirection = nbSerie;
-                        dcoeffp = Math.Abs(delta); dcoeffm = dcoeffp * rr; 
+                        dcoeffp = Math.Abs(delta); dcoeffm = dcoeffp * rr;
 
                     }
                 }
             }
 
-           
+
             //if (histoDiff.Count > 0)
             //    coeffVirt = getCoeff(histo[histo.Count - 1]); 
 
@@ -825,7 +666,7 @@ namespace pdb.util
             write("mode", mode);
             write("fdata", fdata);
             write("fdiff", fdiff);
-            write("fdiffTmp", fdiffTmp); 
+            write("fdiffTmp", fdiffTmp);
 
             write("coeffVirt", coeffVirt);
             write("safe", safe);
@@ -866,6 +707,11 @@ namespace pdb.util
             //    w.WriteEndElement();
             //}
             //writeEnd();
+
+            write("serialAlt", serialAlt);
+            write("serialBox", _nbSameDirectionBox);
+            write("serialAltC", _nbAlt);
+
 
             var sb = new StringBuilder();
             var sbDiff = new StringBuilder();
@@ -917,6 +763,7 @@ namespace pdb.util
         }
 
         public int Serial { get { return _nbSameDirection; } set { _nbSameDirection = value; } }
+        public int SerialBox { get { return _nbSameDirectionBox; } }
 
         public void calcAuto(bool selectedByCoeff, int nb)
         {
@@ -925,13 +772,27 @@ namespace pdb.util
             var last = lastAutoDirection;
             lastAutoDirection = selectedByCoeff;
 
-            if (last.HasValue && last != selectedByCoeff)
-                _nbSameDirection = 0;
+            if (last.HasValue)
+            {
+                if (last != selectedByCoeff)
+                {
+                    _nbSameDirection = 0;
+                    _nbAlt++;
+                }
+                else _nbAlt--;
+            }
 
             if (selectedByCoeff)
+            {
                 _nbSameDirection--;
+                _nbSameDirectionBox--;
+            }
             else
+            {
                 _nbSameDirection++;
+                _nbSameDirectionBox++;
+            }
+
             var lastProduct = linkProduct;
             var rr = 0m;
             if (dcoeffp > 0)
@@ -944,7 +805,8 @@ namespace pdb.util
             if (dconvergence > 0 && last.HasValue)
             {
                 var aux = dconvergence;
-                if (last != selectedByCoeff)
+                //if (last != selectedByCoeff)
+                if (_nbAlt > serialAlt)
                 {
                     //if (selectedByCoeff)
                     //{
@@ -957,7 +819,7 @@ namespace pdb.util
                     // la convergence est maintenant directement le % de baisse
                     //0.1 -> 0.9  ==> 1.1
                     var limit = dcoeffp - EPSILON;
-                    var r = 1 + dconvergence; 
+                    var r = 1 + dconvergence;
                     dcoeffp /= r;
                     dcoeffm /= r;
 
@@ -969,7 +831,7 @@ namespace pdb.util
                     if (limit < dcoeffp)
                     {
                         dcoeffp = limit;
-                        if (rr > 0m) dcoeffm = rr * dcoeffp; 
+                        if (rr > 0m) dcoeffm = rr * dcoeffp;
                     }
 
                     //   _nbSameDirection = 0;
@@ -983,16 +845,16 @@ namespace pdb.util
                     {
 
                         //  var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
-                        dconvergence /= (1+ dconvdeltam); // 0.09 // 0.81
+                        dconvergence /= (1 + dconvdeltam); // 0.09 // 0.81
                         //  dconvergence = 1 - delta; // 0.9 -> 0.91 // 0.1-> 0.19
                     }
 
 
-                    danticonvergence /= (1 + danticonvdeltam); 
+                    danticonvergence /= (1 + danticonvdeltam);
                     //var delta = 1 - danticonvergence; 
                     //delta *= (1- danticonvdeltam) ;
                     //danticonvergence = delta - 1; 
-                   // if (danticonvergence < 1m) danticonvergence = 1;
+                    // if (danticonvergence < 1m) danticonvergence = 1;
 
                     //delta = danticonvergence - 1; // 0.1
                     //delta *= danticonvdeltam;  //0.09; 
@@ -1005,24 +867,24 @@ namespace pdb.util
                 else
                 {
                     bool applyanti = false;
-                    if (selectedByCoeff && -_nbSameDirection > serialm)
+                    if (selectedByCoeff && -_nbSameDirectionBox > serialm)
                         applyanti = true;
-                    else if (!selectedByCoeff && _nbSameDirection > serialp)
+                    else if (!selectedByCoeff && _nbSameDirectionBox > serialp)
                         applyanti = true;
                     if (applyanti)
                     {
                         var limit = dcoeffp + EPSILON;
-                        dcoeffp *= (1 +danticonvergence) ;
-                        dcoeffm *= (1+danticonvergence) ;
-                        danticonvergence *= (1+ danticonvdeltap);
-                       
+                        dcoeffp *= (1 + danticonvergence);
+                        dcoeffm *= (1 + danticonvergence);
+                        danticonvergence *= (1 + danticonvdeltap);
+
 
 
                         if (danticonvergence > 0 && limit > dcoeffp)
                         {
                             dcoeffp = limit;
                         }
-                        
+
                         if (rr > 0)
                             dcoeffm = rr * dcoeffp;
 
@@ -1031,7 +893,7 @@ namespace pdb.util
                         calcConv();
                     else if (applyanti)
                     {
-                        dconvergence *= (1 + dconvdeltap); 
+                        dconvergence *= (1 + dconvdeltap);
                         //   var delta = 1 - dconvergence; // 1- 0.9 = 0.1 // 1-0.1 = 0.9
                         //var delta = 1 - dconvergence; //0.1 -> 0.9  0.5->0.5
                         //delta /= (1+ dconvdeltap); // 0.81 0.25
@@ -1057,6 +919,18 @@ namespace pdb.util
                 makeDelta(false, dcoeffm, nb);
             else
                 makeDelta(true, dcoeffp, nb);
+
+
+
+
+            if (-_nbSameDirectionBox > serialm)
+                _nbSameDirectionBox = -(serialm + 1);
+            if (_nbSameDirectionBox > serialp)
+                _nbSameDirectionBox = serialp + 1;
+            if (_nbAlt < 0)
+                _nbAlt = 0;
+            if (_nbAlt > serialAlt)
+                _nbAlt = serialAlt + 1; 
 
 
 
@@ -1220,14 +1094,14 @@ namespace pdb.util
         public static int Index { get { return index; } }
 
 
-   
+
         public static DecimalIndex getMedianne(IList<decimal> list, decimal coeffMedianne)
         {
             return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
         }
 
-        
- 
+
+
         private static decimal getLn(decimal rapport)
         {
             if (rapport <= 0)
@@ -1346,7 +1220,7 @@ namespace pdb.util
 
             var dx = medianne - index;
 
-          
+
             // var ret = val0 + pente * dx;
 
 
@@ -1356,7 +1230,7 @@ namespace pdb.util
             // pente = log1 - log0;
             var log = log0 + (log1 - log0) * dx;
             return Math.Exp(log) - EPSILON_LOG;
-          
+
 
         }
 
