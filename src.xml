@@ -1,5 +1,5 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  <file path="\pdb.util\Medianne.cs">
+   <file path="\pdb.util\Medianne.cs">
     <content><![CDATA[using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -400,6 +400,12 @@ namespace pdb.util
         private decimal linkProduct;
         private List<decimal> histo = new List<decimal>();
         //  private List<decimal> histoDiff = new List<decimal>();
+
+        public decimal coeffOld = 1m;
+        public bool oldAsZero;
+        public bool coeffOldAuto;
+        public int coeffOldAutoLevel;
+
         public bool linkconv { get { return _linkconv; } set { _linkconv = value; calcProduct(); } }
 
         private void calcProduct()
@@ -505,7 +511,13 @@ namespace pdb.util
             _nbSameDirection = o._nbSameDirection;
             _nbSameDirectionBox = o._nbSameDirectionBox;
             _nbAlt = o._nbAlt;
+
+            coeffOld = o.coeffOld;
+            coeffOldAuto = o.coeffOldAuto;
+            oldAsZero = o.oldAsZero;
+            coeffOldAutoLevel = o.coeffOldAutoLevel;
             histo = new List<decimal>(o.histo);
+
         }
         public ConfMedianneVirt(XmlElement parent, XmlElement child)
             : base(parent, child)
@@ -553,6 +565,13 @@ namespace pdb.util
             buildi("serial", v => _nbSameDirection = v);
             buildi("serialBox", v => _nbSameDirectionBox = v);
             buildi("serialAltC", v => _nbAlt = v);
+
+
+            builddec("coeffOld", v => coeffOld = v);
+            buildb("oldAsZero", v => oldAsZero = v);
+            buildb("coeffOldAuto", v => coeffOldAuto = v);
+            buildi("coeffOldAutoLevel", v => coeffOldAutoLevel = v);
+
 
 
             var xhisto = XMLTool.NodeLookUp(child, "histo");
@@ -652,7 +671,10 @@ namespace pdb.util
                 }
             }
 
-
+            if (coeffOldAuto)
+            {
+                coeffOld = (decimal)Math.Pow(coeffVirt, coeffOldAutoLevel);
+            }
             //if (histoDiff.Count > 0)
             //    coeffVirt = getCoeff(histo[histo.Count - 1]); 
 
@@ -664,6 +686,12 @@ namespace pdb.util
             writeStart("v");
             write("name", name);
             write("mode", mode);
+            write("serial", _nbSameDirection);
+
+
+            write("serialAlt", serialAlt);
+            write("serialBox", _nbSameDirectionBox);
+            write("serialAltC", _nbAlt);
             write("fdata", fdata);
             write("fdiff", fdiff);
             write("fdiffTmp", fdiffTmp);
@@ -698,19 +726,14 @@ namespace pdb.util
             write("linkconv", linkconv);
             write("serialp", serialp);
             write("serialm", serialm);
-            write("serial", _nbSameDirection);
-            //writeStart("histo");
-            //foreach (decimal h in histo)
-            //{
-            //    w.WriteStartElement("h");
-            //    w.WriteString(h.ToString("0.###"));
-            //    w.WriteEndElement();
-            //}
-            //writeEnd();
 
-            write("serialAlt", serialAlt);
-            write("serialBox", _nbSameDirectionBox);
-            write("serialAltC", _nbAlt);
+
+
+            write("coeffOld", coeffOld);
+            write("oldAsZero", oldAsZero);
+            write("coeffOldAuto", coeffOldAuto);
+
+            write("coeffOldAutoLevel", coeffOldAutoLevel);
 
 
             var sb = new StringBuilder();
@@ -778,20 +801,29 @@ namespace pdb.util
                 {
                     _nbSameDirection = 0;
                     _nbAlt++;
+                    if (_nbSameDirectionBox > 0 && selectedByCoeff)
+                        _nbSameDirectionBox--;
+                    if (_nbSameDirectionBox < 0 && !selectedByCoeff)
+                        _nbSameDirectionBox++; 
+
                 }
-                else _nbAlt--;
+                else
+                {
+                    _nbAlt--;
+                    if (selectedByCoeff)
+                    {
+                        _nbSameDirection--;
+                        _nbSameDirectionBox--;
+                    }
+                    else
+                    {
+                        _nbSameDirection++;
+                        _nbSameDirectionBox++;
+                    }
+                }
             }
 
-            if (selectedByCoeff)
-            {
-                _nbSameDirection--;
-                _nbSameDirectionBox--;
-            }
-            else
-            {
-                _nbSameDirection++;
-                _nbSameDirectionBox++;
-            }
+           
 
             var lastProduct = linkProduct;
             var rr = 0m;
@@ -819,20 +851,24 @@ namespace pdb.util
                     // la convergence est maintenant directement le % de baisse
                     //0.1 -> 0.9  ==> 1.1
                     var limit = dcoeffp - EPSILON;
+                    if (limit < 0 && dcoeffp >= 0)
+                        limit = dcoeffp; 
                     var r = 1 + dconvergence;
                     dcoeffp /= r;
                     dcoeffm /= r;
-
-                    if (dcoeffp < EPSILON)
-                    { dcoeffp = EPSILON; if (rr > 0m) dcoeffm = rr * dcoeffp; }
-                    if (dcoeffm < EPSILON)
-                    { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
 
                     if (limit < dcoeffp)
                     {
                         dcoeffp = limit;
                         if (rr > 0m) dcoeffm = rr * dcoeffp;
                     }
+
+                    if (dcoeffp < EPSILON)
+                    { dcoeffp = EPSILON; if (rr > 0m) dcoeffm = rr * dcoeffp; }
+                    if (dcoeffm < EPSILON)
+                    { dcoeffm = EPSILON; if (rr > 0m) dcoeffp = dcoeffm / rr; }
+
+                 
 
                     //   _nbSameDirection = 0;
                     //  lastAutoDirection = null;
@@ -924,13 +960,13 @@ namespace pdb.util
 
 
             if (-_nbSameDirectionBox > serialm)
-                _nbSameDirectionBox = -(serialm + 1);
+                _nbSameDirectionBox = -serialm;
             if (_nbSameDirectionBox > serialp)
-                _nbSameDirectionBox = serialp + 1;
+                _nbSameDirectionBox = serialp;
             if (_nbAlt < 0)
                 _nbAlt = 0;
             if (_nbAlt > serialAlt)
-                _nbAlt = serialAlt + 1; 
+                _nbAlt = serialAlt;
 
 
 
@@ -968,6 +1004,10 @@ namespace pdb.util
                 misc.log("{0} {1:0.######} {2:0.######}->{3:0.######}", montee, delta, c0, coeffT);
 
                 coeffVirt = coeff;
+                if (coeffOldAuto)
+                {
+                    coeffOld = (decimal)Math.Pow(coeffVirt, coeffOldAutoLevel);
+                }
                 histo.Add(coeffT);
             }
             catch
@@ -1267,5 +1307,2124 @@ namespace pdb.util
         //}
     }
 }]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\Album.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using pdb.util;
+using System;
+using System.Globalization;
+using pdb.gen.Tuning;
+using pdb.gen.conf;
+using System.Linq;
+
+namespace pdb.gen.albums
+{
+
+
+    public class Album
+    {
+
+        private string name;
+        private static decimal medianne = 0.5m;
+        private static decimal medianneRest = 0.5m;
+        // public static decimal Medianne { get { return medianne; } set { medianne = value; } }
+        private decimal classementValue;
+        private decimal classementValueLight;
+        private decimal classMoy; public decimal ClassementMoy { get { return classMoy; } }
+        public decimal ClassementValue { get { return classementValue; } }
+        public decimal ClassementValueLight { get { return classementValueLight; } }
+        private decimal durationValue = 0;
+        public decimal DurationValue { get { return durationValue; } }
+        private static ConfGen conf = CConf.ConfGen;
+        private bool _virtual;
+        public bool Virtual { get { return _virtual; } set { _virtual = value; } }
+        private int stackValue;
+        public int StackValue { get { return stackValue; } set { stackValue = value; } }
+        public int StackIndex { get; set; }
+        //  private int rankCorrig; public int Rank2 { get { return rankCorrig; } set { rankCorrig = value; } }
+        private Piece next;
+
+        public Piece Next
+        {
+            get { return next; }
+            set
+            {
+                next = value;
+            }
+        }
+
+
+
+
+        private List<Piece> list = new List<Piece>();
+        private static int _sID = 0;
+        private int _dID;
+
+
+        public Album(string name)
+        {
+            _sID++;
+            _dID = _sID;
+            this.name = name;
+            m_rank.init();
+        }
+
+        public string Name { get { return name; } }
+
+        public override string ToString()
+        {
+            return name;
+        }
+
+        private string equiv = "";
+        public string Equiv { get { return equiv; } }
+
+        private string equivLight = "";
+        public string EquivLight { get { return equivLight; } }
+
+        private string equivLight0 = "";
+        public string EquivLight0 { get { return equivLight0; } }
+
+        private string moyenne = "";
+        public string Moyenne { get { return moyenne; } }
+
+        public bool Moved { get; set; }
+
+        //private Piece equiv;
+
+
+
+        public bool add(Piece piece)
+        {
+            if (list.Contains(piece))
+                return false;
+            if (piece.Enabled)
+                atLeastOneEnabled = true;
+            list.Add(piece);
+            piece.PieceAlbum = this;
+            return true;
+        }
+
+        private HashList<Piece> _tracksSortByClassement;
+        public HashList<Piece> Tracks
+        {
+            get
+            {
+                if (_tracksSortByClassement == null)
+                {
+                    var l = new List<Piece>(list);
+                    l.Sort(new PieceClassementComparer(false));
+                    _tracksSortByClassement = new HashList<Piece>(l);
+                }
+                return _tracksSortByClassement;
+            }
+        }
+
+        //public int IndexClass(Piece p)
+        //{
+        //    return Tracks.IndexOf(p);
+        //}
+
+        //public List<Piece> TracksReverse
+        //{
+        //    get
+        //    {
+        //        var l = new List<Piece>(list);
+        //        l.Sort(new PieceClassementComparerInv());
+        //        return l;
+        //    }
+        //}
+        HashList<Piece> trackSortedByExportPriority;
+        private class PieceExportComparer : IComparer<Piece>
+        {
+            private HashList<Piece> source;
+            private Piece next;
+            private int inext = -1;
+            private int ifirstZero = -1;
+            private bool sortlasts;
+            private bool sortFirsts;
+            private Album album;
+            public PieceExportComparer(Album album, HashList<Piece> source, Piece next)
+            {
+                this.album = album;
+                this.source = source;
+                this.next = next;
+                if (next != null)
+                    inext = source.IndexOf(next);
+                sortlasts = CConf.Export.sortLasts;
+                sortFirsts = CConf.Export.sortFirsts;
+                int count = source.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var p = source[i];
+                    if (p.Enabled && p.RapportClassement == 0)
+                    {
+                        ifirstZero = i;
+                        break;
+                    }
+                }
+
+            }
+            public int Compare(Piece x, Piece y)
+            {
+                //    t = 1.CompareTo(2) -> -1              
+                //  t = true.CompareTo(false) ->1
+                if (x == y)
+                    return 0;
+                if (x == next)
+                    return -1;
+                if (y == next)
+                    return 1;
+                int ix = source.IndexOf(x);
+                int iy = source.IndexOf(y);
+                if (ix == iy)
+                    return 0;
+
+                if (next != null)
+                {
+                    int cmp = 0;
+                   
+
+                    cmp = (x.Enabled.CompareTo(y.Enabled));
+                    if (cmp != 0)
+                    {
+                        if (sortFirsts)
+                        {
+                            //true puis false;
+                            return -cmp;
+                        }
+                        if (sortlasts)
+                        {
+                            if (!x.Enabled && x.RapportClassement < album.ClassementValueLight)
+                                return 1;
+                            if (!y.Enabled && y.RapportClassement < album.ClassementValueLight)
+                                return -1;
+                        }
+                    }
+
+                    //if (dx * dy < 0)
+                    //{
+                    //    if (sortlasts)
+                    //    {
+                    //        if (dx > 0 && !x.Enabled)
+                    //            return 1;
+                    //        if (dy > 0 && !y.Enabled)
+                    //            return -1;
+                    //    }
+                    //    if (sortFirsts)
+                    //    {
+                    //        if (dx < 0 && !x.Enabled)
+                    //            return 1;
+                    //        if (dy < 0 && !y.Enabled)
+                    //            return -1;
+                    //    }
+                    //}
+
+                    int dx = ix - inext;
+                    int dy = iy - inext;
+                    dx *= dx;
+                    dy *= dy;
+
+                    if (ifirstZero >=0)
+                    {
+                        dx += ((ix - ifirstZero) * (ix - ifirstZero)); 
+                        dy += ((iy - ifirstZero) * (iy - ifirstZero)); 
+                    }
+
+                    cmp = dx.CompareTo(dy);
+                    if (cmp != 0)
+                        return cmp;
+                    //ici même distance
+                    cmp = x.Enabled.CompareTo(y.Enabled);
+                    if (cmp != 0) return -cmp;
+
+                    cmp = ix.CompareTo(iy);
+                    return cmp;
+                }
+
+                return source.IndexOf(x).CompareTo(source.IndexOf(y));
+            }
+        }
+        public HashList<Piece> TrackSortedByExportPriority
+        {
+            get
+            {
+                if (trackSortedByExportPriority == null)
+                {
+
+                    var source = new HashList<Piece>(Tracks);
+                    if (next == null)
+                        trackSortedByExportPriority = source;
+                    else
+                    {
+                        var cmp = new PieceExportComparer(this, source, next);
+                        var l = source.List;
+                        l.Sort(cmp);
+
+                        var ll = new List<Piece>(l.Count);
+
+                        trackSortedByExportPriority = new HashList<Piece>(l);
+
+
+                    }
+
+
+
+                    //var source = Tracks;
+                    //if (next == null)
+                    //    trackSortedByExportPriority = new HashList<Piece>(source);
+                    //else
+                    //{
+                    //    trackSortedByExportPriority = new HashList<Piece>();
+                    //    int indexNext = source.IndexOf(next);
+                    //    trackSortedByExportPriority.Add(next);
+
+                    //    int count = source.Count;
+                    //    int offset = 0;
+                    //    while (true)
+                    //    {
+                    //        offset++;
+                    //        bool _continue = false;
+                    //        // on prend le précédent et le suivant
+                    //        var index = indexNext - offset;
+
+                    //        if (index >= 0 && index < count)
+                    //        {
+                    //            trackSortedByExportPriority.Add(source[index]); _continue = true;
+                    //        }
+                    //        index = indexNext + offset;
+                    //        if (index >= 0 && index < count)
+                    //        {
+                    //            trackSortedByExportPriority.Add(source[index]); _continue = true;
+                    //        }
+
+                    //        if (!_continue)
+                    //            break;
+                    //  }
+
+                    //}
+                }
+                return trackSortedByExportPriority;
+            }
+
+        }
+
+
+
+        public int IndexExport(Piece p)
+        {
+            return TrackSortedByExportPriority.IndexOf(p);
+        }
+        public List<Piece> TrackByNumber
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceTrackNumberComparer());
+                return l;
+            }
+        }
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        private bool classed;
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        public bool Classed { get { return classed; } }
+
+        /// <summary>
+        /// Le track Selectionné est malheureusement absent
+        /// </summary>
+        public bool Absent
+        {
+            get
+            {
+                if (next == null)
+                    return true;
+                if (FileRegister.Exist(next.Location))
+                    return false;
+                return true;
+            }
+        }
+
+        //public int nbInAlbum(exportState state)
+        //{
+        //    return list.Count(p => p.ExportStatus == state); 
+        //}
+
+        public int NbExportPresents { get { return list.Count(p => p.ExportStatus == exportState.present || p.ExportStatus == exportState.copy); } }
+
+        private bool atLeastOneEnabled;
+        public bool AtLeastOneEnabled { get { return atLeastOneEnabled; } }
+
+        private selectedCoeff selectedCoeff;
+        public selectedCoeff SelectedCoeff { get { return selectedCoeff; } }
+
+
+
+        public void makeSort(ConfAlbumSort conf, ConfMedianne mode, ConfMedianne mode0) //IList<double> reference, IList<Piece> pieces)
+        {
+            try
+            {
+                selectedCoeff = util.selectedCoeff.noCoeff;
+                //if (name == "The College Dropout")
+                //{
+                //}
+                decimal offset = Album.conf.AlbumMoyOffset;
+                int count = list.Count;
+                if (count == 0)
+                    return;
+                list.Sort(new PieceSortComparer());
+                var listSortedValues = new List<decimal>();
+                for (int i = 0; i < count; i++)
+                {
+                    listSortedValues.Add(list[i].Rank.SortValue);
+                    if (!classed && list[i].isClassListNumeric) // && FileRegister.Exist(list[i].Location))
+                        classed = true;
+                }
+
+                m_rank.SortValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+
+                listSortedValues = new List<decimal>();
+                list.Sort(new PieceDurationValueComparer());
+                for (int i = 0; i < count; i++)
+                    listSortedValues.Add(list[i].Duration.TotalMilliseconds());
+                durationValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+                decimal moy = 0m;
+                #region calcul brut
+                #region init
+                for (int i = 0; i < count; i++)
+                {
+                    var p = list[i];
+                    var rapportClassement = p.RapportClassement;
+                    //if (coeffEnabled != 1m && p.Enabled)
+                    //{
+                    //    rapportClassement /= coeffEnabled;
+                    //}
+                    p.setClassementVirtuel(list[i].RapportClassement);
+
+                    list[i].eraseInfoMedianne();
+
+                    moy += rapportClassement;
+                    if (offset > 0m && rapportClassement > 0.0m)
+                        moy += offset;
+                }
+
+                //list.Sort(new PieceClassementComparer(false));
+                //listSortedValues = new List<decimal>();
+                //for (int i = 0; i < count; i++)
+                //    listSortedValues.Add(list[i].VirtualClassement);
+
+                #endregion
+
+                if (count > 0)
+                    moy /= count;
+                classMoy = moy;
+
+
+
+                var med = AlbumMedianne.getMedianne(new List<Piece>(list), medianne);
+                classementValue = med.d;
+                if (classementValue > 0m)
+                    list[med.index].Medianne = true;
+
+                var _med0 = AlbumMedianne.getMedianneLight(new List<Piece>(list), conf, mode0, false);
+
+
+
+
+                equivLight0 = Piece.getClassementEquiv(_med0.d);
+
+                #endregion
+                #region calcul virtuel
+                #region init (prise en compte coeff des enabled)
+                //var coeffEnabled = conf.coeffEnabled;
+                //for (int i = 0; i < count; i++)
+                //{
+                //    var p = list[i];
+                //    var rapportClassement = p.RapportClassement;
+                //    if (coeffEnabled != 1m && p.Enabled && (!conf.oldAsZero || !p.LastClassementRecent))
+                //    {
+                //        rapportClassement *= coeffEnabled;
+                //    }
+                //    p.setClassementVirtuel(rapportClassement);
+                //    p.setClassementVirtuel2(rapportClassement);
+                //}
+                //list.Sort(new PieceClassementComparer(false));
+                #endregion
+                int i0 = 0;
+                AlbumMedianne.buildVirtual(new List<Piece>(list), mode, mode.Min, conf, false, ref i0);
+
+                med = AlbumMedianne.getMedianneLight(new List<Piece>(list), conf, mode, true);
+                classementValueLight = med.d;
+
+                #endregion
+
+                equiv = Piece.getClassementEquiv(classementValue); // (10000 * m_rank.SortValue).ToString("00000.0", cu); 
+
+
+                moyenne = Piece.getClassementEquiv(classMoy);
+                var modeMin = mode.cmpMin;
+
+
+                if (modeMin == util.modeMin.orphelin)
+                {
+                    Piece min = null;
+                    decimal _min = int.MaxValue;
+                    foreach (Piece p in list)
+                    {
+                        var v = p.RapportClassement;
+
+                        if (p.Enabled) // && FileRegister.Exist(p.Location))
+                        {
+                            if (v < _min)
+                            {
+                                _min = v;
+                                min = p;
+                            }
+                        }
+                    }
+
+                    if (min != null)
+                    {
+                        Next = min;
+                        _min = min.VirtualClassement2;
+                        if (_min > classementValueLight)
+                            classementValueLight = _min;
+                    }
+                }
+                else if (modeMin == util.modeMin.toujours)
+                {
+                    if (mode.Main. oldAsZero)
+                        list.Sort(new PieceClassementComparer(true));
+                    Piece nextZero1 = null;
+                    Piece nextZero2 = null;
+
+                    Piece min1 = null;
+                    Piece min2 = null;
+                    Piece min = null;
+                    decimal _min1 = int.MaxValue;
+                    decimal _min2 = int.MaxValue;
+                    decimal _minzero1 = int.MaxValue;
+                    decimal _minzero2 = int.MaxValue;
+                    bool realZero = false;
+                    foreach (Piece p in list)
+                    {
+                        var v1 = p.VirtualClassement;
+                        var v2 = p.VirtualClassement2;
+
+                        if (p.Enabled) // && FileRegister.Exist(p.Location))
+                        {
+                            if (v1 == 0 || (mode.Main.oldAsZero && !p.LastClassementRecent))
+                            {
+                                if (v1 < _minzero1)
+                                {
+                                    _minzero1 = v1;
+                                    nextZero1 = p;
+                                    if (v1 == 0)
+                                        realZero = true;
+                                }
+                            }
+
+                            if (v2 == 0 || (mode.Main. oldAsZero && !p.LastClassementRecent))
+                            {
+                                if (v2 < _minzero2)
+                                {
+                                    _minzero2 = v2;
+                                    nextZero2 = p;
+                                    if (v2 == 0)
+                                        realZero = true;
+                                }
+
+                            }
+
+
+
+                            if (v1 > 0 && v1 < _min1)
+                            {
+                                _min1 = v1;
+                                min1 = p;
+                            }
+
+                            if (v2 > 0 && v2 < _min2)
+                            {
+                                _min2 = v2;
+                                min2 = p;
+                            }
+                        }
+                    }
+                    decimal _min = 0;
+                    if (_min1 <= _min2)
+                    {
+                        min = min1;
+                        _min = _min1;
+                    }
+                    else
+                    {
+                        min = min2;
+                        _min = _min2;
+                    }
+
+                    Piece nextZero = null;
+                    decimal _minzero = int.MaxValue;
+                    if (_minzero1 <= _minzero2)
+                    {
+                        nextZero = nextZero1; _minzero = _minzero1;
+                    }
+                    else
+                    {
+                        nextZero = nextZero2; _minzero = _minzero2;
+                    }
+
+                    if (nextZero != null)
+                    {
+
+                        if (realZero)
+                        {
+                            // le min trouvé est éventuellement tres élevé (pas prise en compte des éléments non encore notés
+                            // j'applique le seuil que s'il est inférieur à la médiane
+                            if (_min < classementValueLight)
+                            {
+                                if (min != null)
+                                {
+                                    Next = min;
+                                    classementValueLight = _min;
+                                    if (Next.CoeffVirtuel > 1)
+                                        selectedCoeff = selectedCoeff.main;
+                                    if (_min < _min1)
+                                        selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                                }
+                            }
+                            else
+                            {
+                                //  var p = list[med.index];
+                                if (_med0.d > med.d) // if (p.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main; // selectedByCoeff = true; 
+                                Next = nextZero;
+                                //if (Next.CoeffVirtuel > 1)
+                                //    selectedCoeff = selectedCoeff.main; 
+                                //if (_min < _min1)
+                                //    selectedCoeff = selectedCoeff.min; 
+                            }
+                        }
+                        else
+                        {
+                            if (_min < classementValueLight)
+                            {
+                                if (min != null)
+                                {
+                                    Next = min;
+                                    classementValueLight = _min;
+
+                                    if (Next.CoeffVirtuel > 1)
+                                        selectedCoeff = selectedCoeff.main;
+                                    if (_min < _min1)
+                                        selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                                }
+
+                            }
+                            else if (_minzero < classementValueLight)
+                            {
+                                Next = nextZero;
+                                classementValueLight = _minzero;
+
+                                if (Next.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main;
+                                if (_minzero < _minzero1)
+                                    selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                            }
+
+                            else
+                            {
+                                Next = min;
+                                classementValueLight = _min;
+                                //  var p = list[med.index];
+                                if (Next.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main;
+                                if (_med0.d > med.d) // if (p.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main; // selectedByCoeff = true; 
+
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // tous notés => on prend le plus faible
+                        Next = min;
+                        if (min != null)
+                        {
+                            classementValueLight = _min;
+                            // if (min.CoeffVirtuel2 > 1) // if (min.CoeffVirtuel2 > 1)
+                            //if (Next.CoeffVirtuel > 1)
+                            //    selectedCoeff = selectedCoeff.main; 
+                            //if (_min < _min1)
+                            //    selectedCoeff = selectedCoeff.min; //selectedByCoeff2 = true;
+                        }
+
+                    }
+
+                }
+
+                //if (modeMin > modeMin.non)
+                //{
+                //    int nb = 0;
+                //    Piece min = null;
+                //    decimal _min = int.MaxValue;
+                //    foreach (Piece p in list)
+                //    {
+                //        var v = p.RapportClassement;
+                //        if (v > 0 && !p.Enabled)
+                //            nb++;
+                //        if (modeMin == util.modeMin.orphelin || v > 0)
+                //        {
+                //            if (p.Enabled && FileRegister.Exist(p.Location))
+                //            {
+
+                //                if (v < _min)
+                //                {
+                //                    _min = v;
+                //                    min = p;
+                //                }
+                //            }
+                //        }
+                //    }
+
+                //    if (min != null)
+                //    {
+                //        _min = min.VirtualClassement;
+                //        if (nb > 0)
+                //            _min *= (decimal)nb / (decimal)count;
+                //        if (modeMin == modeMin.toujours || _min > classementValueLight)
+                //            classementValueLight = _min;
+                //    }
+
+
+                //}
+                equivLight = Piece.getClassementEquiv(classementValueLight);
+
+
+            }
+            catch (Exception ex)
+            {
+                misc.log("impossible de faire le makeSort de l'album " + name + " " + ex.ToString());
+            }
+
+
+
+        }
+
+
+
+        public decimal getTrackSortValue(int index)
+        {
+            if (index < 0 || index >= list.Count)
+                return 0;
+            return list[index].RapportClassement;
+        }
+
+        decimal firstTrackSortValue = -1;
+        public decimal getFirstTrackSortValue()
+        {
+            if (firstTrackSortValue == -1)
+            {
+                int count = list.Count;
+                if (count == 0)
+                    return -1;
+                var _list = new List<Piece>(list);
+                _list.Sort(new PieceSortComparer());
+                firstTrackSortValue = _list[count - 1].Rank.SortValue;
+            }
+            return firstTrackSortValue;
+        }
+
+        public void makeSelection()
+        {
+            list.Sort(new PieceRestComparer());
+            var listSortedValues = new List<decimal>();
+            for (int i = 0; i < list.Count; i++)
+                listSortedValues.Add(list[i].Rank.TimeRest);
+            m_rank.TimeRest = CalcMedianne.getMedianne(listSortedValues, medianneRest).d;
+        }
+
+        public List<Piece> Sort()
+        {
+            var _list = new List<Piece>(list);
+            _list.Sort(new PieceInAlbumComparer());
+            return _list;
+        }
+
+        public TimeSpan Duration
+        {
+            get
+            {
+                TimeSpan d = new TimeSpan();
+                foreach (Piece piece in list)
+                    d += piece.Duration;
+                return d;
+            }
+        }
+
+
+        #region Rank
+        private CRank m_rank = new CRank();
+
+        public CRank Rank { get { return m_rank; } }
+
+        private void initRank()
+        {
+            m_rank.init();
+        }
+
+        public int QRank
+        {
+            get { return m_rank.Quality; }
+            set { m_rank.Quality = value; }
+        }
+
+        public int LRank
+        {
+            get { return m_rank.Lenght; }
+            set { m_rank.Lenght = value; }
+        }
+
+        public int QLRank
+        {
+            get { return m_rank.Twice; }
+            set { m_rank.Twice = value; }
+        }
+
+
+        #endregion
+
+        #region tri
+
+
+
+        #endregion
+
+        public void sortVirtual()
+        {
+            list.Sort(new PieceInVirtualAlbumComparer());
+            int nb = 0;
+            foreach (var piece in list)
+            {
+                nb++;
+                piece.TrackNumber = nb;
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            var o = obj as Album;
+            if (o == null)
+                return false;
+            return name.Equals(o.name);
+        }
+        public override int GetHashCode()
+        {
+            return name.GetHashCode();
+        }
+
+        public DateTime? UpdateClassement
+        {
+            get
+            {
+                DateTime? dt = null;
+                foreach (Piece p in new List<Piece>(list))
+                {
+                    var _dt = p.UpdateClassement; // CalcDate.getLastModif(p.DatesClassement);
+                    if (_dt != null && (dt == null || _dt > dt))
+                        dt = _dt;
+                }
+                return dt;
+            }
+        }
+
+        public DateTime? LastRead
+        {
+            get
+            {
+                DateTime? dt = null;
+                foreach (Piece p in list)
+                {
+                    var _dt = p.LastRead; // CalcDate.getLastModif(p.DatesClassement);
+                    if (_dt != null && (dt == null || _dt > dt))
+                        dt = _dt;
+                }
+                return dt;
+            }
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\AlbumMedianne.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using pdb.util;
+using System.Collections;
+using pdb.gen.Tuning;
+using Math = pdb.util.Math; 
+
+namespace pdb.gen.albums
+{
+    class AlbumMedianne
+    {
+        const decimal PRECISION = 0.0000001m;
+        const decimal EPSILON = 0.0000000000001m;
+        const decimal EPSILON_LOG = EPSILON;
+        private static int index;
+        public static int Index { get { return index; } }
+
+
+        public static DecimalIndex getMedianne(IList<Piece> list, decimal coeffMedianne)
+        {
+            return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
+        }
+
+        //public static DecimalIndex getMedianne(IEnumerable list, decimal coeffMedianne)
+        //{
+        //    var _list = new List<decimal>();
+        //    foreach (object o in list)
+        //    {
+        //        _list.Add(Convert.ToDecimal(o));
+        //    }
+        //    return getMedianne(_list, coeffMedianne);
+        //}
+
+        //public static DecimalIndex getMedianne(List<decimal> list, decimal coeffMedianne)
+        //{
+        //    return new DecimalIndex() { d = getMedianne_(list, coeffMedianne), index = index };
+        //}
+
+        //public static DecimalIndex getMedianneLight(List<decimal> list, List<Piece> pieces, ConfMedianne mode, bool signal)
+        //{
+        //    DecimalIndex ret0 = new DecimalIndex();
+        //    DecimalIndex ret = ret0;
+        //    try
+        //    {
+
+
+        //        var _zero = mode.zero;
+        //        var medianne = getMedianne_(list, mode.medianne);
+        //        ret0.d = medianne;
+        //        ret0.index = index;
+
+        //        if (list.Count == 1)
+        //            return ret0;
+
+        //        if (mode.safe == 0)
+        //        {
+        //            return calcmedianneVirt(list, mode, 0, 0);
+        //        }
+
+        //        int indexV = 0;
+        //        int nbAdd = 0;
+
+        //        int count = list.Count;
+
+        //        if (mode.safe > 0)
+        //        {
+
+        //            int i0 = count - 1;
+        //            int _nbNoAdd = 0;
+
+        //            for (int i = 0; i < count; i++)
+        //            {
+        //                if (list[i] <= _zero)
+        //                {
+        //                    i0 = i;
+        //                    _nbNoAdd = count - i0;
+        //                    break;
+        //                }
+        //            }
+        //            if (i0 == 0)
+        //                return ret0;
+
+        //            //for (int i00 = 1; i00 <= i0; i00++)
+        //            //{
+        //            //    decimal coeff = (decimal)i00 / (decimal)i0;
+        //            List<decimal> _list = new List<decimal>(list);
+        //            //for (int i = i00; i < count; i++)
+        //            //    _list[i] = 0m;
+        //            //liste partielle originale
+        //            //  List<decimal> _list0 = new List<decimal>(_list);
+        //            int _count = System.Math.Min(count, i0 + mode.safe);
+        //            decimal[] virt = new decimal[_count];
+        //            _nbNoAdd = System.Math.Min(mode.safe, _nbNoAdd);
+        //            if (mode.noAdd)
+        //            {
+
+        //                decimal _coeff = 1m;
+        //                for (int j = _nbNoAdd - 1; j >= 0; j--)
+        //                {
+        //                    if (j < count)
+        //                    {
+        //                        _coeff /= mode.coeffVirt;
+        //                        _list[j] = _list[j] * _coeff;
+        //                    }
+        //                }
+        //            }
+        //            else if (mode.lissage || mode.removeEpsilon || mode.cumul)
+        //            {
+        //                for (int i = 0; i < i0; i++)
+        //                {
+        //                    decimal _coeff = 1m;
+        //                    decimal _base = _list[i];
+        //                    for (int j = i + 1; j < _count; j++)
+        //                    {
+        //                        _coeff /= mode.coeffVirt;
+        //                        virt[j] = System.Math.Max(virt[j], _base * _coeff); //     += _base * _coeff;
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                decimal courant = _list[0];
+        //                for (int i = 1; i < _count; i++)
+        //                {
+        //                    if (_list[i] <= _zero)
+        //                    {
+        //                        courant /= mode.coeffVirt;
+        //                        virt[i] = courant;
+        //                    }
+        //                    else
+        //                        courant = _list[i];
+        //                }
+        //            }
+
+        //            decimal value = int.MaxValue;
+        //            int ii = 0;
+        //            if (mode.noAdd)
+        //            {
+        //                //for (ii = 1; ii < count && ii < _count; ii++)
+        //                //{
+        //                //    var calc = virt[ii];
+        //                //    if (calc > 0m)
+        //                //        list[ii] = calc;
+        //                //}
+        //            }
+        //            else
+        //            {
+        //                for (ii = 1; ii < count && ii < _count; ii++)
+        //                {
+        //                    value = _list[ii];
+        //                    var calc = virt[ii];
+        //                    if (value < calc)
+        //                    {
+        //                        if (mode.lissage || value <= _zero)
+        //                        {
+        //                            if (value <= _zero)
+        //                                nbAdd++;
+        //                            value = calc;
+        //                            _list[ii] = value;
+        //                        }
+
+        //                    }
+        //                    else
+        //                        indexV = ii;
+        //                }
+        //                if (mode.removeEpsilon)
+        //                {
+        //                    // j'ai 5 virtuel alors que j'ai deux safe
+        //                    ///xx---
+        //                    int nb = 0;
+        //                    for (int i = indexV + 1; i < _count; i++)
+        //                    {
+        //                        nb++;
+        //                        if (nb <= mode.safe)
+        //                            continue;
+        //                        _list[i] = 0m;
+        //                    }
+
+        //                }
+        //                if (mode.removeFirst)
+        //                {
+        //                    for (int i = 0; i < nbAdd; i++)
+        //                    {
+        //                        _list[i] = 0m;
+        //                    }
+        //                }
+        //            }
+
+        //            for (int i = 0; i < _list.Count && i < pieces.Count; i++)
+        //                pieces[i].setClassementVirtuel(_list[i]);
+
+        //            if (mode.deleteFirst)
+        //            {
+        //                for (int i = 0; i < nbAdd; i++)
+        //                {
+        //                    _list.RemoveAt(0);
+        //                }
+        //            }
+
+        //            if (mode.reSort || mode.removeFirst || mode.noAdd)
+        //            {
+        //                _list.Sort();
+        //                _list.Reverse();
+        //                pieces.Sort(new PieceCmp());
+        //            }
+
+
+
+        //            if (mode.noAdd)
+        //                nbAdd = _nbNoAdd;
+
+        //            ret = calcmedianneVirt(_list, mode, nbAdd, System.Math.Min(i0, mode.safe));
+        //            if (mode.expEnabled != 0)
+        //            {
+        //                int _nb = pieces.Count<Piece>(p => !p.Enabled);
+        //                decimal _c = (decimal)_nb / (decimal)count;
+        //                _c = Math.Pow(_c, mode.expEnabled);
+        //                ret.d *= _c;
+        //            }
+
+
+        //        }
+        //        else
+        //            ret = calcmedianneVirt(list, mode, 0, 0);
+
+        //        //if (ret < ret0)
+        //        //    ret = ret0; 
+
+
+
+        //    }
+        //    finally
+        //    {
+        //        if (signal)
+        //        {
+        //            try
+        //            {
+        //                pieces[ret.index].MedianneLight = true;
+        //                pieces[ret.indexBorder].Border = true;
+        //                pieces[ret.indexBorderEffect].BorderEffect = true;
+        //                pieces[ret.indexBorderMin].BorderMin = true;
+
+        //            }
+        //            catch { }
+        //        }
+        //    }
+
+        //    return ret;
+        //}
+
+        public static int buildVirtual(List<Piece> pieces, ConfMedianne mode, ConfMedianneVirt modeVirt, ConfAlbumSort conf, bool main, ref int i0)
+        {
+            var coeffEnabled = modeVirt.coeffOld;
+            int count = pieces.Count;
+            pieces.Sort(new PieceClassementComparer(false));
+            if (coeffEnabled != 1)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var p = pieces[i];
+                    var rapportClassement = p.RapportClassement;
+                    if (coeffEnabled != 1m && p.Enabled && (!modeVirt.oldAsZero || !p.LastClassementRecent))
+                    {
+                        rapportClassement /= coeffEnabled;
+                    }
+                    p.setClassementVirtuel(rapportClassement);
+                    p.setClassementVirtuel2(rapportClassement);
+                }
+                pieces.Sort(new PieceClassementComparer(false));
+            }
+
+            int indexV = 0;
+            int nbAdd = 0;
+
+           
+            List<Piece> _pieces = pieces;
+            var _zero = mode.zero;
+
+
+            if (modeVirt.safe > 0)
+            {
+                i0 = count - 1;
+                int _nbNoAdd = 0;
+
+
+                for (int i = 0; i < count; i++)
+                {
+                    var pp = pieces[i];
+                    if (pp.VirtualClassement == 0m)
+                    {
+                        i0 = i;
+                        _nbNoAdd = count - i0;
+                        break;
+                    }
+                }
+
+                if (modeVirt.virtOnlyDisabled || mode.removeLast == removeLast.unselected)
+                { 
+                    _nbNoAdd = pieces.Count(p => p.Enabled);  // || p.VirtualClassement == 0m);
+                    if (_nbNoAdd > 0)
+                        _nbNoAdd--; 
+                }
+                if (modeVirt.noAddAll)
+                    _nbNoAdd = pieces.Count;
+                if (modeVirt.noAddEnd)
+                {
+                    // var nb1 = pieces.Count<Piece>(p => p.Enabled);
+                    // morceaux déjà notés
+                    var nb2 = pieces.Count<Piece>(p => !p.Enabled && p.RapportClassement > 0);
+                    _nbNoAdd = _nbNoAdd - nb2;
+                    if (_nbNoAdd < 0)
+                        _nbNoAdd = 0;
+                }
+                if (i0 == 0)
+                    return 0;
+                //}
+
+                //for (int i00 = 1; i00 <= i0; i00++)
+                //{
+                //    decimal coeff = (decimal)i00 / (decimal)i0;
+                List<decimal> _list = new List<decimal>();
+                for (int i = 0; i < _pieces.Count; i++)
+                    _list.Add(_pieces[i].VirtualClassement);
+                //for (int i = i00; i < count; i++)
+                //    _list[i] = 0m;
+                //liste partielle originale
+                //  List<decimal> _list0 = new List<decimal>(_list);
+                int _count = System.Math.Min(count, i0 + modeVirt.safe);
+                decimal[] virt = new decimal[_count];
+                _nbNoAdd = System.Math.Min(modeVirt.safe, _nbNoAdd);
+                if (modeVirt.noAdd)
+                {
+                   // var coeffEnabled = modeVirt.coeffOld; 
+                    var _coeffVirt = modeVirt.coeffVirt;
+                    if (count < modeVirt.safe && modeVirt.coeffVirtAuto)
+                    {
+                        if (modeVirt.coeffVirtAdjust)
+                            _coeffVirt = Math.Pow(coeffEnabled, 1.0m / (count + 1.0m));
+                        else
+                        {
+                            // ex 2^10 = 1024
+                            // je veux obtenir 1024 avec 3
+                            _coeffVirt = Math.Pow(_coeffVirt, (decimal)modeVirt.safe / (decimal)count);
+                        }
+                    }
+
+                    decimal _coeff = 1m;
+                    decimal prec = 0m;
+                    if (modeVirt.virtAlignPrec)
+                    {
+                        if (_nbNoAdd < _list.Count)
+                            prec = _list[_nbNoAdd];
+                    }
+
+                    for (int j = _nbNoAdd - 1; j >= 0; j--)
+                    {
+                        if (j < _pieces.Count)
+                        {
+
+                            if (!modeVirt.virtOnlyDisabled || !_pieces[j].Enabled)
+                            {
+                                _coeff /= _coeffVirt;
+                                var cand = _list[j] * _coeff;
+                                if (modeVirt.virtAlignPrec)
+                                {
+                                    if (cand < prec)
+                                        cand = prec + EPSILON;
+                                }
+
+                                if (modeVirt.virtAlignSelected && modeVirt.virtOnlyDisabled)
+                                {
+                                    // quel serait le score s'il était coché
+                                    var vu = _list[j] / coeffEnabled;
+                                    // en plus une petite marge
+                                    //  vu *= mode.coeffVirt; 
+                                    if (cand < vu)
+                                        cand = vu;
+                                }
+                                _list[j] = cand;
+                            }
+                            else if (modeVirt.forceCoeffVirt)
+                                _coeff /= _coeffVirt;
+                            prec = _list[j];
+                        }
+                    }
+
+                }
+                else if (modeVirt.lissage || modeVirt.removeEpsilon || modeVirt.cumul)
+                {
+                    for (int i = 0; i < i0; i++)
+                    {
+                        decimal _coeff = 1m;
+                        decimal _base = _list[i];
+                        for (int j = i + 1; j < _count; j++)
+                        {
+                            _coeff /= modeVirt.coeffVirt;
+                            virt[j] = System.Math.Max(virt[j], _base * _coeff); //     += _base * _coeff;
+                        }
+                    }
+                }
+                else
+                {
+                    decimal courant = _list[0];
+                    for (int i = 1; i < _count; i++)
+                    {
+                        if (_list[i] <= _zero)
+                        {
+                            courant /= modeVirt.coeffVirt;
+                            virt[i] = courant;
+                        }
+                        else
+                            courant = _list[i];
+                    }
+                }
+
+                decimal value = int.MaxValue;
+                int ii = 0;
+                if (modeVirt.noAdd)
+                {
+                    //for (ii = 1; ii < count && ii < _count; ii++)
+                    //{
+                    //    var calc = virt[ii];
+                    //    if (calc > 0m)
+                    //        list[ii] = calc;
+                    //}
+                }
+                else
+                {
+                    for (ii = 1; ii < count && ii < _count; ii++)
+                    {
+                        value = _list[ii];
+                        var calc = virt[ii];
+                        if (value < calc)
+                        {
+                            if (modeVirt.lissage || value <= _zero)
+                            {
+                                if (value <= _zero)
+                                    nbAdd++;
+                                value = calc;
+                                _list[ii] = value;
+                            }
+
+                        }
+                        else
+                            indexV = ii;
+                    }
+                    if (modeVirt.removeEpsilon)
+                    {
+                        // j'ai 5 virtuel alors que j'ai deux safe
+                        ///xx---
+                        int nb = 0;
+                        for (int i = indexV + 1; i < _count; i++)
+                        {
+                            nb++;
+                            if (nb <= modeVirt.safe)
+                                continue;
+                            _list[i] = 0m;
+                        }
+
+                    }
+                    if (mode.removeFirst)
+                    {
+                        for (int i = 0; i < nbAdd; i++)
+                        {
+                            _list[i] = 0m;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < _list.Count && i < _pieces.Count; i++)
+                {
+                    if (main)
+                        _pieces[i].setClassementVirtuel(_list[i]);
+                    else
+                        _pieces[i].setClassementVirtuel2(_list[i]);
+                }
+
+                if (mode.deleteFirst)
+                {
+                    for (int i = 0; i < nbAdd; i++)
+                    {
+                        pieces.RemoveAt(0);
+                    }
+                }
+
+                if (modeVirt.reSort || mode.removeFirst || modeVirt.noAdd)
+                {
+                    //_list.Sort();
+                    //_list.Reverse();
+                    if (main)
+                        pieces.Sort(new PieceCmp());
+                    else
+                        pieces.Sort(new PieceCmp2());
+                }
+
+
+
+                if (modeVirt.noAdd)
+                    nbAdd = _nbNoAdd;
+            }
+            return nbAdd;
+        }
+
+        public static DecimalIndex getMedianneLight(List<Piece> pieces, ConfAlbumSort conf, ConfMedianne mode, bool signal)
+        {
+
+            DecimalIndex ret0 = new DecimalIndex();
+            DecimalIndex ret = ret0;
+            try
+            {
+                var _zero = mode.zero;
+                var medianne = getMedianne_(pieces, mode.medianne);
+                ret0.d = medianne;
+                ret0.index = index;
+                ret = ret0;
+                if (pieces.Count == 1)
+                    return ret0;
+
+                #region old
+                //if (mode.safe == 0)
+                //{
+                //    return calcmedianneVirt(pieces, mode, 0, 0);
+                //}
+
+                //int indexV = 0;
+                //int nbAdd = 0;
+
+                //int count = pieces.Count;
+                //List<Piece> _pieces = pieces;
+                ////if (mode.virtOnlyDisabled)
+                ////{
+                ////    _pieces = pieces.FindAll(p => !p.Enabled && p.VirtualClassement > 0m);
+                ////    _pieces.Sort(new PieceCmp());
+                ////}
+
+
+                //if (mode.safe > 0)
+                //{
+                //    int i0 = count - 1;
+                //    int _nbNoAdd = 0;
+                //    //if (mode.virtOnlyDisabled)
+                //    //{
+                //    //    _nbNoAdd = pieces.Count<Piece>(p => p.Enabled);
+                //    //}
+                //    //else
+                //    //{
+
+                //    for (int i = 0; i < count; i++)
+                //    {
+                //        var pp = pieces[i];
+                //        if (pp.VirtualClassement == 0m)
+                //        {
+                //            i0 = i;
+                //            _nbNoAdd = count - i0;
+                //            break;
+                //        }
+                //    }
+
+                //    if (mode.virtOnlyDisabled || mode.removeLast == removeLast.unselected)
+                //        _nbNoAdd = pieces.Count<Piece>(p => p.Enabled);  // || p.VirtualClassement == 0m);
+                //    if (mode.noAddAll)
+                //        _nbNoAdd = pieces.Count;
+                //    if (mode.noAddEnd)
+                //    {
+                //        // var nb1 = pieces.Count<Piece>(p => p.Enabled);
+                //        // morceaux déjà notés
+                //        var nb2 = pieces.Count<Piece>(p => !p.Enabled && p.RapportClassement > 0);
+                //        _nbNoAdd = _nbNoAdd - nb2;
+                //        if (_nbNoAdd < 0)
+                //            _nbNoAdd = 0;
+                //    }
+                //    if (i0 == 0)
+                //        return ret0;
+                //    //}
+
+                //    //for (int i00 = 1; i00 <= i0; i00++)
+                //    //{
+                //    //    decimal coeff = (decimal)i00 / (decimal)i0;
+                //    List<decimal> _list = new List<decimal>();
+                //    for (int i = 0; i < _pieces.Count; i++)
+                //        _list.Add(_pieces[i].VirtualClassement);
+                //    //for (int i = i00; i < count; i++)
+                //    //    _list[i] = 0m;
+                //    //liste partielle originale
+                //    //  List<decimal> _list0 = new List<decimal>(_list);
+                //    int _count = System.Math.Min(count, i0 + mode.safe);
+                //    decimal[] virt = new decimal[_count];
+                //    _nbNoAdd = System.Math.Min(mode.safe, _nbNoAdd);
+                //    if (mode.noAdd)
+                //    {
+                //        var _coeffVirt = mode.coeffVirt;
+                //        if (count < mode.safe && mode.coeffVirtAuto)
+                //        {
+                //            if (mode.coeffVirtAdjust)
+                //                _coeffVirt = Math.Pow(coeffEnabled, 1.0m / (count + 1.0m));
+                //            else
+                //            {
+                //                // ex 2^10 = 1024
+                //                // je veux obtenir 1024 avec 3
+                //                _coeffVirt = Math.Pow(_coeffVirt, (decimal)mode.safe / (decimal)count);
+                //            }
+                //        }
+
+                //        decimal _coeff = 1m;
+                //        decimal prec = 0m;
+                //        if (mode.virtAlignPrec)
+                //        {
+                //            if (_nbNoAdd < _list.Count)
+                //                prec = _list[_nbNoAdd];
+                //        }
+
+                //        for (int j = _nbNoAdd - 1; j >= 0; j--)
+                //        {
+                //            if (j < _pieces.Count)
+                //            {
+
+                //                if (!mode.virtOnlyDisabled || !_pieces[j].Enabled)
+                //                {
+                //                    _coeff /= _coeffVirt;
+                //                    var cand = _list[j] * _coeff;
+                //                    if (mode.virtAlignPrec)
+                //                    {
+                //                        if (cand < prec)
+                //                            cand = prec + EPSILON;
+                //                    }
+
+                //                    if (mode.virtAlignSelected && mode.virtOnlyDisabled)
+                //                    {
+                //                        // quel serait le score s'il était coché
+                //                        var vu = _list[j] / coeffEnabled;
+                //                        // en plus une petite marge
+                //                        //  vu *= mode.coeffVirt; 
+                //                        if (cand < vu)
+                //                            cand = vu;
+                //                    }
+                //                    _list[j] = cand;
+                //                }
+                //                else if (mode.forceCoeffVirt)
+                //                    _coeff /= _coeffVirt;
+                //                prec = _list[j];
+                //            }
+                //        }
+
+                //    }
+                //    else if (mode.lissage || mode.removeEpsilon || mode.cumul)
+                //    {
+                //        for (int i = 0; i < i0; i++)
+                //        {
+                //            decimal _coeff = 1m;
+                //            decimal _base = _list[i];
+                //            for (int j = i + 1; j < _count; j++)
+                //            {
+                //                _coeff /= mode.coeffVirt;
+                //                virt[j] = System.Math.Max(virt[j], _base * _coeff); //     += _base * _coeff;
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        decimal courant = _list[0];
+                //        for (int i = 1; i < _count; i++)
+                //        {
+                //            if (_list[i] <= _zero)
+                //            {
+                //                courant /= mode.coeffVirt;
+                //                virt[i] = courant;
+                //            }
+                //            else
+                //                courant = _list[i];
+                //        }
+                //    }
+
+                //    decimal value = int.MaxValue;
+                //    int ii = 0;
+                //    if (mode.noAdd)
+                //    {
+                //        //for (ii = 1; ii < count && ii < _count; ii++)
+                //        //{
+                //        //    var calc = virt[ii];
+                //        //    if (calc > 0m)
+                //        //        list[ii] = calc;
+                //        //}
+                //    }
+                //    else
+                //    {
+                //        for (ii = 1; ii < count && ii < _count; ii++)
+                //        {
+                //            value = _list[ii];
+                //            var calc = virt[ii];
+                //            if (value < calc)
+                //            {
+                //                if (mode.lissage || value <= _zero)
+                //                {
+                //                    if (value <= _zero)
+                //                        nbAdd++;
+                //                    value = calc;
+                //                    _list[ii] = value;
+                //                }
+
+                //            }
+                //            else
+                //                indexV = ii;
+                //        }
+                //        if (mode.removeEpsilon)
+                //        {
+                //            // j'ai 5 virtuel alors que j'ai deux safe
+                //            ///xx---
+                //            int nb = 0;
+                //            for (int i = indexV + 1; i < _count; i++)
+                //            {
+                //                nb++;
+                //                if (nb <= mode.safe)
+                //                    continue;
+                //                _list[i] = 0m;
+                //            }
+
+                //        }
+                //        if (mode.removeFirst)
+                //        {
+                //            for (int i = 0; i < nbAdd; i++)
+                //            {
+                //                _list[i] = 0m;
+                //            }
+                //        }
+                //    }
+
+                //    for (int i = 0; i < _list.Count && i < _pieces.Count; i++)
+                //        _pieces[i].setClassementVirtuel(_list[i]);
+
+                //    if (mode.deleteFirst)
+                //    {
+                //        for (int i = 0; i < nbAdd; i++)
+                //        {
+                //            pieces.RemoveAt(0);
+                //        }
+                //    }
+
+                //    if (mode.reSort || mode.removeFirst || mode.noAdd)
+                //    {
+                //        //_list.Sort();
+                //        //_list.Reverse();
+                //        pieces.Sort(new PieceCmp());
+                //    }
+
+
+
+                //    if (mode.noAdd)
+                //        nbAdd = _nbNoAdd;
+
+                #endregion
+                int i0 = 0;
+                int count = pieces.Count;
+                int nbAdd = buildVirtual(pieces, mode, mode.Main, conf, true, ref i0);
+                ret = calcmedianneVirt(pieces, conf, mode, mode.Main, nbAdd, System.Math.Min(i0, mode.Main.safe));
+                if (mode.expEnabled != 0)
+                {
+                    int _nb = pieces.Count<Piece>(p => !p.Enabled);
+                    decimal _c = (decimal)_nb / (decimal)count;
+                    _c = Math.Pow(_c, mode.expEnabled);
+                    ret.d *= _c;
+                }
+
+
+                //}
+                //else
+                //    ret = calcmedianneVirt(pieces, mode, 0, 0);
+
+                //if (ret < ret0)
+                //    ret = ret0; 
+
+            }
+            finally
+            {
+
+                if (signal)
+                {
+                    try
+                    {
+                        pieces[ret.index].MedianneLight = true;
+                        pieces[ret.indexBorder].Border = true;
+                        pieces[ret.indexBorderEffect].BorderEffect = true;
+                        pieces[ret.indexBorderMin].BorderMin = true;
+
+                    }
+                    catch { }
+                }
+            }
+
+            return ret;
+        }
+
+
+
+
+        private class PieceCmp : IComparer<Piece>
+        {
+            private static PieceTrackNumberComparer tn = new PieceTrackNumberComparer();
+            public int Compare(Piece x, Piece y)
+            {
+                int cmp = x.VirtualClassement.CompareTo(y.VirtualClassement);
+                if (cmp != 0)
+                    return -cmp;
+                return tn.Compare(x, y);
+            }
+        }
+
+        private class PieceCmp2 : IComparer<Piece>
+        {
+            private static PieceTrackNumberComparer tn = new PieceTrackNumberComparer();
+            public int Compare(Piece x, Piece y)
+            {
+                int cmp = x.VirtualClassement2.CompareTo(y.VirtualClassement2);
+                if (cmp != 0)
+                    return -cmp;
+                return tn.Compare(x, y);
+            }
+        }
+
+
+
+
+        //private static DecimalIndex calcmedianneVirt(IList<decimal> list, ConfMedianne conf, int nbAdd, int nbDel)
+        //{
+        //    var _list = new List<decimal>(list);
+        //    int count = _list.Count;
+
+        //    DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
+        //    int _nbSupp = 0;
+        //    bool beginBorder = false;
+        //    for (int i = 0; i < count; i++)
+        //    {
+
+        //        if (i > 0)
+        //        {
+
+        //            _list.RemoveAt(count - i);
+
+        //        }
+
+        //        var aux = getMedianne_(_list, conf.medianne);
+        //        if (aux == 0m)
+        //            continue;
+        //        if (!beginBorder)
+        //        {
+        //            beginBorder = true;
+        //            ret.indexBorder = count - i - 1;
+        //        }
+        //        // aux = getLn(aux);
+        //        //decimal coeff = 1; 
+        //        //if (count >2)
+        //        //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
+        //        decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
+        //        if (conf.removeFirst && !conf.deleteFirst && i > nbDel)
+        //        {
+        //            coeff = 1 - (decimal)(i - nbDel) / (decimal)count;
+        //        }
+        //        if (conf.quasi)
+        //            coeff *= coeff;
+        //        aux = aux * coeff;
+        //        if (aux > ret.d)
+        //        {
+        //            ret.d = aux;
+        //            ret.index = index;
+        //            ret.indexBorderEffect = count - i - 1;
+        //        }
+
+        //        if (_list[count - i - 1] > conf.zero)
+        //        {
+
+        //            if (conf.removeLast == removeLast.non)
+        //                break;
+        //            _nbSupp++;
+        //            if (conf.removeLast == removeLast.virtuel && _nbSupp >= nbAdd)
+        //                break;
+        //        }
+
+
+        //    }
+
+        //    //     if (ret == int.MinValue)
+        //    //         return 0m;
+        //    return ret;
+        //}
+
+
+
+        private static DecimalIndex calcmedianneVirt(IList<Piece> list, ConfAlbumSort confP, ConfMedianne conf, ConfMedianneVirt confc, int nbAdd, int nbDel)
+        {
+            var _list = new List<Piece>(list);
+            var classes = _list.FindAll(p => p.VirtualClassement > conf.zero);
+
+            if (confc.oldAsZero)
+                classes = _list.FindAll(p => p.LastClassementRecent);
+           
+            int count = _list.Count;
+
+            int nbEnabled = classes.Count<Piece>(p => p.Enabled);
+            int nbDisabled = classes.Count<Piece>(p => !p.Enabled);
+            int nbdispo = System.Math.Min(nbEnabled, nbDisabled);
+
+
+            DecimalIndex ret = new DecimalIndex() { d = 0m, index = 0 }; // 0m; // decimal ret = int.MinValue;
+            int _nbSupp = 0;
+            //int _nbSuppDisabled = 0;
+            //int _nbSuppEnabled = 0;
+            bool beginBorder = false;
+            for (int i = 0; i < count; i++)
+            {
+
+                if (i > 0)
+                {
+                    //var d = _list[count - i];
+                    //if (d.Enabled)
+                    //    nbEnabled--;
+                    //else
+                    //    nbDisabled--;
+
+                    _list.RemoveAt(count - i);
+
+                }
+
+                var aux = getMedianne_(_list, conf.medianne);
+                if (aux == 0m)
+                    continue;
+                if (!beginBorder)
+                {
+                    beginBorder = true;
+                    ret.indexBorder = count - i - 1;
+                }
+                // aux = getLn(aux);
+                //decimal coeff = 1; 
+                //if (count >2)
+                //coeff = (decimal)(count - 2 - i) / (decimal)(count - 2); 
+                decimal coeff = 1 - (decimal)i / (decimal)count; // (decimal)count - i / (decimal)count;
+                if (conf.removeFirst && !conf.deleteFirst && i > nbDel)
+                {
+                    coeff = 1 - (decimal)(i - nbDel) / (decimal)count;
+                }
+                if (conf.quasi)
+                    coeff *= coeff;
+                aux = aux * coeff;
+                if (aux > ret.d)
+                {
+                    ret.d = aux;
+                    ret.index = index;
+                    ret.indexBorderEffect = count - i - 1;
+                }
+
+                ret.indexBorderMin = count - i - 1;
+                var p = _list[count - i - 1];
+
+                if (p.VirtualClassement > conf.zero && (!confc.oldAsZero || p.LastClassementRecent))
+                {
+                    // je regarde si le morceau est désactivé
+                    // si c'est coché, je ne regarde pas quand je considère qu'on peut supprimmer les morceaux activé
+                    if (p.Enabled)
+                        nbEnabled--;
+                    else
+                        nbDisabled--;
+                    nbdispo--;
+
+                    if (!p.Enabled || !conf.removeEnabled || conf.removeLast == removeLast.unselected)
+                    {
+                        //bool priseEncompte = true || nbEnabled <= 0 || !conf.removeEnabled || conf.removeLast == removeLast.unselected;
+                        //if (priseEncompte)
+                        //{
+                        if ((conf.removeLast == removeLast.non || conf.removeLast == removeLast.unselected) && nbEnabled < 0)
+                            break;
+
+                        if (conf.removeLast == removeLast.unselected) //&& (nbEnabled <= 0 ||  nbDisabled <=0))
+                        {
+                            if (nbdispo < 0)
+                                break;
+                        }
+
+                        _nbSupp++;
+                        if (conf.removeLast == removeLast.virtuel && _nbSupp >= nbAdd)
+                            break;
+                        // }
+
+
+                    }
+                }
+
+
+            }
+
+            //     if (ret == int.MinValue)
+            //         return 0m;
+            return ret;
+        }
+
+        //public static decimal getMedianneLight0(IList<decimal> list, decimal coeffMedianne, bool quasi)
+        //{
+        //    if (list.Count == 1)
+        //        return getMedianne_(list, coeffMedianne);
+        //    decimal ret = 0m;
+        //    int count = list.Count;
+
+        //    List<decimal> _list = new List<decimal>(list);
+        //    // ret = getMedianne_(_list, coeffMedianne);
+        //    decimal nb = 0m;
+        //    for (int i = 0; i < count - 1; i++)
+        //    {
+        //        if (i > 0)
+        //            _list.RemoveAt(count - i);
+        //        var aux = getMedianne_(_list, coeffMedianne);
+        //        decimal coeff = count - 1 - i;
+        //        if (quasi)
+        //            coeff *= coeff;
+        //        ret += aux * coeff;
+        //        nb += coeff;
+
+
+        //    }
+        //    ret /= nb;
+
+
+        //    return ret;
+        //}
+        //private static decimal getMedianne_(IList<decimal> list, decimal coeffMedianne)
+        //{
+        //    index = 0;
+        //    if (list == null)
+        //        throw new ArgumentException("liste nulle");
+        //    int count = list.Count;
+        //    if (count == 0)
+        //        throw new ArgumentException("liste vide");
+        //    if (coeffMedianne < 0 || coeffMedianne > 1)
+        //        throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
+        //    if (count == 1)
+        //        return list[0];
+        //    if (coeffMedianne == 0)
+        //        return list[0];
+        //    if (coeffMedianne == 1)
+        //    {
+        //        index = count - 1;
+        //        return list[count - 1];
+        //    }
+
+        //    var medianne = coeffMedianne * (count - 1);
+
+        //    index = (int)medianne;
+        //    int i1 = index + 1;
+        //    var val0 = list[index];
+        //    var val1 = list[i1];
+        //    if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
+        //        return val0;
+        //    if (Math.Abs(medianne - i1) < PRECISION)
+        //    {
+        //        index = i1;
+        //        return val1;
+        //    }
+
+        //    var pente = (val1 - val0);
+        //    var dx = medianne - index;
+        //    var dy = pente * dx;
+        //    return val0 + dy;
+
+        //}
+
+        private static decimal getMedianne_(IList<Piece> list, decimal coeffMedianne)
+        {
+            index = 0;
+            if (list == null)
+                throw new ArgumentException("liste nulle");
+            int count = list.Count;
+            if (count == 0)
+                throw new ArgumentException("liste vide");
+            if (coeffMedianne < 0 || coeffMedianne > 1)
+                throw new ArgumentException("coeffMedianne doit être compris entre 0 et 1, valeur:" + coeffMedianne);
+            if (count == 1)
+                return list[0].VirtualClassement;
+            if (coeffMedianne == 0)
+                return list[0].VirtualClassement;
+            if (coeffMedianne == 1)
+            {
+                index = count - 1;
+                return list[count - 1].VirtualClassement;
+            }
+
+            var medianne = coeffMedianne * (count - 1);
+
+            index = (int)medianne;
+            int i1 = index + 1;
+            var val0 = list[index].VirtualClassement;
+            var val1 = list[i1].VirtualClassement;
+            if (Math.Abs(medianne - Convert.ToDecimal(index)) < PRECISION)
+                return val0;
+            if (Math.Abs(medianne - i1) < PRECISION)
+            {
+                index = i1;
+                return val1;
+            }
+
+            if (val1 < PRECISION)
+            {
+                index = i1;
+                return val1;
+            }
+
+            //         var pente = (val1 - val0);
+            var dx = medianne - index;
+
+            // var ret = val0 + pente * dx;
+
+
+            // moyenne avec calcul de log
+            var log0 = Math.Log(val0 + EPSILON_LOG);
+            var log1 = Math.Log(val1 + EPSILON_LOG);
+            // pente = log1 - log0;
+            var log = log0 + (log1 - log0) * dx;
+            return Math.Exp(log) - EPSILON_LOG;
+          
+
+        }
+
+        //public static int getEquiv(IList<double> listRef, double target, int i0, int i1)
+        //{
+        //    var val0 = listRef[i0]; 
+        //     var val1 = listRef[i1]; 
+        //    if (i1 - i0 == 1)
+        //    {
+        //        // on prend le plus proche
+        //        var delta0 = target - val0;
+        //        var delta1 = val1 - target; 
+
+        //        if (delta0 <= delta1)
+        //            return i0;
+        //        return i1; 
+        //    }
+
+        //    int imiddle = (i0 + i1) / 2;
+        //    if (imiddle == i0)
+        //        imiddle++; 
+        //    var vmiddle = listRef[imiddle];
+
+        //    if (vmiddle == target)
+        //        return imiddle;
+        //    if (Math.Abs(vmiddle - target) < PRECISION)
+        //        return imiddle;
+
+        //    if (vmiddle < target)
+        //        return getEquiv(listRef, target, imiddle, i1);
+        //    return getEquiv(listRef, target, i0, imiddle); 
+
+
+        //}
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\Tuning\ConfAlbumSort.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using System.Xml;
+using pdb.util;
+using System;
+using pdb.gen.albums;
+
+namespace pdb.gen.Tuning
+{
+    [Serializable]
+    /// <summary>
+    /// Configuration sort Albums
+    /// </summary>
+    public class ConfAlbumSort : TuningBase
+    {
+      
+        private List<ConfMedianne> composants = new List<ConfMedianne>();
+        private List<ConfMedianne> composantsUtiles = new List<ConfMedianne>();
+        public List<ConfMedianne> Composants { get { return composants; } }
+        public List<ConfMedianne> ComposantsUtiles { get { return composantsUtiles; } }
+       // public decimal coeffEnabled = 1m;
+        public int stackSize = 0;
+        public DateTime lastModif;
+        public bool createCourant = true;
+        public bool createInter = true;
+        public bool createAll;
+       // public bool oldAsZero; 
+        public void Calcul()
+        {
+            composantsUtiles = new List<ConfMedianne>();
+            foreach (var cmp in composants)
+            {
+                if (cmp.enabled)
+                    composantsUtiles.Add(cmp);
+            }
+            if (composantsUtiles.Count == 0)
+                composantsUtiles.Add(composants[0]);
+        }
+        public ConfAlbumSort()
+        {
+        }
+
+        public ConfAlbumSort(XmlElement node)
+            : base(node)
+        {
+
+            composants.Clear();
+            foreach (XmlNode sub in node.ChildNodes)
+            {
+                if (sub is XmlElement)
+                {
+                    var cmp = new ConfMedianne(node, sub as XmlElement);
+                    composants.Add(cmp);
+                }
+            }
+
+           
+            buildi("stackSize", v => stackSize = v);
+            buildDate("lastModif", v => lastModif = v);
+            buildb("createCourant", v => createCourant = v);
+            buildb("createInter", v => createInter = v);
+            buildb("createAll", v => createAll = v);
+          
+            Calcul();
+
+        }
+
+        public override void save(XmlWriter w)
+        {
+            base.save(w); 
+            writeStart("albumSort");
+               
+                write("stackSize",stackSize);
+                write("lastModif", lastModif); 
+                write("createCourant", createCourant);
+                write("createInter", createInter);
+                write("createAll", createAll);
+               
+                foreach (var cmp in composants)
+                    cmp.save(w);
+            writeEnd(); 
+        }
+        public bool Enabled
+        {
+            get
+            {
+                foreach (var cmp in composants)
+                {
+                    if (cmp.enabled)
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        public void auto(Piece p)
+        {
+            if ( p.StackIndex >0 && p.StackIndex <= stackSize + 1)
+                return; 
+            var motif = p.SelectedMotif;
+            if (p.SelectedMotif == selectedCoeff.none)
+                return; 
+            foreach (var cmp in composants)
+            {
+                cmp.auto(motif); 
+            }
+        }
+    }
+
+
+}
+]]></content>
   </file>
 </db>
