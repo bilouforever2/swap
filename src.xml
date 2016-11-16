@@ -1,455 +1,150 @@
 <db path="C:\Bernard\db1\PieceDb3Ref">
-  
-  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Threading;
-using pdb.player.ViewModel.Commande.Link;
-using pdb.player.ViewModel.Commande.PlayList;
-using pdb.player.ViewModel.Commande;
-using pdb.util;
-using System.Globalization;
-
-namespace pdb.player.ViewModel
-{
-    public enum listDisplay
-    {
-        all,
-        onlyDisabled,
-        onlyEnabled
-    }
-
-    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
-    {
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
-        public event PropertyChangedEventHandler PropertyChanged;
-        //   private List<TrackListViewModel> tracks;
-        private Dictionary<int, TrackListViewModel> dict;
-        private object _lock = new object();
-        private PlayListViewModel parent;
-        private DispatcherOperation ope;
-      
-
-
-        private bool? onlyDisabled;
-        private bool onlyFathers;
-        public AllTracksViewModel(PlayListViewModel parent, bool? onlyDisabled, bool onlyFathers)
-        {
-            this.parent = parent;
-            this.onlyDisabled = onlyDisabled;
-            this.onlyFathers = onlyFathers;
-            //   this.mode = mode; 
-            build();
-            PlayerViewModel.Instance.resumeChange += playerResumeChange;
-            PlayerViewModel.autoChange += new EventHandler(PlayerViewModel_autoChange);
-            //TrackListViewModel.CurrentHumanSelectedChanged += PlayerViewModel_autoChange; 
-        }
-
-        void PlayerViewModel_autoChange(object sender, EventArgs e)
-        {
-            OnPropertyChanged("AutoResume");        
-        }
-
-
-        void playerResumeChange(object sender, EventArgs e)
-        {
-            OnPropertyChanged("TV"); 
-            OnPropertyChanged("Resume");
-            OnPropertyChanged("AutoResume");  
-        }
-
-        public string Resume
-        {
-            get
-            {
-                return PlayerViewModel.Instance.Resume;
-            }
-            set
-            {
-
-            }
-        }
-
-        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
-        {
-            // Be nice - use BlockReentrancy like MSDN said
-
-            //var dispatcher = Dispatcher.CurrentDispatcher;
-            //if (dispatcher.CheckAccess())
-            //{
-            //    if (CollectionChanged == null)
-            //    {
-            //    }
-            //    else
-            //    {
-            //        CollectionChanged(this, e); 
-            //    }
-            //    return; 
-            //}
-
-            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
+  <file path="\pdb.player\Vue\AlbumCtl.xaml">
+    <content><![CDATA[<UserControl x:Class="pdb.player.Vue.AlbumCtl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             xmlns:l="clr-namespace:pdb.player.Vue"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <l:EnhancedDataGrid  Grid.Column="0" DockPanel.Dock="Bottom" 
+                       x:Name="dg" x:Uid="93A5ABB5-8716-49B8-B2CF-25D5B852114D"
+                       AutoGenerateColumns="False" 
+                        IsSynchronizedWithCurrentItem="false" 
+                                        
+                       SelectedItem="{Binding SelectedTrackInAlbumView}">
 
 
 
-            var eventHandler = CollectionChanged;
-            if (eventHandler != null)
-            {
-                Delegate[] delegates = eventHandler.GetInvocationList();
-                // Walk thru invocation list
-                foreach (NotifyCollectionChangedEventHandler handler in delegates)
-                {
-                    try
-                    {
-                        var dispatcherObject = handler.Target as DispatcherObject;
-                        // If the subscriber is a DispatcherObject and different thread
-                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
-                        // Invoke handler in the target dispatcher's thread
-                        {
-                            ope =
-                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
-                                            handler, this, e);
-                            ope.Completed += ope_Completed;
+            <!--<DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="MouseDoubleClick" Handler="dgAlbum_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
+                    <Setter Property="DataGridRow.IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="DataGridRow.Background" Value="White" />
+                    <Style.Triggers>
+                        <Trigger Property="DataGridRow.IsSelected" Value="True">
+                            <Setter Property="DataGridRow.Background" Value="Brown" />
+                        </Trigger>
+                    </Style.Triggers>
+
+                </Style>
+            </DataGrid.RowStyle>-->
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridCheckBoxColumn Header=""  Binding="{Binding Enabled,UpdateSourceTrigger=PropertyChanged}"  />-->
+                <DataGridTextColumn Header="" Binding="{Binding Index,Mode=OneWay}"/>
+                <DataGridTextColumn Header="p" Binding="{Binding TrackNumber,Converter={StaticResource Int}}"/>
+                <DataGridTextColumn Header="Nom" Binding="{Binding Name,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="" Binding="{Binding MedianneStatus,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Classement" Binding="{Binding Classement,Converter={StaticResource cl},UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Virtuel" Binding="{Binding ClassementVirtuel,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Coeff" Binding="{Binding CoeffVirtuel, Mode=OneWay, Converter={StaticResource decimal},UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Virtuel2" Binding="{Binding ClassementVirtuel2,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Coeff2" Binding="{Binding CoeffVirtuel2,Mode=OneWay, Converter={StaticResource decimal},UpdateSourceTrigger=PropertyChanged}"/>
+
+                <DataGridTextColumn Header="Durée" Binding="{Binding Duration,Mode=OneWay,Converter={StaticResource TimeSpan}}"   >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                            <Setter Property="Padding" Value="0,0,3,0" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Comment" Binding="{Binding Comment,Mode=OneWay}"/>
+                <DataGridTextColumn Header="Maj"  Binding="{Binding UpdateClassement, Mode=OneWay,Converter={StaticResource date}}" />
+                <DataGridTextColumn Header="MajAlbum"  Binding="{Binding AlbumUpdateClassement, Mode=OneWay, Converter={StaticResource date}}" />
+
+                <DataGridTextColumn Header="Delai"  Binding="{Binding UpdateClassement, Mode=OneWay,Converter={StaticResource delai}}" />
+                <DataGridTextColumn Header="DelaiAlbum"  Binding="{Binding AlbumUpdateClassement, Mode=OneWay, Converter={StaticResource delai}}" />
+                <DataGridTextColumn Header="Motif" Binding="{Binding SelectedMotif,  Mode=OneWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource motif}}"/>
+                <DataGridTextColumn Header="NbClassements"  Binding="{Binding NbClass,Converter={StaticResource Int}}" />
+                <DataGridTextColumn Header="Grouping" Binding="{Binding Grouping, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"/>
+            </DataGrid.Columns>
 
 
-                        }
-                        else // Execute handler as is
-                            handler(this, e);
-                    }
-                    catch (Exception ex)
-                    {
-                        App.log.log(ex.ToString());
-                    }
-                }
-            }
-            else
-            {
-            }
+            <DataGrid.ItemContainerStyle>
 
-            // PlayerViewModel.Instance.makeResume();
+                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <EventSetter Event="MouseDoubleClick" Handler="dgAlbum_MouseDoubleClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="dg_MouseClick" />
+                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="dg_MouseClick" />
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="FontWeight" Value="Normal" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <!--<Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="FontWeight" Value="Bold" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Exis
+                    ts}" Value="False">
+                            <Setter Property="Background" Value="LightGray" />
+                        </DataTrigger>
+                    </Style.Triggers>-->
+                </Style>
+            </DataGrid.ItemContainerStyle>
 
-        }
-
-        void ope_Completed(object sender, EventArgs e)
-        {
-            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
-            PlayerViewModel.Instance.makeResume();
-        }
-
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            var eventHandler = PropertyChanged;
-            if (eventHandler == null)
-            {
-                //   int toto = 0;
-            }
-            else
-            {
-                //var dispatcher = Dispatcher.CurrentDispatcher;
-                //if (dispatcher.CheckAccess())
-                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-                //else
-                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
-
-                Delegate[] delegates = eventHandler.GetInvocationList();
-                // Walk thru invocation list
-                foreach (PropertyChangedEventHandler handler in delegates)
-                {
-                    try
-                    {
-                        var dispatcherObject = handler.Target as DispatcherObject;
-                        // If the subscriber is a DispatcherObject and different thread
-                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
-                            // Invoke handler in the target dispatcher's thread
-                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
-                                          handler, this, new PropertyChangedEventArgs(propertyName));
-                        else // Execute handler as is
-                            handler(this, new PropertyChangedEventArgs(propertyName));
-                    }
-                    catch (Exception ex)
-                    {
-                        App.log.log(ex.ToString());
-                    }
-                }
-            }
-        }
-
-        public void refresh()
-        {
-            build();
-            foreach (TrackListViewModel track in this)
-                track.refresh();
-
-        }
-
-        //public void init()
-        //{
-        //    refresh();
-        //    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        //}
-
-        public TrackListViewModel TV { get { return TrackListViewModel.HumanSelected; } }
-
-        public void build()
-        {
-            lock (_lock)
-            {
-                var list = new List<TrackListViewModel>();
-                var dict = new Dictionary<int, TrackListViewModel>();
-                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
-                if (this.dict == null)
-                {
-                    this.dict = new Dictionary<int, TrackListViewModel>();
-                    foreach (TrackListViewModel track in list)
-                    {
-                        Add(track);
-                        this.dict.Add(track.PieceId, track);
-                        track.PropertyChanged += track_PropertyChanged;
-                    }
-
-                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-                }
-                else
-                {
-
-                    foreach (TrackListViewModel newTrack in list)
-                    {
-                        if (!this.dict.ContainsKey(newTrack.PieceId))
-                        {
-                            Add(newTrack);
-                            this.dict.Add(newTrack.PieceId, newTrack);
-                            newTrack.PropertyChanged += track_PropertyChanged;
-                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
-                        }
-                    }
-
-                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
-                    {
-                        if (!dict.ContainsKey(track.PieceId))
-                        {
-                            Remove(track);
-                            this.dict.Remove(track.PieceId);
-                            track.PropertyChanged -= track_PropertyChanged;
-                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
-                        }
-                    }
-                }
-            }
-
-            //Clear(); 
-            //foreach (TrackListViewModel track in parent.Tracks)
-            //    Add(track); 
-        }
-
-        void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case "Duration":
-                case "Enabled":
-                    PlayerViewModel.Instance.makeResume();
-                    break;
-            }
-        }
-
-        public List<TrackListViewModel> AllTracks
-        {
-            get
-            {
-                build();
-                return this;
-            }
-        }
-
-        public List<TrackListViewModel> Tracks
-        {
-            get
-            {
-                return parent.Tracks;
-            }
-        }
-
-        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool? onlyDisabled, bool onlyFathers)
-        {
-            foreach (TrackListViewModel t in parent.Tracks)
-            {
-                if (!t.Enabled || true !=onlyDisabled)
-                {
-                    if (onlyDisabled == null && t.Enabled)
-                    {
-                        if (!t.PieceGen.ClassementProvisoireRecent)
-                            continue; 
-                    }
-                    if (t.PieceParentId < 0 || !onlyFathers)
-                    {
-                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
-                        {
-                            
-                            if (!dict.ContainsKey(t.PieceId))
-                            {
-                                dict.Add(t.PieceId, t);
-                                container.Add(t);
-                                //  t.Index = container.Count; 
-                            }
-                        }
-                    }
-                }
-
-            }
-
-            foreach (PlayListViewModel pl in parent)
-            {
-                AllTracksViewModel other = pl.AlltracksVm;
-                //if (true == onlyDisabled)
-                //    other = pl.AlltracksVmd;
-                //else
-                //    other = pl.AlltracksVm;
-                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
-            }
-        }
-
-        #region cmd
-
-        private ICommand _contextCmdCheck;
-        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
-
-        private ICommand _contextCmdUnCheck;
-        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
-
-
-        private ICommand _contextLinkFather;
-        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
-
-        private ICommand _contextLinkChild;
-        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
-
-        private ICommand _contextLinkFusion;
-        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
-
-        private ICommand _contextUnLink;
-        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
-
-        private ICommand _contextExport;
-        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
-
-        private ICommand _contextExportCompress;
-        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
-
-        private ICommand _contextDelete;
-        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
-
-        public TrackListViewModel HumanSelected
-        {
-            get
-            {
-                return TrackListViewModel.HumanSelected;
-            }
-        }
-
-        private ICommand _ContextCmdAddToList;
-        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
-
-        private ICommand _ContextCmdDbDeleteClassement;
-        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
-
-        private ICommand _ContextCmdDbDeleteRead;
-        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
-
-
-        #endregion
-
-        #region from Ihm
-        private TrackListViewModel selectedTrack;
-        public TrackListViewModel SelectedTrack
-        {
-            get
-            {
-                return selectedTrack;
-            }
-            set
-            {
-                selectedTrack = value;
-                TrackListViewModel.setHumanSelected(parent, value); //  .HumanSelected = value;
-                if (selectedTrack != null)
-                    selectedTrack.IsSelected = true;
-            }
-        }
-        #endregion
-
-        private int nbAlbumMoved;
-
-        public int NbAlbumMoved
-        {
-            get { return nbAlbumMoved; }
-        }
-
-        public string AutoResume
-        {
-            get
-            {
-               
-                try
-                {
-
-                    var conf = App.gen.SortAlbumMode.ComposantsUtiles[0].Main;
-                    var sb = new StringBuilder();
-                    
-                    sb.Append(conf.CoeffT.ToString("0.000", CultureInfo.InvariantCulture)); sb.Append("  ");
-                  
-                    sb.Append((1000 * conf.dcoeffp).ToString("0.##")); sb.Append("m  ");
-                    sb.Append(conf.Serial); sb.Append(" ");
-                    sb.Append(conf.SerialBox); sb.Append(" ");
-                    sb.Append(conf.Alt); sb.Append(" ");
-                    sb.Append(conf.AltHisto); 
-                    //var motif = selectedCoeff.none;
-                    //var current = TrackListViewModel.HumanSelected;
-                    //if (current != null)
-                    //    motif = current.SelectedMotif; 
-                  //  var stat10 = conf.calcStat(motif,10);
-                   // sb.Append(stat10); sb.Append(" - ");
-                 //   var stat100 = conf.calcStat(motif,100);
-                  //  sb.Append(stat100); 
-
-                    //sb.Append(conf.coeffTMin(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" - ");
-                    //sb.Append(conf.coeffTMin(100).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(100).ToString("0.000", CultureInfo.InvariantCulture)); 
-                    return sb.ToString(); 
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport},ConverterParameter=album,   UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="Foreground" Value="{Binding TV, Converter={StaticResource foreColor}, ConverterParameter=album,  UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
                    
-                }
-                catch
-                {
-                    return ""; 
-                }
-            }
-        }
-        public string NbAlbumMovedDesc
-        {
-            get
-            {
-                if (nbAlbumMoved < 0)
-                    return "";
-                if (nbAlbumMoved == 0)
-                    return "pas d'album en quarantaine";
-                return string.Format("{0} albums en quarantaine", nbAlbumMoved); 
-            }
-        }
-
-        public void setNbAlbumMoved(int nb)
-        {
-            if (nb != nbAlbumMoved)
-            {
-                nbAlbumMoved = nb;
-                OnPropertyChanged("NbAlbumMoved");
-                OnPropertyChanged("NbAlbumMovedDesc");
-            }
-
-        }
-    }
+                    
+                    
+                    <EventSetter Event="MouseDoubleClick" Handler="dgAlbum_MouseDoubleClick" />
 
 
-}
+
+
+                    <!--<Style.Triggers>
+                        <Trigger Property="IsSelected"  Value="True">-->
+                    <!--<Setter Property="Background"  Value="SteelBlue"/>-->
+                    <!--<Setter Property="Background"  Value="SteelBlue"/>-->
+                    <!--<Setter Property="Foreground"  Value="White" />-->
+                    <!--<Setter Property="BorderThickness" Value="1" />-->
+                    <!--</Trigger>
+                    </Style.Triggers>-->
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <!--<Setter Property="Height"  Value="20" />-->
+
+                    <Setter Property="Background" Value="{Binding TV, Converter={StaticResource colorExport}, ConverterParameter=album,  UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="Padding" Value="10,10,10,10" />
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+            
+                    <MenuItem Header="Invalider dernier classement"  Command="{Binding ContextCmdDbDeleteClassement}" />
+                    <MenuItem Header="Invalider dernière lecture"  Command="{Binding ContextCmdDbDeleteRead}" />                 
+                    <MenuItem Header="Ajouter à la liste"  Command="{Binding ContextCmdAddToList}" />
+
+
+
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </l:EnhancedDataGrid>
+
+       
+
+    </Grid>
+</UserControl>
 ]]></content>
   </file>
   <file path="\pdb.player\Vue\ConfAlbumSortW.xaml">
@@ -602,7 +297,7 @@ namespace pdb.player.ViewModel
             </StackPanel>
             <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right" Margin="5,5,8,5"  Width="326">
                 <TextBox Grid.Row="2" Name="tb_stackSize" Width="30"  VerticalAlignment="Center" Text="10" ToolTip="taille de la pile d'exclusion" Margin="5" Padding="2"/>
-
+                <CheckBox Grid.Row="2" Name="cb_checkStack" Width="30"  VerticalAlignment="Center" ToolTip="Ne pas prendre en compte les albums retardés dans la file d'attente pour la cinématique" Margin="5" Padding="2" />
                 <CheckBox Grid.Row="2" Name="cb_idem" Width="30"  VerticalAlignment="Center" ToolTip="Lier les items" Margin="5" Padding="2" Click="cb_idem_Click" />
 
                 <Button Grid.Row="2" Name="bt_cancel" IsCancel="true" Height="25" HorizontalAlignment="Right" Content="Cancel" Click="bt_cancel_Click"   Margin="5" Padding="2"/>
@@ -672,6 +367,7 @@ namespace pdb.player.Vue
             cb_createCourant.IsChecked = conf.createCourant;
             dp_date.SelectedDate = conf.lastModif;
             cb_idem.IsChecked = _idem;
+            cb_checkStack.IsChecked = conf.checkStack; 
          
 
             first.display();
@@ -751,6 +447,7 @@ namespace pdb.player.Vue
             conf.createInter = cb_createInter.IsChecked.Value;
             conf.createAll = cb_createAll.IsChecked.Value;
             conf.lastModif = dp_date.SelectedDate.Value;
+            conf.checkStack = cb_checkStack.IsChecked.Value; 
           
 
             first.record();
@@ -897,406 +594,6 @@ namespace pdb.player.Vue
             if (second != null)
                 second.checkIdem();
         }
-
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.player\Vue\Conf\ConfVirt.xaml">
-    <content><![CDATA[<UserControl x:Class="pdb.player.Vue.Conf.ConfVirt"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
-             d:DesignHeight="103.332" Width="2537.578">
-    <Grid Grid.IsSharedSizeScope="True" >
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V1" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V2" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V3" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V4" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V5" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V6" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V7" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V8" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V9" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V10" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V11" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V12" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V13" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V14" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V15" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V16" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V17" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V18" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V19" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V20" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V21" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V22" />
-
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V23" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V24" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V25" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V26" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V27" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V28" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V29" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V30" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V31" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V32" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V33" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V34" />
-            <ColumnDefinition Width="Auto" SharedSizeGroup="V35" />
-        </Grid.ColumnDefinitions>
-
-
-        <CheckBox Height="20" VerticalAlignment="Center" Name="cb_lissage" ToolTip="lissage" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="1" Name="cb_removeEpsilon" ToolTip="removeEpsilon" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="2" Name="cb_reSort" ToolTip="reSort" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <TextBox Grid.Column="3" Name="tb_safe" ToolTip="safe" Margin="6,22,5,22" KeyUp="tb_safe_KeyUp" Grid.RowSpan="2" />
-        <TextBox Grid.Column="4" Name="tb_coeff" ToolTip="coeff des morceaux virtuels" Margin="5,22,6,22" KeyUp="tb_safe_KeyUp" Grid.RowSpan="2" />
-        <TextBox  Grid.Column="5" Name="tb_coeffT" ToolTip="coeff total des morceaux virtuels" Margin="6,22,5,22" KeyUp="tb_coeffT_KeyUp" Grid.RowSpan="2" />
-
-
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="6" Name="cb_cumul" ToolTip="cumul" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="7" Name="cb_noAdd" ToolTip="pas d'ajout" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-
-
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="8" Name="cb_virtOnlyDisabled" ToolTip="virtuel: seulement les décochés" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="9" Name="cb_forceCoeffVirt" ToolTip="virtuel: coeff forcé" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="10" Name="cb_virtAlignSelected" ToolTip="virtuel: aligné sur le coché" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="11" Name="cb_virtAlignPrec" ToolTip="virtuel: aligné sur le précédent" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="12" Name="cb_coeffVirtAdjust" ToolTip="coeffvirt ajusté sur coeff selected" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="13" Name="cb_coeffVirtAuto" ToolTip="coeffvirt automatique" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="14" Name="cb_noaddEnd" ToolTip="en fin d'alum pas de virtuel" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="15" Name="cb_noaddAll" ToolTip="tout virtuel" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="16" Name="cb_auto" ToolTip="pilotage auto" Margin="5,22" Padding="2" Grid.RowSpan="2" />
-        <TextBox Grid.Column="17" Name="tb_dcoeffp" ToolTip="delta en montée" Margin="5,22,6,22" Grid.RowSpan="2" KeyUp="tb_dcoeffp_KeyUp" />
-        <TextBox Grid.Column="18" Name="tb_serialp" ToolTip="série en montée" Margin="6,22,5,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="19" Name="tb_dcoeffm" ToolTip="delta en descente" Margin="5,22,6,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="20" Name="tb_serialm" ToolTip="série en descente" Margin="6,22,5,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="21" Name="tb_serial" ToolTip="série en cours" Margin="5,22,6,22" Grid.RowSpan="2" ToolTipService.ShowOnDisabled="True" />
-        <TextBox Grid.Column="22" Name="tb_convergence" ToolTip="convergence" Margin="6,22,5,22" Grid.RowSpan="2" KeyUp="tb_convergence_KeyUp" />
-        <TextBox Grid.Column="23" Name="tb_dconvdeltap" ToolTip="evol convergent +" Margin="5,22,6,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="24" Name="tb_dconvdeltam" ToolTip="cevol convergent -" Margin="6,22,5,22" Grid.RowSpan="2" />
-
-        <CheckBox Height="20" VerticalAlignment="Center" Grid.Column="25" Name="cb_link" ToolTip="aligner convergence et coeff" Margin="5,22" Padding="2" Grid.RowSpan="2" Click="cb_link_Click" />
-        <TextBox Grid.Column="26" Name="tb_prod" ToolTip="produit de convergence" Margin="5,22,6,22" Grid.RowSpan="2" KeyUp="tb_prod_KeyUp" ToolTipService.ShowOnDisabled="True" />
-        <TextBox Grid.Column="27" Name="l_prod" ToolTip="produit de convergence effectif" Margin="6,22,5,22" Grid.RowSpan="2" ToolTipService.ShowOnDisabled="True"  IsReadOnly="True"/>
-        <TextBox Grid.Column="28" Name="tb_anti" ToolTip="anti-convergence" Margin="5,22,6,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="29" Name="tb_antideltap" ToolTip="evol anti-convergent +" Margin="6,22,5,22" Grid.RowSpan="2" />
-        <TextBox Grid.Column="30" Name="tb_antideltam" ToolTip="evol anti-convergent -" Margin="5,22,6,22" Grid.RowSpan="2" />
-        <TextBox  Height="20" Grid.Column="31" Name="tb_coeffOld"  VerticalAlignment="Center" Text="1" ToolTip="Coeff des vieux morceaux" Margin="6,22,5,22" Grid.RowSpan="2" />
-        <CheckBox Height="20" Grid.Column="32" Name="cb_oldAsZero" VerticalAlignment="Center" ToolTip="Vieux comme null" Margin="5,22,6,22" Padding="2" Grid.RowSpan="2" />
-        <CheckBox Height="20" Grid.Column="33" Name="cb_coeffOldAuto" VerticalAlignment="Center" ToolTip="Vieux comme null" Margin="6,22,5,22" Padding="2" Grid.RowSpan="2" />
-      
-        <TextBox  Height="20" Grid.Column="34" Name="tb_coeffAutoLevel"  VerticalAlignment="Center" Text="4" ToolTip="Niveau des vieux" Margin="6,22,5,22" Grid.RowSpan="2" />
-    </Grid>
-</UserControl>
-]]></content>
-  </file>
-  <file path="\pdb.player\Vue\Conf\ConfVirt.xaml.cs">
-    <content><![CDATA[using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using pdb.util;
-using Math = System.Math; 
-namespace pdb.player.Vue.Conf
-{
-    public interface IConfSort
-    {
-     //   string CoeffEnabled { get; }
-        bool DuplicateItem { get; }
-    }
-    /// <summary>
-    /// Interaction logic for ConfVirt.xaml
-    /// </summary>
-    public partial class ConfVirt : UserControl
-    {
-        private ConfMedianneVirt conf;
-        private IConfSort parent;
-    
-
-
-        decimal coeffp;
-        decimal prod;
-        decimal conv; 
-        
-
-        public ConfVirt()
-        {
-            InitializeComponent();
-        }
-
-        public ConfVirt(ConfMedianneVirt conf, IConfSort parent)
-            : this()
-        {
-            this.conf = conf;
-            this.parent = parent;
-            //display();
-            //onchange();
-        }
-
-        public ConfMedianneVirt Conf
-        {
-            set
-            {
-                this.conf = value; 
-            }
-        }
-
-
-        public void display()
-        {
-
-           
-            cb_lissage.IsChecked = conf.lissage;
-            cb_removeEpsilon.IsChecked = conf.removeEpsilon;
-            cb_reSort.IsChecked = conf.reSort;
-
-
-            cb_cumul.IsChecked = conf.cumul;
-            cb_noAdd.IsChecked = conf.noAdd;
-            tb_safe.Text = conf.safe.ToString();
-            tb_coeff.Text = conf.coeffVirt.ToString();
-
-
-            cb_virtOnlyDisabled.IsChecked = conf.virtOnlyDisabled;
-            cb_forceCoeffVirt.IsChecked = conf.forceCoeffVirt;
-            cb_virtAlignPrec.IsChecked = conf.virtAlignPrec;
-            cb_virtAlignSelected.IsChecked = conf.virtAlignSelected;
-            cb_coeffVirtAdjust.IsChecked = conf.coeffVirtAdjust;
-            cb_coeffVirtAuto.IsChecked = conf.coeffVirtAuto;
-
-
-            cb_noaddEnd.IsChecked = conf.noAddEnd;
-            cb_noaddAll.IsChecked = conf.noAddAll;
-
-            cb_auto.IsChecked = conf.auto;
-            coeffp = conf.dcoeffp;
-            tb_dcoeffp.Text = coeffp.ToString("0.#####");
-            tb_dcoeffm.Text = conf.dcoeffm.ToString("0.#####");
-            conv = conf.dconvergence; 
-            tb_convergence.Text = conv.ToString("0.######");
-            tb_dconvdeltap.Text = conf.dconvdeltap.ToString("0.######");
-            tb_dconvdeltam.Text = conf.dconvdeltam.ToString("0.######");
-
-            tb_anti.Text = conf.danticonvergence.ToString("0.#####");
-            tb_antideltap.Text = conf.danticonvdeltap.ToString("0.######");
-            tb_antideltam.Text = conf.danticonvdeltam.ToString("0.######");
-
-            cb_link.IsChecked = conf.linkconv;
-
-            prod = conf.LinkProduct;
-            tb_prod.Text = prod.ToString("0.######");
-            tb_prod.Visibility = conf.linkconv ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed; 
-            l_prod.Text = conf.calcProduct(conf.dcoeffp, conf.dconvergence).ToString("0.######");
-            tb_prod.IsEnabled = conf.linkconv;
-
-            tb_serialp.Text = conf.serialp.ToString();
-            tb_serialm.Text = conf.serialm.ToString();
-            tb_serial.Text = conf.Serial.ToString();
-
-            cb_oldAsZero.IsChecked = conf.oldAsZero;
-            cb_coeffOldAuto.IsChecked = conf.coeffOldAuto;
-            tb_coeffOld.Text = conf.coeffOld.ToString("0.######");
-            tb_coeffAutoLevel.Text = conf.coeffOldAutoLevel.ToString(); 
-
-
-           
-          
-
-        }
-
-       
-
-        public void record()
-        {
-
-
-            conf.lissage = cb_lissage.IsChecked.Value;
-            conf.removeEpsilon = cb_removeEpsilon.IsChecked.Value;
-            conf.reSort = cb_reSort.IsChecked.Value;
-
-            conf.cumul = cb_cumul.IsChecked.Value;
-            conf.noAdd = cb_noAdd.IsChecked.Value;
-            conf.safe = Convert.ToInt32(tb_safe.Text);
-            conf.coeffVirt = Convert.ToDecimal(tb_coeff.Text);
-
-            conf.virtOnlyDisabled = cb_virtOnlyDisabled.IsChecked.Value;
-            conf.forceCoeffVirt = cb_forceCoeffVirt.IsChecked.Value;
-            conf.virtAlignPrec = cb_virtAlignPrec.IsChecked.Value;
-            conf.virtAlignSelected = cb_virtAlignSelected.IsChecked.Value;
-            conf.coeffVirtAuto = cb_coeffVirtAuto.IsChecked.Value;
-            conf.coeffVirtAdjust = cb_coeffVirtAdjust.IsChecked.Value;
-
-            conf.noAddEnd = cb_noaddEnd.IsChecked.Value;
-            conf.noAddAll = cb_noaddAll.IsChecked.Value;
-
-            conf.auto = cb_auto.IsChecked.Value;
-            conf.dcoeffp = coeffp; // Convert.ToDecimal(tb_dcoeffp.Text);
-            conf.dcoeffm = Convert.ToDecimal(tb_dcoeffm.Text);
-            conf.dconvergence = conv; // Convert.ToDecimal(tb_convergence.Text);
-            conf.dconvdeltap = Convert.ToDecimal(tb_dconvdeltap.Text);
-            conf.dconvdeltam = Convert.ToDecimal(tb_dconvdeltam.Text);
-
-            conf.danticonvergence = Convert.ToDecimal(tb_anti.Text);
-            conf.danticonvdeltap = Convert.ToDecimal(tb_antideltap.Text);
-            conf.danticonvdeltam = Convert.ToDecimal(tb_antideltam.Text);
-
-
-            conf.linkconv = cb_link.IsChecked.Value;
-
-            conf.serialp = Convert.ToInt32(tb_serialp.Text);
-            conf.serialm = Convert.ToInt32(tb_serialm.Text);
-            conf.Serial = Convert.ToInt32(tb_serial.Text);
-
-            conf.oldAsZero = cb_oldAsZero.IsChecked.Value;
-            conf.coeffOldAuto = cb_coeffOldAuto.IsChecked.Value;
-
-            conf.coeffOld = Convert.ToDecimal(tb_coeffOld.Text);
-            conf.coeffOldAutoLevel = Convert.ToInt32(tb_coeffAutoLevel.Text);
-
-        }
-
-
-
-        private void onchange2()
-        {
-            try
-            {
-                var safe = Convert.ToInt32(tb_safe.Text);
-                var coeffT = Convert.ToDouble(tb_coeffT.Text);
-                var coeff = Math.Pow(coeffT, (1.0 / (double)safe));
-                tb_coeff.Text = coeff.ToString();
-            }
-            catch
-            {
-            }
-        }
-
-        private void tb_safe_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            onchange();
-        }
-
-        private void tb_coeffT_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            onchange2();
-        }
-
-        public void onchange()
-        {
-
-
-
-            //if (true == cb_coeffVirtAdjust.IsChecked)
-            //{
-            //    try
-            //    {
-            //        var safe = Convert.ToInt32(tb_safe.Text);
-            //        var coeffEnabled = Convert.ToDecimal(parent.CoeffEnabled);
-            //        var coeffVirt = Math.Pow((double)coeffEnabled, 1.0 / (safe + 1.0));
-            //        tb_coeff.Text = coeffVirt.ToString();
-            //    }
-            //    catch
-            //    {
-            //    }
-            //}
-
-            //try
-            //{
-            //    var safe = Convert.ToInt32(tb_safe.Text);
-            //    var coeff = Convert.ToDouble(tb_coeff.Text);
-            //    var coeffT = Math.Pow(coeff, (double)safe);
-            //    tb_coeffT.Text = coeffT.ToString("0.#####");
-            //}
-            //catch
-            //{
-            //}
-
-        }
-
-        private void cb_link_Click(object sender, RoutedEventArgs e)
-        {
-            tb_prod.IsEnabled = cb_link.IsChecked.Value;
-            tb_prod.Visibility = cb_link.IsChecked.Value ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed; 
-          
-        }
-
-
-       
-        private void tb_prod_KeyUp(object sender, KeyEventArgs e)
-        {
-            try
-            {
-                prod = Convert.ToDecimal(tb_prod.Text);
-                conv = conf.calcConv(coeffp, prod); 
-                tb_convergence.Text = conv.ToString("0.######");
-            }
-            catch 
-            {
-                
-                
-            }
-        }
-
-        private void tb_dcoeffp_KeyUp(object sender, KeyEventArgs e)
-        {
-            try
-            {
-                coeffp = Convert.ToDecimal(tb_dcoeffp.Text);
-                prod = conf.calcProduct(coeffp, conv);
-                tb_prod.Text = prod.ToString("0.######");
-
-
-            }
-            catch
-            {
-            }
-            
-        }
-
-        private void tb_convergence_KeyUp(object sender, KeyEventArgs e)
-        {
-            try
-            {
-                conv = Convert.ToDecimal(tb_convergence.Text);
-                prod = conf.calcProduct(coeffp, conv);
-                tb_prod.Text = prod.ToString("0.######");
-            }
-            catch
-            {
-            }
-        }
-
-        //private void calcProduct()
-        //{
-        //    try
-        //    {
-        //        var coeffp = Convert.ToDecimal(tb_dcoeffp.Text);
-        //        var convergence = Convert.ToDecimal(tb_convergence.Text);
-        //        tb_prod.Text = conf.calcProduct(coeffp, convergence).ToString("0.###");
-        //    }
-        //    catch
-        //    {
-        //    }
-        //}
 
     }
 }
@@ -2084,7 +1381,7 @@ namespace pdb.util
             int count = histo.Count;
             for (int i = 0; i < count; i++)
             {
-                var line = histo[i].ToString("0.######");
+                var line = histo[i].ToString("0.########");
                 sb.AppendLine(line);
                 if (i >= indexDiff)
                     sbDiff.AppendLine(line);
@@ -2656,5 +1953,121 @@ namespace pdb.util
         //}
     }
 }]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\Tuning\ConfAlbumSort.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using System.Xml;
+using pdb.util;
+using System;
+using pdb.gen.albums;
+
+namespace pdb.gen.Tuning
+{
+    [Serializable]
+    /// <summary>
+    /// Configuration sort Albums
+    /// </summary>
+    public class ConfAlbumSort : TuningBase
+    {
+
+        private List<ConfMedianne> composants = new List<ConfMedianne>();
+        private List<ConfMedianne> composantsUtiles = new List<ConfMedianne>();
+        public List<ConfMedianne> Composants { get { return composants; } }
+        public List<ConfMedianne> ComposantsUtiles { get { return composantsUtiles; } }
+        // public decimal coeffEnabled = 1m;
+        public int stackSize = 0;
+        public bool checkStack = false;
+        public DateTime lastModif;
+        public bool createCourant = true;
+        public bool createInter = true;
+        public bool createAll;
+        // public bool oldAsZero; 
+        public void Calcul()
+        {
+            composantsUtiles = new List<ConfMedianne>();
+            foreach (var cmp in composants)
+            {
+                if (cmp.enabled)
+                    composantsUtiles.Add(cmp);
+            }
+            if (composantsUtiles.Count == 0)
+                composantsUtiles.Add(composants[0]);
+        }
+        public ConfAlbumSort()
+        {
+        }
+
+        public ConfAlbumSort(XmlElement node)
+            : base(node)
+        {
+
+            composants.Clear();
+            foreach (XmlNode sub in node.ChildNodes)
+            {
+                if (sub is XmlElement)
+                {
+                    var cmp = new ConfMedianne(node, sub as XmlElement);
+                    composants.Add(cmp);
+                }
+            }
+
+
+            buildi("stackSize", v => stackSize = v);
+            buildb("checkStack", v => checkStack = v);
+            buildDate("lastModif", v => lastModif = v);
+            buildb("createCourant", v => createCourant = v);
+            buildb("createInter", v => createInter = v);
+            buildb("createAll", v => createAll = v);
+
+            Calcul();
+
+        }
+
+        public override void save(XmlWriter w)
+        {
+            base.save(w);
+            writeStart("albumSort");
+
+            write("stackSize", stackSize);
+            write("checkStack", checkStack);
+            write("lastModif", lastModif);
+            write("createCourant", createCourant);
+            write("createInter", createInter);
+            write("createAll", createAll);
+
+            foreach (var cmp in composants)
+                cmp.save(w);
+            writeEnd();
+        }
+        public bool Enabled
+        {
+            get
+            {
+                foreach (var cmp in composants)
+                {
+                    if (cmp.enabled)
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        public void auto(Piece p)
+        {
+            if (checkStack && p.StackIndex > 0 && p.StackIndex <= stackSize + 1)
+                return;
+            var motif = p.SelectedMotif;
+            if (p.SelectedMotif == selectedCoeff.none)
+                return;
+            foreach (var cmp in composants)
+            {
+                cmp.auto(motif);
+            }
+        }
+    }
+
+
+}
+]]></content>
   </file>
 </db>
