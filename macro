@@ -1,0 +1,3 @@
+Sub refreshDyn()
+Sheets("_cinematique").Range("A1").QueryTable.refresh BackgroundQuery:=False
+End Sub
