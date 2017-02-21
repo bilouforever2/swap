@@ -1,1858 +1,1248 @@
 <db path="C:\Bernard\db1\pdb4">
-  <file path="\pdb.player\ViewModel\Commande\PlayList\ExportCmd.cs">
+  <file path="\pdb.player\ViewModel\AllTracksViewModel.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using pdb.db;
-using pdb.db.obj;
-using pdb.gen;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using pdb.player.ViewModel.Commande.Link;
+using pdb.player.ViewModel.Commande.PlayList;
+using pdb.player.ViewModel.Commande;
 using pdb.util;
-using pdb.gen.Tuning;
-using System.Runtime.InteropServices;
-using pdb.gen.albums;
-using pdb.obj;
+using System.Globalization;
 
-namespace pdb.player.ViewModel.Commande.PlayList
+namespace pdb.player.ViewModel
 {
-    class StatAlbum
+    public enum listDisplay
     {
-        private string key;
-        private int count;
-
-        public void clear()
-        {
-            count = 0;
-        }
-
-        public StatAlbum(string key)
-        {
-            this.key = key;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is StatAlbum)
-            {
-                return key.Equals(((StatAlbum)obj).key);
-            }
-            return false;
-        }
-
-        public override int GetHashCode()
-        {
-            return key.GetHashCode();
-        }
-
-        public int Count { get { return count; } }
-        public void record()
-        {
-            count++;
-        }
+        all,
+        onlyDisabled,
+        onlyEnabled
     }
 
-    class StatAlbums
+    public class AllTracksViewModel : List<TrackListViewModel>, INotifyCollectionChanged, INotifyPropertyChanged
     {
-        private BgDictString0<StatAlbum> dict = new BgDictString0<StatAlbum>();
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
+        //   private List<TrackListViewModel> tracks;
+        private Dictionary<int, TrackListViewModel> dict;
+        private object _lock = new object();
+        private PlayListViewModel parent;
+        private DispatcherOperation ope;
+      
 
-        public void clear()
+
+        private bool? onlyDisabled;
+        private bool onlyFathers;
+        public AllTracksViewModel(PlayListViewModel parent, bool? onlyDisabled, bool onlyFathers)
         {
-            foreach (var stat in dict)
-            {
-                stat.Value.clear();
-            }
+            this.parent = parent;
+            this.onlyDisabled = onlyDisabled;
+            this.onlyFathers = onlyFathers;
+            //   this.mode = mode; 
+            build();
+            PlayerViewModel.Instance.resumeChange += playerResumeChange;
+            PlayerViewModel.autoChange += new EventHandler(PlayerViewModel_autoChange);
+            //TrackListViewModel.CurrentHumanSelectedChanged += PlayerViewModel_autoChange; 
         }
 
-        public StatAlbum getStat(Album album)
+        void PlayerViewModel_autoChange(object sender, EventArgs e)
         {
-            var key = album.Key;
-            var s = dict[key];
-            if (s == null)
-            {
-                s = new StatAlbum(key);
-                dict.Add(key, s);
-            }
-            return s;
-        }
-    }
-
-
-    public enum compressState
-    {
-        none,
-        enCours,
-        reload,
-        cancel
-    }
-
-
-
-
-    class ExportCmd : CommandeBase
-    {
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool GetDiskFreeSpaceEx(string lpDirectoryName,
-        out ulong lpFreeBytesAvailable,
-        out ulong lpTotalNumberOfBytes,
-        out ulong lpTotalNumberOfFreeBytes);
-
-        private static long getFreeSpace()
-        {
-            ulong FreeBytesAvailable;
-            ulong TotalNumberOfBytes;
-            ulong TotalNumberOfFreeBytes;
-
-            bool success = GetDiskFreeSpaceEx(conf.dir, out FreeBytesAvailable, out TotalNumberOfBytes,
-                               out TotalNumberOfFreeBytes);
-            if (!success)
-                throw new System.ComponentModel.Win32Exception();
-            return (long)TotalNumberOfFreeBytes;
+            OnPropertyChanged("AutoResume");        
         }
 
 
-
-        private static IExportTracks ihm;
-        public static IExportTracks Ihm { set { ihm = value; } }
-        // private static bool cancel;
-        // protected static string dir;
-        protected static PlayListViewModel lastpl;
-        protected static List<PiecePrior> presents;
-        protected static Dict<int, PiecePrior> dict;
-        protected static List<PiecePrior> list;
-        protected static List<List<PiecePrior>> listes;
-        protected static List<PlayListViewModel> playlists = new List<PlayListViewModel>();
-        protected static Dict<string, string> empreintes = new Dict<string, string>();
-        protected static StatAlbums statAlbums = new StatAlbums();
-
-        //  protected static Dictionary<int, object> ids;
-        protected static HashSet<int> idCopie;
-        protected static HashSet<string> idCopieLoc;
-        private static int nbLoop = 0;
-        protected static Export conf;
-        private static bool modeAlbum;
-        //private static int nbByAlbumMin = int.MaxValue;
-        //private static int nbByAlbumMax = int.MaxValue;
-        //private static int nbLot = 100; 
-        protected static int nbFicherSup;
-        protected static int nbFichierAdd;
-        const string CAPTION = "export";
-        protected string ANNULATION_EXPORT = "Annulation export";
-        protected static volatile object _lock = new object();
-        protected static Thread thCalcul;
-        protected static Thread thCopy;
-
-        protected static bool endCopy;
-        protected static bool endCopyFinal; 
-        protected static compressState copy;
-        protected static bool endCalcul;
-
-        protected static compressState query;
-
-        //protected static BgDictString<List<PiecePrior>> locations = new BgDictString<List<PiecePrior>>();
-
-        protected static ILogger logger = Logger.getLogger("export");
-
-        protected static void sendCancel()
+        void playerResumeChange(object sender, EventArgs e)
         {
-            lock (_lock)
-            {
-                if (query < compressState.cancel)
-                    query = compressState.cancel;
-            }
+            OnPropertyChanged("TV"); 
+            OnPropertyChanged("Resume");
+            OnPropertyChanged("AutoResume");  
         }
-        protected static compressState Query
+
+        public string Resume
         {
             get
             {
-                lock (_lock)
-                    return query;
+                return PlayerViewModel.Instance.Resume;
             }
             set
             {
-                lock (_lock)
-                    query = value;
+
             }
         }
 
-
-
-
-
-        public static void CalculExport()
+        protected void OnCollectionChange(NotifyCollectionChangedEventArgs e)
         {
-            if (conf != null && conf.oneShot)
-                return;
-            switch (Query)
-            {
-                case compressState.none:
-                    break;
-                case compressState.enCours:
-                    //if (checkSthChange())
-                    //{
-                    //PlayListViewModel.resetExport(exportState.none);
-                    Query = compressState.reload;
-                    //lock (_lock)
-                    //    state = compressState.reload;
-                    //}
-                    break;
-                case compressState.cancel:
-                    PlayListViewModel.resetExport(exportState.none);
-                    Query = compressState.none;
-                    break;
-                default:
-                    break;
-            }
-        }
+            // Be nice - use BlockReentrancy like MSDN said
 
-        private static bool checkSthChange()
-        {
-            bool ret = false;
-            foreach (PlayListViewModel pl in playlists)
-            {
-                var emp = empreintes[pl.Name];
-                logger.log("{0} ancienne empreinte {1}", pl.Name, emp);
-                var _newEmpre = pl.getEmpreinte();
-                logger.log("{0} nouvelle empreinte {1}", pl.Name, _newEmpre);
-                if (emp != _newEmpre)
-                {
-                    logger.log("on recalcule");
-                    ret = true;
-                }
-                empreintes[pl.Name] = _newEmpre;
-
-            }
-            return ret;
-
-        }
-
-        protected class PiecePrior
-        {
-            private int prior0 = int.MaxValue;
-            private int prior1 = int.MaxValue;
-            public readonly Piece PieceGen;
-            public PiecePrior(Piece piece, int prior)
-            {
-                this.PieceGen = piece;
-                this.prior0 = prior;
-            }
-
-            public CListFile Files { get { return (PieceGen.Track as CPiece).Files; } }
-
-            public int Prior0 { get { return prior0; } }
-            public int Prior1 { get { return prior1; } }
-            // public int MasterId { get { return Piece.MasterId; } }
-            public int PieceId { get { return PieceGen.PieceId; } }
-            public void setPrior(int prior)
-            {
-                if (prior < this.prior1)
-                    this.prior1 = prior;
-            }
-
-            public static void mergePrior0(ICollection<PiecePrior> list)
-            {
-                if (list.Count <= 1)
-                    return;
-                int min = int.MaxValue;
-                foreach (PiecePrior p in list)
-                {
-                    var p0 = p.prior0;
-                    if (p0 < min)
-                        min = p0;
-                }
-                foreach (PiecePrior p in list)
-                {
-                    p.prior0 = min;
-                }
-            }
-
-            public static void mergePrior1(ICollection<PiecePrior> list)
-            {
-                if (list.Count <= 1)
-                    return;
-                int min = int.MaxValue;
-                foreach (PiecePrior p in list)
-                {
-                    var p1 = p.prior1;
-                    if (p1 < min)
-                        min = p1;
-                }
-                foreach (PiecePrior p in list)
-                {
-                    p.prior0 = min;
-                }
-            }
-
-            public override string ToString()
-            {
-                int rank = PieceGen.RankAlbumReverse;
-                int nb = PieceGen.NbExportPresents;
-                return string.Format("{0} {1} {2}\t {3} {4} {5}", rank, nb, PieceGen.TrackNumber, prior0, prior1, PieceGen.ToString());
-                //  return rank + " " + PieceGen.TrackNumber + "\t" + prior0 + " " + prior1 + " " + PieceGen.ToString();
-            }
-        }
-
-        protected class PriorComparer : IComparer<PiecePrior>
-        {
-            public int Compare(PiecePrior x, PiecePrior y)
-            {
-                int cmp = x.Prior1.CompareTo(y.Prior1);
-                if (cmp != 0)
-                    return cmp;
-                return x.Prior0.CompareTo(y.Prior0);
-            }
-        }
-
-        public ExportCmd()
-        {
-
-        }
-
-
-        public override bool CanExecute(object parameter)
-        {
-            return ihm != null;
-        }
-
-        public override void Execute(object parameter)
-        {
-            if (Query <= compressState.none)
-                record();
-            else
-            {
-                sendCancel();
-                PlayListViewModel.resetExport(exportState.none);
-            }
-            OnPropertyChanged("Header");
-        }
-        private class TrackAlbumReverseComparer : IComparer<TrackListViewModel>
-        {
-            //  private static PieceClassementComparerInv comparer = new PieceClassementComparerInv();
-            //private bool disabledAlway;
-
-            //public TrackAlbumReverseComparer(bool disabledAlway)
+            //var dispatcher = Dispatcher.CurrentDispatcher;
+            //if (dispatcher.CheckAccess())
             //{
-            //    this.disabledAlway = disabledAlway; 
-            //}
-
-            public int Compare(TrackListViewModel x, TrackListViewModel y)
-            {
-                var xx = x.PieceGen;
-                var yy = y.PieceGen;
-                if (xx.PieceAlbum != yy.PieceAlbum)
-                    return x.Index.CompareTo(y.Index);
-
-                return xx.IndexExport.CompareTo(yy.IndexExport);
-
-                //if (disabledAlway)
-                //{
-                //    if (x.Enabled != y.Enabled)
-                //    {
-                //        return -x.Enabled.CompareTo(y.Enabled); // ? -1 : 1;
-                //    }
-                //}
-                //var xv = x.PieceGen.RapportClassement;
-                //var yv = y.PieceGen.RapportClassement;
-
-                //int cmp = 0;
-                //if (xv > 0 && yv > 0)
-                //{
-                //    cmp = xv.CompareTo(yv);
-                //    if (cmp != 0) return cmp;
-                //    cmp = x.PieceGen.VirtualClassement.CompareTo(y.PieceGen.VirtualClassement);
-                //    if (cmp != 0) return cmp;
-                //}
-
-                //cmp = x.TrackNumber.CompareTo(y.TrackNumber);
-                //if (cmp != 0)
-                //    return cmp;
-                //return x.Location.CompareTo(y.Location);
-
-            }
-        }
-        protected virtual List<PiecePrior> buildList(PlayListViewModel pl)
-        {
-
-            var list = new List<PiecePrior>();
-            try
-            {
-                bool onlyEnabled = PlayerViewModel.Instance.OnlyEnabled && !modeAlbum;
-                bool _modeAlbum = modeAlbum && !PlayerViewModel.Instance.SortByAlbum;
-
-                // var ids = new Dictionary<int, object>();
-                int i = 0;
-                var tracks = new List<TrackListViewModel>(pl.ExportTracks);
-                logger.log("export::buildList {0} {1} elements", pl, tracks.Count);
-                if (conf.albumReverse)
-                {
-                    tracks.Sort(new TrackAlbumReverseComparer()); //conf.disabledAlway));
-
-                }
-                else
-                    tracks.Sort((x, y) => x.Index.CompareTo(y.Index));
-
-                int lastI = 0;
-                Album lastAlbum = null;
-                StatAlbum lastStatAlbum = null;
-                //  int inext = -1; 
-                int nbByAlbum = int.MaxValue;
-                int limitMax = int.MaxValue;
-                if (conf.modeAlbum)
-                {
-                    nbByAlbum = conf.nbMax;
-                    limitMax = conf.limitMax;
-                    if (limitMax < nbByAlbum)
-                        limitMax = nbByAlbum;
-                }
-                int nbLot = 0;
-                int ii = -1;
-                var ids = new HashSet<int>();
-                while (true)
-                {
-
-                    if (query != compressState.enCours)
-                        return list;
-                    int nbInThisAlbum = 0;
-                    foreach (TrackListViewModel track in tracks)
-                    {
-                        if (query != compressState.enCours)
-                            return list;
-                        ii++;
-                        int id = track.PieceGen.PieceId;
-                        if (ids.Contains(id))
-                            continue;
-                        //  track.ExportStatus = exportState.miss; 
-                        if (!onlyEnabled || track.Enabled)
-                        {
-                            // CPiece piece = track.Piece;
-                            if (track.Exists)
-                            {
-                                var pp = dict[id]; // list.Add(piece);
-                                if (pp == null)
-                                {
-                                    pp = new PiecePrior(track.PieceGen, ii);
-                                    dict[id] = pp;
-                                    presents.Add(pp);
-                                }
-
-                                if (!_modeAlbum)
-                                {
-                                    if (track.album == lastAlbum)
-                                    {
-                                        if (lastStatAlbum.Count > limitMax)
-                                            continue;
-                                        if (nbInThisAlbum > nbByAlbum)
-                                            continue;
-                                        if (track.Enabled || (conf.countFirsts && track.PieceGen.VirtualClassement >= lastAlbum.ClassementValueLight) || (conf.countLasts && track.PieceGen.VirtualClassement <= lastAlbum.ClassementValueLight))
-                                            nbInThisAlbum++;
-                                        else if (nbInThisAlbum >= nbByAlbum)
-                                            continue;
-                                        if (nbInThisAlbum > nbByAlbum)
-                                            continue;
-                                    }
-                                    else
-                                    {
-                                        nbInThisAlbum = 0;
-                                        lastAlbum = track.album;// inext = lastAlbum.IndexClass(lastAlbum.Next);
-                                        lastStatAlbum = statAlbums.getStat(lastAlbum);
-                                        if (lastStatAlbum.Count > limitMax)
-                                            continue;
-
-                                        if (track.Enabled || (conf.countFirsts && track.PieceGen.VirtualClassement >= lastAlbum.ClassementValueLight) || (conf.countLasts && track.PieceGen.VirtualClassement <= lastAlbum.ClassementValueLight))
-                                            nbInThisAlbum++;
-                                        else if (nbInThisAlbum >= nbByAlbum)
-                                            continue;
-                                        if (nbInThisAlbum > nbByAlbum)
-                                            continue;
-
-                                    }
-
-                                    pp.setPrior(i);
-                                    list.Add(pp);
-                                    lastStatAlbum.record();
-                                    ids.Add(id);
-                                    i++;
-
-                                    //  if (track.Enabled || conf.countAll)
-                                    nbLot++;
-
-                                    if (conf.modeAlbum && nbLot > conf.lot)
-                                    {
-                                        nbLot = 0;
-                                        nbByAlbum--;
-                                        if (nbByAlbum < conf.nbMin)
-                                            nbByAlbum = conf.nbMin;
-                                        if (nbByAlbum == 0)
-                                            break;
-
-                                        limitMax = conf.limitMax;
-                                        if (limitMax < nbByAlbum)
-                                            limitMax = nbByAlbum;
-
-                                    }
-
-
-                                }
-                                else
-                                {
-                                    if (conf.modeAlbum)
-                                    {
-                                        if (track.album == lastAlbum)
-                                            continue;
-                                        else
-                                        {
-                                            nbLot++;
-                                            if (nbLot > conf.lot)
-                                            {
-                                                nbLot = 0;
-                                                nbByAlbum--;
-                                                if (nbByAlbum < conf.nbMin)
-                                                    nbByAlbum = conf.nbMin;
-                                                if (nbByAlbum == 0)
-                                                    break;
-
-                                                limitMax = conf.limitMax;
-                                                if (limitMax < nbByAlbum)
-                                                    limitMax = nbByAlbum;
-                                            }
-                                        }
-                                    }
-                                    List<Piece> album = null;
-                                    if (conf.albumReverse)
-                                        album = App.gen.getTracksAlbumReverse(track.Track);
-                                    else
-                                        album = App.gen.getTracksAlbumByNumber(track.Track); // piece);
-                                    if (album != null)
-                                    {
-                                        nbInThisAlbum = 0;
-                                        lastAlbum = track.album;// inext = lastAlbum.IndexClass(lastAlbum.Next);  //.Album;
-                                        foreach (var p in album)
-                                        {
-                                            var piece = p.Track as CPiece;
-                                            if (piece != null && piece.Exists)
-                                            {
-                                                if (!onlyEnabled || piece.Enabled)
-                                                {
-                                                    id = p.PieceId;
-
-                                                    //if (ids.Contains(id))
-                                                    //    continue;
-                                                    var ppp = dict[id];
-                                                    ppp.setPrior(i);
-                                                    list.Add(ppp);
-                                                    //   ids.Add(id);
-                                                    i++;
-                                                    if (piece.Enabled || (conf.countFirsts && p.VirtualClassement >= lastAlbum.ClassementValueLight) || (conf.countLasts && p.VirtualClassement <= lastAlbum.ClassementValueLight))
-                                                    {
-                                                        nbLot++;
-                                                        if (conf.modeAlbum && nbLot > conf.lot)
-                                                        {
-                                                            nbLot = 0;
-                                                            nbByAlbum--;
-                                                            if (nbByAlbum < conf.nbMin)
-                                                                nbByAlbum = conf.nbMin;
-
-                                                            limitMax = conf.limitMax;
-                                                            if (limitMax < nbByAlbum)
-                                                                limitMax = nbByAlbum;
-                                                        }
-
-                                                        nbInThisAlbum++;
-                                                        if (nbInThisAlbum >= nbByAlbum)
-                                                            break;
-                                                    }
-                                                }
-                                            }
-
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (!modeAlbum)
-                        break;
-                    if (nbByAlbum == int.MaxValue)
-                        break;
-                    if (nbByAlbum > 0)
-                    {
-                        if (i == lastI)
-                            break;
-                    }
-
-                    lastI = i;
-                    lastAlbum = null;
-                    if (conf.modeAlbum)
-                    {
-                        if (conf.resetAfterLoop)
-                            nbByAlbum = conf.nbMax;
-                        if (nbByAlbum < conf.nbMin)
-                            nbByAlbum = conf.nbMin;
-                        if (nbByAlbum == 0)
-                            nbByAlbum = 1;
-
-                        limitMax = conf.limitMax;
-                        if (limitMax < nbByAlbum)
-                            limitMax = nbByAlbum;
-                    }
-                }
-                listes.Add(list);
-                //   ihm.InfoIHm("liste n° " + listes.Count + " " + list.Count + " éléments", CAPTION);
-                OnPropertyChanged("Header");
-            }
-            catch (Exception ex)
-            {
-                misc.log(ex.ToString());
-            }
-            return list;
-        }
-
-        public override string Header
-        {
-            get
-            {
-                if (query == compressState.enCours || query == compressState.reload)
-                    return ANNULATION_EXPORT;
-
-                return "Exporter la liste";
-            }
-        }
-
-
-
-        private void record()
-        {
-            if (Query == compressState.none)
-            {
-
-                OnPropertyChanged("Header");
-                nbLoop = 0;
-                conf = ihm.getConfExport("Configuration Export");
-
-                //  dir = conf.dir; // ihm.folderDialog();
-
-                if (string.IsNullOrEmpty(conf.dir))
-                {
-                    Query = compressState.none;
-                    return;
-                }
-
-                modeAlbum = conf.modeAlbum; // ihm.Confirm("par albums complets?", CAPTION);
-
-                //if (modeAlbum)
-                //{
-                //    nbByAlbumMin = conf.nbMin; // ihm.getNb("Nombre de morceaux par passe?");
-                //    nbByAlbumMax = conf.nbMax;
-                //    nbLot = conf.lot;
-                //}
-                //else
-                //    nbByAlbum = int.MaxValue;
-
-                playlists.Clear(); empreintes.Clear();
-            }
-
-            bool? status = true;
-
-
-            var pl = ihm.PlayList;
-            if (!playlists.Contains(pl))
-            {
-                playlists.Add(pl);
-                empreintes[pl.Name] = pl.getEmpreinte();
-                lastpl = pl;
-            }
-
-            status = ihm.TriChoix("liste n° " + playlists.Count + " " + pl.ExportTracks.Count + " éléments\r\n lancer l'export ?", CAPTION);
-
-
-
-            if (status == null)
-            {
-                //listes = new List<List<PiecePrior>>();
-                playlists.Clear(); empreintes.Clear();
-                Query = compressState.none;
-                OnPropertyChanged("Header");
-                return;
-            }
-            if (false.Equals(status))
-            {
-                OnPropertyChanged("Header");
-                return;
-            }
-
-            waitCalculForEnd();
-
-            Query = compressState.enCours;
-
-            lock (_lock)
-            {
-                if (thCalcul == null)
-                {
-                    thCalcul = new Thread(calculLoop);
-                    thCalcul.SetApartmentState(ApartmentState.STA);
-                    thCalcul.Start();
-                }
-
-                if (thCopy == null)
-                {
-                    thCopy = new Thread(copyLoop);
-                    thCopy.SetApartmentState(ApartmentState.STA);
-                    thCopy.Start();
-                }
-            }
-
-
-            OnPropertyChanged("Header");
-        }
-        //protected static long totalSize = 0;
-        //protected static long capacity = int.MaxValue;
-        //protected static long freeSpace; 
-        //private static void refreshInfoFreeSpace()
-        //{
-        //    DriveInfo drive = new DriveInfo(Path.GetPathRoot(conf.dir));
-        //    var calculfree = freeSpace; 
-        //    freeSpace = drive.AvailableFreeSpace;
-        //    var delta = freeSpace - calculfree;
-        //    if (delta > 0)
-        //        App.log.log("difference free space " + delta); 
-
-        //}
-
-        private void buildListIni()
-        {
-
-            logger.log("export:buildListIni");
-            lock (_lock)
-            {
-                statAlbums.clear();
-                listes = new List<List<PiecePrior>>();
-                presents = new List<PiecePrior>();
-                dict = new Dict<int, PiecePrior>();
-            }
-            //  locations = new BgDictString<List<PiecePrior>>();
-
-            try
-            {
-
-                if (!conf.dir.EndsWith("\\"))
-                    conf.dir += "\\";
-                //  refreshInfoFreeSpace(); 
-
-                List<Piece> l = null;
-
-
-                if (lastpl.isSubList("album") || PlayerViewModel.Instance.SortByAlbum)
-                {
-                    l = App.gen.sortByAlbum();
-                    l.Reverse();
-                }
-                else
-                    l = App.gen.sortByClass();
-                // l.Reverse();
-
-                int i = 0;
-                foreach (Piece p in l)
-                {
-
-                    if (query != compressState.enCours)
-                        return;
-                    //var piece = p.Track as CPiece;
-                    if (!dict.ContainsKey(p.PieceId))
-                    {
-                        var pp = new PiecePrior(p, i);
-                        i++;
-                        presents.Add(pp);
-                        dict[p.PieceId] = pp;
-
-                        //var piece = p.Track as CPiece;
-                        //foreach (CFile file in piece.Files)
-                        //{
-                        //    var lp = locations[file.File];
-                        //    if (lp == null)
-                        //    {
-                        //        lp = new List<PiecePrior>();
-                        //        lp.Add(pp);
-                        //        locations.Add(file.File, lp);
-                        //    }
-                        //    else
-                        //    {
-                        //        lp.Add(pp);
-                        //        PiecePrior.mergePrior0(lp);
-                        //    }
-                        //}
-
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                misc.log(ex.ToString());
-            }
-
-        }
-
-        private void waitCalculForEnd()
-        {
-            lock (_lock)
-            {
-
-                if (query == compressState.none)
-                    return;
-                if (query == compressState.enCours)
-                    query = compressState.cancel;
-            }
-            var dt = DateTime.Now;
-            int nb = 0;
-            while (true)
-            {
-                lock (_lock)
-                    if (endCalcul)
-                        return;
-                Thread.Sleep(100);
-                if ((DateTime.Now - dt).TotalSeconds > 10)
-                    return;
-                nb++;
-                if (nb >= 10)
-                {
-                    nb = 0;
-                    logger.log("waitForEnd Calcul");
-                }
-            }
-
-        }
-
-
-        private void waitCopyForEnd()
-        {
-            lock (_lock)
-            {
-                if (copy == compressState.none)
-                    return;
-                if (copy == compressState.enCours)
-                    copy = compressState.cancel;
-                if (endCopy)
-                    return;
-            }
-            var dt = DateTime.Now;
-            int nb = 0;
-            while (true)
-            {
-                lock (_lock)
-                {
-                    if (endCopy)
-                        return;
-                    if (query != compressState.enCours)
-                    {
-                        logger.log("abandon attente car query={0}", query);
-                        return;
-                    }
-                }
-                Thread.Sleep(100);
-                if ((DateTime.Now - dt).TotalSeconds > 10)
-                    return;
-                nb++;
-                if (nb >= 10)
-                {
-                    nb = 0;
-                    logger.log("waitForEnd Copy");
-                }
-            }
-
-        }
-
-
-        [STAThread]
-        private void copyLoop()
-        {
-            while (true)
-            {
-                try
-                {
-                    compressState _cp;
-                    lock (_lock)
-                        _cp = copy;
-                    if (_cp != compressState.enCours)
-                    {
-                        Thread.Sleep(1000);
-                        continue;
-                    }
-
-                    _copy();
-                }
-
-                catch (Exception ex)
-                {
-                    logger.log(ex.ToString());
-                }
-            }
-        }
-
-
-        [STAThread]
-        private void calculLoop()
-        {
-
-
-            while (true)
-            {
-                try
-                {
-                    switch (Query)
-                    {
-                        case compressState.none: Thread.Sleep(1000); continue;
-
-                        case compressState.enCours:
-                            if (endCopyFinal)
-                            {
-                                Thread.Sleep(1000); continue;
-                            }
-                            break;
-                        case compressState.reload:
-                            waitCalculForEnd();
-                            break;
-
-                        case compressState.cancel:
-                            {
-                                waitCalculForEnd();
-                                waitCopyForEnd();
-                                Query = compressState.none;
-                                nbLoop = 0;
-                                Thread.Sleep(1000); continue;
-                            }
-
-                        default:
-                            break;
-                    }
-                    lock (_lock)
-                    {
-                        endCalcul = false;
-                        query = compressState.enCours;
-                        nbLoop++;
-                    }
-
-
-
-                    buildListIni();
-
-                    foreach (PlayListViewModel pl in playlists)
-                    {
-                        buildList(pl);
-                    }
-
-                    //foreach (List<PiecePrior> lp in locations.Values)
-                    //{
-                    //    PiecePrior.mergePrior1(lp);
-                    //}
-
-                    // concaténation
-                    int max = 0;
-                    list = new List<PiecePrior>();
-                    foreach (var _l in listes)
-                    {
-                        if (query != compressState.enCours)
-                            return;
-                        var count_ = _l.Count;
-                        if (count_ > max)
-                            max = count_;
-                    }
-                    int count = listes.Count;
-
-
-                    for (int i = 0; i < max; i++)
-                    {
-                        if (query != compressState.enCours)
-                            return;
-                        for (int j = 0; j < count; j++)
-                        {
-                            var l = listes[j];
-                            if (i < l.Count)
-                            {
-                                var p = l[i];
-                                list.Add(p);
-                            }
-                        }
-                    }
-
-
-
-                    waitCopyForEnd();
-                    lock (_lock)
-                    {
-                        if (query != compressState.enCours)
-                            continue;
-                        App.log.log("Export lancé " + listes.Count + " liste" + (list.Count > 1 ? "s " : " ") + list.Count + " éléments", CAPTION);
-                        endCopy = false; copy = compressState.enCours; endCopyFinal = false; 
-                    }
-
-                    while (true)
-                    {
-                        Thread.Sleep(100);
-
-                        if (endCopy || query != compressState.enCours)
-                            break;
-
-                    }
-
-
-                }
-                catch (Exception ex)
-                {
-                    misc.log(ex.ToString());
-                    Thread.Sleep(1000);
-                }
-
-                finally
-                {
-                    lock (_lock)
-                        endCalcul = true;
-                   
-
-                }
-
-            }
-        }
-
-        protected virtual bool noMoreSpace()
-        {
-            return true;
-        }
-        protected virtual void prepareExport()
-        {
-        }
-
-        protected void setExport(exportState state, PiecePrior p)
-        {
-            setExport(state, p.PieceGen);
-        }
-
-        protected void setExport(exportState state, ITrackNativeDates p)
-        {
-            p.ExportStatus = state;
-            PlayListViewModel.setExport(p.PieceId, state);
-
-
-            var h = TrackListViewModel.HumanSelected;
-            if (h != null)
-            {
-                if (p.Album == h.Album)
-                {
-                    TrackListViewModel trackAlbum = PlayListViewModel.findTrack(App.bib.Musique, p.PieceId);
-                    if (trackAlbum != null)
-                    {
-                        trackAlbum.ExportStatus = state;
-                    }
-
-                }
-            }
-
-            //var track = PlayListViewModel.findTrack(lastpl, p.PieceId);
-            //if (track != null)
-            //{
-            //    track.ExportStatus = state;
-            //}
-            //var h = TrackListViewModel.HumanSelected;
-            //if (h != null)
-            //{
-            //    if (p.Album == h.Album)
+            //    if (CollectionChanged == null)
             //    {
-            //        var album = App.getAlbum(h);
-            //        var f = album.Find(t => t.PieceId == p.PieceId);
-            //        if (f != null)
-            //            track.ExportStatus = state;
             //    }
-            //  }
-        }
-        [STAThread]
-        private void _copy()
-        {
-            PlayListViewModel.resetExport(exportState.none);
-            try
+            //    else
+            //    {
+            //        CollectionChanged(this, e); 
+            //    }
+            //    return; 
+            //}
+
+            //dispatcher.Invoke(DispatcherPriority.DataBind, new Action<NotifyCollectionChangedEventArgs>(OnCollectionChange), e);
+
+
+
+            var eventHandler = CollectionChanged;
+            if (eventHandler != null)
             {
-                List<PiecePrior> _list = null;
-                lock (_lock)
-                {
-                    _list = new List<PiecePrior>(list);
-                }
-                foreach (PiecePrior piece in _list)
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (NotifyCollectionChangedEventHandler handler in delegates)
                 {
                     try
                     {
-                        if (copy != compressState.enCours)
-                            return;
-                        //1. Vérification que le fichier n'existe pas déjà 
-                        bool exists = false;
-                        var files = piece.Files;
-                        foreach (CFile file in files)
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                        // Invoke handler in the target dispatcher's thread
                         {
-                            if (copy != compressState.enCours)
-                                return;
-                            try
-                            {
-                                string path = conf.dir + file.File;
-                                var fv = FileRegister.Check(path);
-                                if (fv.Exists)
-                                {
-                                    if (fv.Length == file.Size)
-                                    {
-                                        exists = true;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        fv.delete();
-                                    }
-                                }
-                            }
+                            ope =
+                               dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                            handler, this, e);
+                            ope.Completed += ope_Completed;
 
-                            catch
-                            {
-                            }
+
                         }
-
-
-
-                        if (exists)
-                        {
-                            setExport(exportState.present, piece);
-                            // PlayListViewModel.setExport(piece.Piece.PieceId, exportState.present);
-                            //var track = PlayListViewModel.findTrack(lastpl, piece.Piece.PieceId);
-                            //if (track != null)
-                            //{
-                            //    track.ExportStatus = exportState.present;
-                            //}
-                        }
-                        else
-                            setExport(exportState.miss, piece);
+                        else // Execute handler as is
+                            handler(this, e);
                     }
-                    catch (Exception e)
-                    {
-                        App.log.log(e.ToString());
-                    }
-                }
-
-                nbFicherSup = 0; nbFichierAdd = 0;
-                idCopie = new HashSet<int>();
-                idCopieLoc = new HashSet<string>();
-                presents.Sort(new PriorComparer());
-                prepareExport();
-
-                string orgDir = CFile.DefaultFolder;
-                foreach (PiecePrior piece in list)
-                {
-                    try
-                    {
-                        if (copy != compressState.enCours)
-                            return;
-
-                        int id = piece.PieceId;
-                        if (idCopie.Contains(id))
-                            continue;
-                        var files = piece.Files;
-                        bool contFile = false;
-                        foreach (CFile file in files)
-                        {
-                            if (idCopieLoc.Contains(file.File))
-                            {
-                                contFile = true;
-                                break;
-                            }
-                        }
-                        if (contFile)
-                            continue;
-
-                        idCopie.Add(id); // idCopie[id] = piece;
-                        foreach (CFile file in files)
-                        {
-                            idCopieLoc.Add(file.File); // [file.File] = piece;
-                        }
-
-
-
-
-                        //1. Vérification que le fichier n'existe pas déjà 
-                        bool exists = false;
-                        foreach (CFile file in files)
-                        {
-                            if (copy != compressState.enCours)
-                                return;
-                            try
-                            {
-                                string path = conf.dir + file.File;
-                                var fv = FileRegister.Check(path);
-                                if (fv.Exists)
-                                {
-
-                                    if (fv.Length == file.Size)
-                                    {
-                                        exists = true;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        fv.delete();
-                                    }
-
-                                }
-                            }
-
-                            catch
-                            {
-                            }
-                        }
-
-
-
-                        if (exists)
-                        {
-                            //    var track = PlayListViewModel.findTrack(lastpl, piece.Piece.PieceId);
-                            //    if (track != null)
-                            //    {
-                            //        track.ExportStatus = exportState.present; 
-                            //    }
-                            continue;
-                        }
-
-                        //2. Copie du meilleur fichier
-                        CFile pertinent = files.getPertinentFile();
-                        if (pertinent == null)
-                            continue;
-
-
-                        while (true)
-                        {
-                            if (copy != compressState.enCours)
-                                return;
-                            try
-                            {
-                              var f = FileRegister.Check( pertinent.Path); //  FileInfo f = new  FileInfo FileInfo(pertinent.Path);
-                                var freeSpace = getFreeSpace() - conf.marge;
-                                long nextfreeAvailable = freeSpace - f.Length;
-                                if (nextfreeAvailable < 0)
-                                {
-                                    if (noMoreSpace())
-                                        return;
-                                    continue;
-                                }
-                                App.log.log("copie\t" + piece + "->" + conf.dir + pertinent.File + " ( " + piece + " )");                                
-                                f.copyTree(conf.dir + pertinent.File, true);
-                                //  freeSpace = nextfreeAvailable; 
-                                //  PlayListViewModel.setExport(piece.Piece.PieceId, exportState.copy);
-                                setExport(exportState.copy, piece);
-                                //var track = PlayListViewModel.findTrack(lastpl, piece.Piece.PieceId);
-                                //if (track != null)
-                                //{
-                                //    track.ExportStatus = exportState.copy;
-                                //}
-                                nbFichierAdd++;
-
-                                break;
-                            }
-                            catch (System.IO.IOException io)
-                            {
-                                App.log.log(io.Message);
-                                //  refreshInfoFreeSpace(); 
-                                if (noMoreSpace())
-                                    return;
-                            }
-                        }
-
-                    }
-
                     catch (Exception ex)
                     {
                         App.log.log(ex.ToString());
                     }
-
-
                 }
-            }
-            catch (Exception ex)
-            {
-                App.log.log(ex.ToString());
-
-            }
-            finally
-            {
-                compressState _copy;
-                lock (_lock)
-                    _copy = copy;
-
-                if (Query != compressState.none && _copy != compressState.none)
-                {
-                    var _status = string.Format("statusCalc={0} statusCopy={1} calc={2} copy={3}", endCalcul, endCopy, query, copy); 
-                    var log = string.Format("Fin de l'export {0} liste{1} éléments\r\n{2} fichier{3} copié{3}\r\n{4} fichier{5} supprimé{6} {7}",
-                        listes.Count, (list.Count > 1 ? "s " : " "), nbFichierAdd, (nbFichierAdd > 1 ? "s" : ""), nbFicherSup, (nbFicherSup > 1 ? "s" : ""), (nbFicherSup > 1 ? "s" : ""), _status);
-                    App.log.log(log, CAPTION);
-                    if (conf.oneShot)
-                        ihm.InfoIHm(log, CAPTION);
-                    //  ihm.InfoIHm("Fin de l'export " + listes.Count + " liste" + (list.Count > 1 ? "s " : " ") + list.Count + " éléments\r\n" + idCopie.Count + " fichiers copiés\r\n" + nbFicherSup + "fichier" + (nbFicherSup > 1 ? "s" : "") + " supprimé" + (nbFicherSup > 1 ? "s" : ""), CAPTION);
-                    //list = new List<PiecePrior>();
-                    //listes = new List<List<PiecePrior>>(); 
-
-                    if (_copy == compressState.enCours)
-                    {
-                        endCopyFinal = true; 
-                       // PlayListViewModel.resetExport(exportState.none);
-                    }
-
-                    OnPropertyChanged("Header");
-                }
-
-                lock (_lock)
-                {
-                    endCopy = true;
-                    copy = compressState.none;
-                }
-                //var log = string.Format("Fin de l'export {0} liste{1} éléments\r\n{2} fichier{3} copié{3}\r\n{4} fichier{5} supprimé{6}",
-                //    listes.Count, (list.Count > 1 ? "s " : " "), nbFichierAdd, (nbFichierAdd > 1 ? "s" : ""), nbFicherSup, (nbFicherSup > 1 ? "s" : ""), (nbFicherSup > 1 ? "s" : ""));
-                //App.log.log(log, CAPTION);
-                //if (conf.oneShot)
-                //    ihm.InfoIHm(log, CAPTION);
-                ////  ihm.InfoIHm("Fin de l'export " + listes.Count + " liste" + (list.Count > 1 ? "s " : " ") + list.Count + " éléments\r\n" + idCopie.Count + " fichiers copiés\r\n" + nbFicherSup + "fichier" + (nbFicherSup > 1 ? "s" : "") + " supprimé" + (nbFicherSup > 1 ? "s" : ""), CAPTION);
-                //list = null;
-                //listes = null;
-
-                //if (state == compressState.enCours)
-                //{
-                //}
-                //else
-                //    PlayListViewModel.resetExport(exportState.none);
-
-                //lock (_lock)
-                //    state = compressState.end;
-                //OnPropertyChanged("Header");
-
-            }
-        }
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.util\FileUtil.cs">
-    <content><![CDATA[using System;
-using System.IO;
-
-using Microsoft.Win32;
-
-namespace pdb.util
-{
-    /// <summary>
-    /// Utilitaires de manipulation de fichiers
-    /// </summary>
-    public static class FileUtil
-    {
-        public const int KILO = 1024;
-        public const int MEGA = KILO * KILO;
-        public const int GIGA = MEGA * KILO;
-
-        /// <summary>
-        /// Enregistrement d'un fichier sans limite max
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="path"></param>
-        public static void RecordFile(Stream input, String path)
-        {
-            RecordFile(input, path, long.MaxValue);
-        }
-
-        /// <summary>
-        /// Enregistrement d'un fichier avec une limite de taille
-        /// </summary>
-        /// <param name="input">Flux d'entrée</param>
-        /// <param name="path">Chemin destination</param>
-        /// <param name="sizeMax">taille maximum gérée (en octets)</param>
-        /// <remarks>Lance toutes les IO.Exceptions</remarks>
-        public static void RecordFile(Stream input, String path, long sizeMax)
-        {
-            if (input.Length > sizeMax)
-            {
-                throw new ApplicationException("Exception manipulation du fichier : taile flux > SizeMax ");
-            }
-
-            using (input)
-            {
-                using (Stream sFile = new FileStream(path, FileMode.Create))
-                {
-                    const int BUF_LENGHT = 4096;
-
-                    byte[] buf = new byte[BUF_LENGHT];
-                    int nb = input.Read(buf, 0, BUF_LENGHT);
-                    while (nb > 0)
-                    {
-                        sFile.Write(buf, 0, nb);
-                        nb = input.Read(buf, 0, BUF_LENGHT);
-                    }
-
-                }
-            }
-
-        }
-
-        public static byte[] ReadFile(String path)
-        {
-            byte[] tab;
-            using (Stream fs = new FileStream(path, FileMode.Open))
-            {
-                tab = new byte[fs.Length];
-                fs.Read(tab, 0, tab.GetLength(0));
-            }
-            return tab;
-        }
-
-        public static MemoryStream getStream(String path)
-        {
-            using (Stream fs = new FileStream(path, FileMode.Open))
-            {
-                MemoryStream memStr = new MemoryStream();
-                const int BUF = 4096;
-                byte[] buffer = new byte[BUF];
-                int nb = 0;
-                while ((nb = fs.Read(buffer, 0, BUF)) > 0)
-                {
-                    memStr.Write(buffer, 0, nb);
-                }
-                memStr.Flush();
-                memStr.Position = 0;
-                return memStr;
-            }
-        }
-
-        /// <summary>
-        /// Fournit la taille d'un fichier user friendly
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        public static String HumanReadableSize(this long size, int level)
-        {
-            //level <=0 ==>3.6 Mo
-            // level ==0 ==> 3 Mo
-            // level == 1 ==> 3 Mo 614 Ko
-
-            if (size > GIGA)
-            {
-                return getHumanParty(size, GIGA, "Go", level);
-            }
-
-            if (size > MEGA)
-            {
-                return getHumanParty(size, MEGA, "Mo", level);
-            }
-            if (size > KILO)
-            {
-                return getHumanParty(size, KILO, "Ko", level);
-            }
-
-            return getHumanParty(size, 1, "o", level); 
-        }
-
-        private static String getHumanParty(long size, int kilo, String unite, int  level)
-        {
-            double ratio = (double)size / kilo; 
-            int partie = (int)Math.Floor(ratio);
-            long reste = size - partie * kilo;
-
-           if (reste == 0 || level ==0 || kilo == 1)
-               return string.Format("{0} {1}", partie, unite);
-
-           if (level < 0)
-           {
-               return string.Format("{0:0.###} {1}", ratio, unite); 
-           }
-
-           return string.Format("{0} {1} {2}", partie ,unite, HumanReadableSize(reste, level-1));
-
-
-            //if (level>0)
-            //    return String.Format("{0} {1}{2}", partie, unite, reste == 0 ? "" : " " + HumanReadableSize(reste, complete));
-            //else
-            //{
-            //    if (reste == 0)
-            //        return (string.Format("{0} {1}", partie, unite)); 
-            //    else 
-            //    {
-
-            //    }
-
-            //}
-
-            //    return string.Format("{0} {1}{2}", partie, reste == 0 ? "" : "." + HumanReadableSize(reste, complete));
-        }
-
-        public static String getMimeType(this String file)
-        {
-            var contentType = "application/octet-stream";
-            String ext = Path.GetExtension(file);
-            try
-            {
-
-                var fileClass = Registry.ClassesRoot.OpenSubKey(ext);
-                contentType = fileClass.GetValue("Content Type").ToString();
-            }
-            catch
-            {
-                switch (ext)
-                {
-                    case ".doc":
-                        return "application/msword";
-                    case ".docx":
-                        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                    case ".ppt":
-                        return "application/vnd.ms-powerpoint";
-                    case ".pptx":
-                        return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-                    case ".xls":
-                        return "application/vnd.ms-excel";
-                    case ".xlsx":
-                        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    case ".pdf":
-                        return "application/pdf";
-                    case ".xml":
-                        return "text/xml";
-                    case ".csv":
-                        return "application/vnd.ms-excel";
-                    case ".zip":
-                        return "application/zip";
-                    case ".txt":
-                        return "text/plain";
-                    default:
-                        break;
-                }
-            }
-            return contentType;
-        }
-
-        //public static FileInfo findFile(String directory, String seq_id)
-        //{
-        //    DirectoryInfo dir = new DirectoryInfo(directory);
-        //    foreach (FileInfo file in dir.GetFiles())
-        //    {
-        //        if (file.Name.StartsWith(seq_id))
-        //            return file;
-        //    }
-        //    return null;
-        //}
-    }
-}
-]]></content>
-  </file>
-  <file path="\pdb.util\misc.cs">
-    <content><![CDATA[using System;
-using System.IO;
-using System.Threading;
-
-namespace pdb.util
-{
-    /// <summary>
-    /// utilitaires divers
-    /// </summary>
-    /// <remarks></remarks>
-    public static class misc
-    {
-        const int K = 1024;
-        public static void gcCollect(string org)
-        {
-
-            DateTime now = DateTime.Now;
-            long mem0 = GC.GetTotalMemory(false);
-            GC.Collect();
-            long mem1 = GC.GetTotalMemory(false);
-
-            var _mem0 = mem0.HumanReadableSize(-1);
-            var _mem1 = mem1.HumanReadableSize(-1);
-            var delta = (mem0 - mem1).HumanReadableSize(-1);
-
-            misc.log("GC.Collect " + org + " " + _mem0 + " " + _mem1 + " (" + delta + ") " + (DateTime.Now - now).TotalMilliseconds.ToString("0"));
-        }
-        private static ILogger logger = new DefaultLogger();
-        private static getDefaultLogger _getDefaultLogger;
-        //public static void init(ILogger a_logger)
-        //{
-        //    logger = a_logger;
-        //    //if (logger is Logger)
-        //    //    Logger.init();
-        //}
-
-        public static void init(getDefaultLogger getDefaultLogger)
-        {
-            _getDefaultLogger = getDefaultLogger;
-        }
-
-        public static void init(ILogger logger)
-        {
-            misc.logger = logger;
-        }
-
-        public static string Pre { set { Logger.Pre = value; } }
-
-        private static ILogger Logger
-        {
-            get
-            {
-                if (logger is DefaultLogger && _getDefaultLogger != null)
-                    logger = _getDefaultLogger();
-                return logger;
-            }
-        }
-
-
-        public static void logNoDate(String txt)
-        {
-            Logger.logNoDate(txt);
-        }
-
-        public static void log(string txt, params object[] other)
-        {
-            Logger.log(txt, other);
-        }
-
-        public static void log(string txt)
-        {
-            Logger.log(txt);
-        }
-
-        public static void logError(string txt, Exception ex)
-        {
-            log("[Error] " + txt + " " + ex.ToString());
-        }
-
-        public static void logWarn(string txt)
-        {
-            log("[Warn] " + txt);
-        }
-
-        public static string moveTree(this FileInfo org, String dest, bool? overWrite)
-        {
-            return tree(org, dest, true, overWrite);
-        }
-
-        public static string copyTree(this FileInfo org, String dest, bool? overWrite)
-        {
-            return tree(org, dest, false, overWrite);
-        }
-
-        public static string copyTree(this FileValue org, String dest, bool? overWrite)
-        {
-            var fi = new FileInfo(org.FullName); 
-            return tree(fi, dest, false, overWrite);
-        }
-
-        public static string getShortPath(this string path, params string[] keywords)
-        {
-
-            string[] dirs = path.Split(Path.DirectorySeparatorChar);
-            int found = 0;
-            int count = dirs.GetLength(0);
-            foreach (string key in keywords)
-            {
-                for (int i = count - 2; i > 0; i--)
-                {
-                    var s = dirs[i].ToLower();
-                    if (string.IsNullOrEmpty(s))
-                        continue;
-
-                    if (key.Equals(s))
-                    {
-                        found = i;
-                        break;
-                    }
-                }
-                if (found > 0)
-                    break;
-            }
-
-
-            var sb = new StringBuilder();
-            var begin = false;
-            for (int i = found + 1; i < count; i++)
-            {
-                var s = dirs[i];
-                if (string.IsNullOrEmpty(s))
-                    continue;
-                if (begin)
-                {
-                    sb.Append(Path.DirectorySeparatorChar);
-                }
-                begin = true;
-                sb.Append(s);
-            }
-            return sb.ToString();
-        }
-
-
-        private static string tree(FileInfo org, String dest, bool deleteOrg, bool? overwrite)
-        {
-            string newDest = dest;
-            String[] dirs = dest.Split(Path.DirectorySeparatorChar);
-
-            int i = 0;
-            DirectoryInfo root = new DirectoryInfo(dirs[0] + Path.DirectorySeparatorChar);
-            for (i = 1; i < dirs.GetLength(0) - 1; i++)
-            {
-                String strDir0 = dirs[i] + Path.DirectorySeparatorChar;
-                String StrDir = root.FullName + strDir0;
-                DirectoryInfo dir = new DirectoryInfo(StrDir);
-                if (!dir.Exists)
-                {
-                    dir.Create();
-                    try
-                    {
-                        dir.Attributes &= ~FileAttributes.ReadOnly;
-                    }
-                    catch (Exception ea)
-                    {
-                        //   log("impossible de poser les attributs de répertoire " +ea.ToString()); 
-                    }
-
-                }
-                root = dir;
-            }
-            //object o;
-
-            FileInfo orgg = new FileInfo(org.FullName);
-            var f = FileRegister.Check(dest);
-            if (overwrite == null)
-            {
-
-                if (f.Exists)
-                    return newDest;
-                var d = org.CopyTo(dest, false);
-                f.copy(d.Length);
-
-            }
-            else if (overwrite.Value)
-            {
-                var d = org.CopyTo(dest, true);
-                f.copy(d.Length);
             }
             else
             {
-                if (f.Exists)
-                {
-                    var d = org.CopyTo(dest, false);
-                    f.copy(d.Length);
-                }
-                else
-                {
-                    int index = 1;
-                    string fdest = Path.GetDirectoryName(dest) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(dest);
-                    string ext = Path.GetExtension(dest);
-
-
-                    newDest = fdest + "_" + index + ext;
-                    var newf = FileRegister.Check(newDest);
-                    while (newf.Exists)
-                    {
-                        index++;
-                        newDest = fdest + index + ext;
-                        newf = FileRegister.Check(newDest);
-                    }
-                    var d = org.CopyTo(newDest, false);
-                    newf.copy(d.Length);
-
-                }
-            }
-            try
-            {
-                File.SetAttributes(newDest, File.GetAttributes(newDest) & ~FileAttributes.ReadOnly);
             }
 
-            catch (Exception ea2)
-            {
-                // log("impossible de poser les attributs de fichier " + ea2.ToString());
-            }
-
-
-
-            if (deleteOrg)
-            {
-                org.Delete();
-                FileRegister.Check(org.FullName).delete();
-            }
-            DirectoryInfo current = orgg.Directory;
-
-            while (current.GetFileSystemInfos().GetLength(0) == 0)
-            {
-                DirectoryInfo parent = current.Parent;
-                current.Delete();
-                current = parent;
-            }
-
-            return newDest;
-        }
-
-        //public static void deleteFile(string path)
-        //{
-        //}
-
-        public static void deleteFile(string path, string desc)
-        {
-            var file = FileRegister.Check(path);
-            if (!file.Exists)
-            {
-                log("fichier {0} non présent", desc);
-                return;
-            }
-            var fi = new FileInfo(path);
-            log("suppr\t{0}", desc);
-            fi.Delete();
-            file.delete();
-
-            DirectoryInfo current = fi.Directory;
-
-            while (current.GetFileSystemInfos().GetLength(0) == 0)
-            {
-                DirectoryInfo parent = current.Parent;
-                log("suppression répertoire {0}", current.FullName);
-                current.Delete();
-                current = parent;
-            }
-
+            // PlayerViewModel.Instance.makeResume();
 
         }
 
-
-        public static void DeleteDir(DirectoryInfo dir)
+        void ope_Completed(object sender, EventArgs e)
         {
-            Console.WriteLine("DeleteDir " + dir.FullName);
-            try
+            App.log.log(string.Format("AllTracksViewModel::OnCollectionChange {0} CollectionChanged completé", sender));
+            PlayerViewModel.Instance.makeResume();
+        }
+
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            var eventHandler = PropertyChanged;
+            if (eventHandler == null)
             {
-                if (!dir.Exists)
-                    return;
-                foreach (FileInfo file in dir.GetFiles())
+                //   int toto = 0;
+            }
+            else
+            {
+                //var dispatcher = Dispatcher.CurrentDispatcher;
+                //if (dispatcher.CheckAccess())
+                //    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                //else
+                //    dispatcher.Invoke(new Action<string>(OnPropertyChanged), propertyName);
+
+                Delegate[] delegates = eventHandler.GetInvocationList();
+                // Walk thru invocation list
+                foreach (PropertyChangedEventHandler handler in delegates)
                 {
                     try
                     {
-                        file.Delete();
+                        var dispatcherObject = handler.Target as DispatcherObject;
+                        // If the subscriber is a DispatcherObject and different thread
+                        if (dispatcherObject != null && dispatcherObject.CheckAccess() == false)
+                            // Invoke handler in the target dispatcher's thread
+                            dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind,
+                                          handler, this, new PropertyChangedEventArgs(propertyName));
+                        else // Execute handler as is
+                            handler(this, new PropertyChangedEventArgs(propertyName));
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("impossible de supprimer " + file.FullName + " " + ex);
+                        App.log.log(ex.ToString());
                     }
                 }
-                foreach (DirectoryInfo sub in dir.GetDirectories())
-                    DeleteDir(sub);
-                try
+            }
+        }
+
+        public void refresh()
+        {
+            build();
+            foreach (TrackListViewModel track in this)
+                track.refresh();
+
+        }
+
+        //public void init()
+        //{
+        //    refresh();
+        //    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        //}
+
+        public TrackListViewModel TV { get { return TrackListViewModel.HumanSelected; } }
+
+        public void build()
+        {
+            lock (_lock)
+            {
+                var list = new List<TrackListViewModel>();
+                var dict = new Dictionary<int, TrackListViewModel>();
+                buildAllTraks(list, dict, onlyDisabled, onlyFathers);
+                if (this.dict == null)
                 {
-                    dir.Delete();
+                    this.dict = new Dictionary<int, TrackListViewModel>();
+                    foreach (TrackListViewModel track in list)
+                    {
+                        Add(track);
+                        this.dict.Add(track.PieceId, track);
+                       // track.PropertyChanged += track_PropertyChanged;
+                    }
+
+                    OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
                 }
-                catch (Exception edelDir)
+                else
                 {
-                    Console.WriteLine("impossible de supprimer en final " + dir.FullName + " " + edelDir.Message);
+
+                    foreach (TrackListViewModel newTrack in list)
+                    {
+                        if (!this.dict.ContainsKey(newTrack.PieceId))
+                        {
+                            Add(newTrack);
+                            this.dict.Add(newTrack.PieceId, newTrack);
+                           // newTrack.PropertyChanged += track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newTrack));
+                        }
+                    }
+
+                    foreach (TrackListViewModel track in new List<TrackListViewModel>(this))
+                    {
+                        if (!dict.ContainsKey(track.PieceId))
+                        {
+                            Remove(track);
+                            this.dict.Remove(track.PieceId);
+                           // track.PropertyChanged -= track_PropertyChanged;
+                            OnCollectionChange(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, track));
+                        }
+                    }
                 }
             }
-            catch (Exception exd)
+
+            //Clear(); 
+            //foreach (TrackListViewModel track in parent.Tracks)
+            //    Add(track); 
+        }
+
+        //void track_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        //{
+        //    switch (e.PropertyName)
+        //    {
+        //        case "Duration":
+        //        case "Enabled":
+        //            PlayerViewModel.Instance.makeResume();
+        //            break;
+        //    }
+        //}
+
+        public List<TrackListViewModel> AllTracks
+        {
+            get
             {
-                Console.WriteLine("impossible de supprimer " + dir.FullName + " " + exd);
+                build();
+                return this;
+            }
+        }
+
+        public List<TrackListViewModel> Tracks
+        {
+            get
+            {
+                return parent.Tracks;
+            }
+        }
+
+        protected void buildAllTraks(List<TrackListViewModel> container, Dictionary<int, TrackListViewModel> dict, bool? onlyDisabled, bool onlyFathers)
+        {
+            foreach (TrackListViewModel t in parent.Tracks)
+            {
+                if (!t.Enabled || true !=onlyDisabled)
+                {
+                    if (onlyDisabled == null && t.Enabled)
+                    {
+                        if (!t.PieceGen.ClassementProvisoireRecent)
+                            continue; 
+                    }
+                    if (t.PieceParentId < 0 || !onlyFathers)
+                    {
+                        if (!t.Track.Virtual || PlayerViewModel.Instance.WithVirtualAlbum)
+                        {
+                            
+                            if (!dict.ContainsKey(t.PieceId))
+                            {
+                                dict.Add(t.PieceId, t);
+                                container.Add(t);
+                                //  t.Index = container.Count; 
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (PlayListViewModel pl in parent)
+            {
+                AllTracksViewModel other = pl.AlltracksVm;
+                //if (true == onlyDisabled)
+                //    other = pl.AlltracksVmd;
+                //else
+                //    other = pl.AlltracksVm;
+                other.buildAllTraks(container, dict, onlyDisabled, onlyFathers);
+            }
+        }
+
+        #region cmd
+
+        private ICommand _contextCmdCheck;
+        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
+
+        private ICommand _contextCmdUnCheck;
+        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
+
+
+        private ICommand _contextLinkFather;
+        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
+
+        private ICommand _contextLinkChild;
+        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
+
+        private ICommand _contextLinkFusion;
+        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
+
+        private ICommand _contextUnLink;
+        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
+
+        private ICommand _contextExport;
+        public ICommand Export { get { if (_contextExport == null) _contextExport = new ExportCmd(); return _contextExport; } }
+
+        private ICommand _contextExportCompress;
+        public ICommand ExportCompress { get { if (_contextExportCompress == null) _contextExportCompress = new ExportCompress(); return _contextExportCompress; } }
+
+        private ICommand _contextDelete;
+        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
+
+        public TrackListViewModel HumanSelected
+        {
+            get
+            {
+                return TrackListViewModel.HumanSelected;
+            }
+        }
+
+        private ICommand _ContextCmdAddToList;
+        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
+
+        private ICommand _ContextCmdDbDeleteClassement;
+        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
+
+        private ICommand _ContextCmdDbDeleteRead;
+        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
+
+
+        #endregion
+
+        #region from Ihm
+        private TrackListViewModel selectedTrack;
+        public TrackListViewModel SelectedTrack
+        {
+            get
+            {
+                return selectedTrack;
+            }
+            set
+            {
+                selectedTrack = value;
+                TrackListViewModel.setHumanSelected(parent, value); //  .HumanSelected = value;
+                if (selectedTrack != null)
+                    selectedTrack.IsSelected = true;
+            }
+        }
+        #endregion
+
+        private int nbAlbumMoved;
+
+        public int NbAlbumMoved
+        {
+            get { return nbAlbumMoved; }
+        }
+
+        public string AutoResume
+        {
+            get
+            {
+               
+                try
+                {
+
+                    var conf = App.gen.SortAlbumMode.ComposantsUtiles[0].Main;
+                    var sb = new StringBuilder();
+                    
+                    sb.Append(conf.CoeffOld.ToString("0.000", CultureInfo.InvariantCulture)); sb.Append("  ");
+
+                    sb.Append((1000 * conf.dcoeffp).ToString("### ### ##0.##\\.##")); sb.Append("m  ");
+                    var percentConv = 0m;
+                    if (conf.dconvergence > 0) percentConv = conf.dconvergence0 / conf.dconvergence;
+                    sb.Append((percentConv).ToString("### ### ##0.##", CultureInfo.InvariantCulture)); sb.Append("  ");
+                   
+                    sb.Append(conf.Serial); sb.Append(" ");
+                    sb.Append(conf.SerialBox); sb.Append(" ");
+                    sb.Append(conf.Alt); sb.Append(" ");
+                    sb.Append(conf.AltHisto); sb.Append("  ");
+                    sb.Append(conf.Elastique.ToString("0.#")); sb.Append(" ");
+                    sb.Append(conf.Elastique2.ToString("0.#"));
+                    //var motif = selectedCoeff.none;
+                    //var current = TrackListViewModel.HumanSelected;
+                    //if (current != null)
+                    //    motif = current.SelectedMotif; 
+                  //  var stat10 = conf.calcStat(motif,10);
+                   // sb.Append(stat10); sb.Append(" - ");
+                 //   var stat100 = conf.calcStat(motif,100);
+                  //  sb.Append(stat100); 
+
+                    //sb.Append(conf.coeffTMin(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(10).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" - ");
+                    //sb.Append(conf.coeffTMin(100).ToString("0.000", CultureInfo.InvariantCulture)); sb.Append(" "); sb.Append(conf.coeffTMax(100).ToString("0.000", CultureInfo.InvariantCulture)); 
+                    return sb.ToString(); 
+                   
+                }
+                catch
+                {
+                    return ""; 
+                }
+            }
+        }
+        public string NbAlbumMovedDesc
+        {
+            get
+            {
+                if (nbAlbumMoved < 0)
+                    return "";
+                if (nbAlbumMoved == 0)
+                    return "pas d'album en quarantaine";
+                return string.Format("{0} albums en quarantaine", nbAlbumMoved); 
+            }
+        }
+
+        public void setNbAlbumMoved(int nb)
+        {
+            if (nb != nbAlbumMoved)
+            {
+                nbAlbumMoved = nb;
+                OnPropertyChanged("NbAlbumMoved");
+                OnPropertyChanged("NbAlbumMovedDesc");
+            }
+
+        }
+
+        private int nbAlbumMovedUnavailable;
+        public int NbAlbumMovedUnavailable
+        {
+            get
+            {
+                return nbAlbumMovedUnavailable; 
+            }
+
+            set
+            {
+                if (value != nbAlbumMovedUnavailable)
+                {
+                    nbAlbumMovedUnavailable = value;
+                    OnPropertyChanged("NbAlbumMovedUnavailable"); 
+                }
+            }
+        }
+
+    }
+
+
+}
+]]></content>
+  </file>
+  <file path="\pdb.player\ViewModel\TrackListViewModel.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Windows;
+using pdb.obj;
+using pdb.util;
+using pdb.gen;
+using pdb.db.obj;
+using pdb.gen.albums;
+
+namespace pdb.player.ViewModel
+{
+
+    public class TrackListViewModel : BibViewModelBase, ITrackNativeDates
+    {
+
+
+
+
+        #region répercut
+        //  private static BgDict<int, List<TrackListViewModel>> dictT = new BgDict<int, List<TrackListViewModel>>();
+        #endregion
+        private TrackList track;
+        private PieceViewModel piece;
+        private static TrackListViewModel currentPlaying;
+        private static TrackListViewModel currentSelected;
+        public TrackList Track { get { return track; } }
+        public CPiece Piece { get { return piece.Piece; } }
+        public Piece PieceGen { get { return track.Piece; } }
+        public Piece Master { get { return PieceGen.Master; } }
+
+        public void remove()
+        {
+            //var list = dictT[PieceId];
+            //if (list == null)
+            //    return;
+            //list.Remove(this);
+        }
+
+        public void refresh()
+        {
+            piece.eraseCommentGrouping();
+            OnPropertyChanged("ExportStatus");
+            OnPropertyChanged("TV");
+            OnPropertyChanged("Comment");
+            OnPropertyChanged("Grouping");
+            OnPropertyChanged("MedianneStatus");
+            OnPropertyChanged("ClassementVirtuel");
+            OnPropertyChanged("MedianneStatus");
+            OnPropertyChanged("");
+        }
+
+        public override bool IsSelected
+        {
+            get
+            {
+                return base.IsSelected;
+            }
+            set
+            {
+                if (value != base.IsSelected)
+                {
+                    base.IsSelected = value;
+                    if (value)
+                        CurrentSelected = this;
+                    OnPropertyChanged("TV");
+                }
+            }
+        }
+
+        private int index;
+        public int Index
+        {
+            get { return index; }
+            set
+            {
+                if (value != index)
+                {
+                    index = value;
+                    OnPropertyChanged("Index");
+                }
+            }
+        }
+
+        public int StackValue { get { return PieceGen.StackValue; } }
+        public int StackIndex { get { return PieceGen.StackIndex; } }
+
+        public static event EventHandler CurrentSelectedChanged;
+        public static TrackListViewModel CurrentSelected
+        {
+            get
+            {
+                return currentSelected;
+            }
+            set
+            {
+                if (value != currentSelected)
+                {
+                    currentSelected = value;
+                    if (CurrentSelectedChanged != null)
+                        CurrentSelectedChanged("Track", EventArgs.Empty);
+                }
+            }
+        }
+
+        public static event EventHandler CurrentHumanSelectedChanged;
+        private static TrackListViewModel humanSelected;
+        private static int humanSelectedId;
+        public static TrackListViewModel HumanSelected
+        {
+            get { return humanSelected; }
+            //set
+            //{
+            //    if (value != humanSelected)
+            //    {
+            //        humanSelected = value;
+            //        if (CurrentHumanSelectedChanged != null)
+            //            CurrentHumanSelectedChanged("Human", EventArgs.Empty);
+            //    }
+            //}
+        }
+
+        public static void setHumanSelected(PlayListViewModel pl, TrackListViewModel track)
+        {
+            //if (humanSelected != null)
+            //{
+            //    humanSelected.refresh();
+            //   // var b = humanSelected.Grouping; 
+            //}
+            if (track != humanSelected)
+            {
+                humanSelected = track;
+
+
+                //  humanSelected.refresh();
+                // var b = humanSelected.Grouping; 
+                int id = 0;
+                if (track != null) id = track.PieceId;
+                if (id != humanSelectedId)
+                {
+                    humanSelectedId = id;
+                    if (CurrentHumanSelectedChanged != null)
+                        CurrentHumanSelectedChanged(pl, EventArgs.Empty);
+                }
+            }
+        }
+
+        public bool Enabled
+        {
+            get
+            {
+                return piece.Enabled;
+            }
+            set
+            {
+                piece.Enabled = value;
+                //if (value != track.Enabled)
+                //{
+                //    track.Piece.Enabled = value;
+                //    OnPropertyChanged("Enabled");
+                //}
+            }
+        }
+        //  private exportState exportState;
+        //public int ExportState
+        //{
+        //    get
+        //    {
+        //        return (int)exportState;
+        //    }
+        //}
+
+        public static EventHandler ExportStatusChange;
+        private static void OnExportStatusChange(TrackListViewModel tv)
+        {
+            if (ExportStatusChange != null)
+                ExportStatusChange(tv, EventArgs.Empty);
+        }
+
+        public static event EventHandler ClassementChange;
+        private static void OnClassementChange(TrackListViewModel tv)
+        {
+            if (ClassementChange != null)
+                ClassementChange(tv, EventArgs.Empty);
+        }
+
+        public TrackListViewModel TV { get { return this; } }
+
+        public exportState ExportStatus
+        {
+            get
+            {
+                return Piece.ExportStatus; // exportState;
+            }
+            set
+            {
+                if (Piece.ExportStatus != value)
+                {
+                    Piece.ExportStatus = value;
+                    OnPropertyChanged("ExportStatus");
+                    OnPropertyChanged("TV");
+                    OnPropertyChanged("Background");
+                    OnExportStatusChange(this);
+                    //refresh();
+
+
+                }
+            }
+        }
+
+        public int IndexExport
+        {
+            get { return PieceGen.IndexExport; }
+        }
+
+        public selectedCoeff SelectedMotif
+        {
+            get
+            {
+                if (PieceGen == null)
+                    return selectedCoeff.none;
+                return PieceGen.SelectedMotif;
             }
         }
 
 
 
 
+
+
+
+
+        public TrackListViewModel(TrackList track, PlayListViewModel playlist)
+            : base(track, playlist)
+        {
+            this.track = track;
+            this.piece = PieceViewModel.getPiece(track); // new PieceViewModel(track); // track.Piece.Track as CPiece; 
+            //piece.PropertyChanged += new System.ComponentModel.PropertyChangedEventHandler(piece_PropertyChanged);
+            int id = track.PieceId;
+            //if (!dictT.ContainsKey(id))
+            //{
+            //    var list = new List<TrackListViewModel>();
+            //    dictT.Add(id, list);
+            //}
+
+            //dictT[id].Add(this);
+
+        }
+
+        //void piece_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        //{
+        //    OnPropertyChanged(e.PropertyName);
+        //}
+
+        public String StrPlaying
+        {
+            get
+            {
+                if (playing) return "<))";
+                return "";
+            }
+        }
+        public string MedianneStatus
+        {
+            get
+            {
+                var p = PieceGen;
+                if (p.Medianne)
+                    return ">>";
+                if (p.MedianneLight)
+                    return ">";
+                if (p.Border)
+                    return "-";
+                if (p.BorderMin)
+                    return "-";
+                if (p.BorderEffect)
+                    return "--";
+
+                return "";
+            }
+        }
+
+        private bool playing;
+        public bool Playing
+        {
+            get { return playing; }
+            set
+            {
+                if (value != playing)
+                {
+                    playing = value;
+                    if (playing)
+                    {
+                        CurrentPlaying = this;
+                    }
+                    OnPropertyChanged("Playing");
+                    OnPropertyChanged("StrPlaying");
+                }
+            }
+        }
+
+        public static TrackListViewModel CurrentPlaying
+        {
+            get
+            {
+                return currentPlaying;
+            }
+            set
+            {
+                if (value != currentPlaying)
+                {
+                    if (currentPlaying != null)
+                        currentPlaying.Playing = false;
+                    currentPlaying = value;
+                }
+            }
+        }
+
+        public int Rating
+        {
+            get
+            {
+                return piece.Rating;
+            }
+            set
+            {
+                //piece.Rating = value;
+                if (value != track.Rating)
+                {
+                    track.Rating = value;
+                    OnPropertyChanged("Rating");
+                }
+            }
+        }
+
+        //  private pdb.db.obj.CPiece CPiece { get { return track.Piece.Track as pdb.db.obj.CPiece; } }
+
+
+        //public static readonly DependencyProperty ClassementProperty =
+        //DependencyProperty.Register("Classement", typeof(String),
+        // typeof(PieceViewModel), new UIPropertyMetadata(null));
+        public String Classement
+        {
+            get
+            {
+                return piece.Piece.StrClassement;
+            }
+            set
+            {
+
+                // piece.StrClassement = value;
+                if (value != piece.Piece.StrClassement)
+                {
+                    piece.Classement = value;
+                    PieceGen.invalidateCache();
+                    App.gen.Albums.signalClassChange(track);
+                    try
+                    {
+
+                        PlayerViewModel.makeauto(this);
+                        App.bib.setClassement(this, value);
+
+
+
+                        // piece.Piece.StrClassement = value;
+
+                    }
+                    catch
+                    {
+                    }
+
+                    OnClassementChange(this);
+                    App.go(true);
+                    OnPropertyChanged("Classement");
+
+
+                }
+
+            }
+        }
+
+        public int Year
+        {
+            get
+            {
+                return piece.Year;
+            }
+            set
+            {
+               // piece.Year = value;
+                if (value != piece.Year)
+                {
+                    track.Year = value;
+                    OnPropertyChanged("Year");
+                }
+            }
+        }
+
+
+        //public static readonly DependencyProperty CommentProperty =
+        //DependencyProperty.Register("Comment", typeof(string),
+        //typeof(PieceViewModel), new UIPropertyMetadata(null)); 
+        public string Comment
+        {
+            get
+            {
+                if (PieceGen.Virtual)
+                    return "";
+                return piece.Comment;
+            }
+            set
+            {
+                if (PieceGen.Virtual)
+                    return;
+                //piece.Comment = value; 
+                if (value != piece.Comment)
+                {
+                    //  track.Comment = value;
+                    piece.Comment = value;
+                    OnPropertyChanged("Comment");
+
+                }
+            }
+        }
+
+        public string Grouping
+        {
+            get { return track.Piece.Grouping; }
+            set
+            {
+                //  piece.Grouping = value;
+                if (value != track.Piece.Grouping)
+                {
+                    track.Piece.setGrouping(value, true);
+                    // track.setGrouping(value, true);
+                    OnPropertyChanged("Grouping");
+                }
+            }
+        }
+
+
+
+
+        public bool isPodcast
+        {
+            get { return piece.isPodcast; }
+        }
+
+
+        public TimeSpan Duration
+        {
+            get { return piece.Duration; }
+            set
+            {
+                piece.Duration = value;
+                //if (!Exists)
+                //    return; 
+                //if (value != Duration)
+                //{
+                //    var deltaMs = Math.Abs(value.TotalMilliseconds - Duration.TotalMilliseconds);
+                //    if (deltaMs >= 1)
+                //    {
+                //        track.Duration = value;
+                //        if (deltaMs >= 1000)
+                //            onPropertyChanged("Duration");
+                //    }
+                //}
+            }
+        }
+
+        public string Location
+        {
+            get { return piece.Location; }
+        }
+
+        public string Artist
+        {
+            get
+            {
+                return piece.Artist;
+            }
+            set
+            {
+               // piece.Artist = value;
+                if (value != track.Artist)
+                {
+                    track.Artist = value;
+                    OnPropertyChanged("Artist");
+                }
+            }
+        }
+
+        public string Album
+        {
+            get
+            {
+                if (track.Virtual)
+                {
+                    if (track.Piece.VirtualByArtist)
+                        return string.Format("[{0}]", track.Album);
+                    return track.Album;
+                }
+                return piece.Album;
+            }
+            set
+            {
+              
+                if (value != track.Album)
+                {
+                    if (!track.Virtual)
+                        piece.Album = value;
+                  
+                    OnPropertyChanged("Album");
+                }
+            }
+        }
+
+        public string MasterAlbum
+        {
+            get
+            {
+                //    if (track.Virtual)
+                //        return " " + PieceGen.Master.Album;
+                return PieceGen.Master.Album;
+            }
+            set
+            {
+                if (value == null)
+                    return;
+                value = value.Trim();
+                if (value != PieceGen.Master.Album)
+                {
+                    PieceGen.Master.Album = value;
+                    OnPropertyChanged("MasterAlbum");
+                }
+            }
+        }
+
+        public Album album { get { return PieceGen.PieceAlbum; } }
+
+        public string Name
+        {
+            get
+            {
+                return piece.Name;
+            }
+            set
+            {
+                //  piece.Name = value;
+                if (value != track.Name)
+                {
+                    track.Piece.Name = value;
+                    OnPropertyChanged("Name");
+                }
+            }
+        }
+
+        public int TrackNumber
+        {
+            get
+            {
+                return track.Piece.TrackNumber;
+            }
+            set
+            {
+              
+                if (value != track.TrackNumber)
+                {
+                    if (!track.Virtual)
+                        piece.TrackNumber = value;
+                   
+                    OnPropertyChanged("TrackNumber");
+                }
+            }
+        }
+
+
+        public void setClassement(string className, int rating)
+        {
+            piece.Piece.setClassement(className, rating);
+            PieceGen.invalidateCache();
+
+        }
+
+        public string ClassName
+        {
+            get
+            {
+                return piece.Piece.ClassName;
+            }
+            set
+            {
+                piece.Piece.ClassName = value;
+            }
+        }
+
+
+        public DateTime PlayedDate
+        {
+            get { return piece.Piece.PlayedDate; }
+        }
+
+        public string ArtWork
+        {
+            get
+            {
+                return piece.Piece.ArtWork;
+            }
+            set
+            {
+                piece.Piece.ArtWork = value;
+            }
+        }
+
+        public void setGrouping(string value, bool prior)
+        {
+            track.Piece.setGrouping(value, prior);
+            piece.Grouping = value; // TODO je fait quoi de ça ???
+            // onPropertyChanged("Grouping");
+        }
+
+        public string ClassementVirtuel { get { return PieceGen.ClassementVirtuel; } }
+
+        public decimal CoeffVirtuel { get { return PieceGen.CoeffVirtuel; } }
+
+        public string ClassementVirtuel2 { get { return PieceGen.ClassementVirtuel2; } }
+
+        public decimal CoeffVirtuel2 { get { return PieceGen.CoeffVirtuel2; } }
+
+        public bool FirstClass
+        {
+            get
+            {
+                return true;
+            }
+            set
+            {
+
+            }
+        }
+
+        public List<CPlayList> ClassPlayLists
+        {
+            get { return piece.Piece.ClassPlayLists; }
+        }
+
+        public List<DateTime> Dates
+        {
+            get { return new List<DateTime>(piece.Piece.Dates); }
+        }
+
+        public List<DateTime> DatesClassement
+        {
+            get { return piece.Piece.DatesClassement; }
+        }
+
+        public string ClassEvol
+        {
+            get { return track.Piece.ClassEvol; }
+        }
+
+        public long Size { get { return Piece.Size; } }
+
+        public bool Exists { get { return Piece.Exists; } }
+
+        //public void onPropertyChanged(string propertyName)
+        //{
+        //    var list = dictT[PieceId];
+        //    if (list == null)
+        //    {
+        //        OnPropertyChanged(propertyName);
+        //    }
+        //    else
+        //    {
+        //        foreach (TrackListViewModel t in dictT[PieceId])
+        //            t.OnPropertyChanged(propertyName);
+        //    }
+        //}
+
+
+
+
+        public int PieceId
+        {
+            get { return track.PieceId; }
+        }
+        public int MasterId { get { return PieceGen.MasterId; } }
+
+
+        public int PieceParentId
+        {
+            get { return track.PieceParentId; }
+            set { track.PieceParentId = value; }
+        }
+
+        public void setParent(TrackListViewModel parent)
+        {
+            track.Piece.albumMustRefresh();
+            parent.track.Piece.albumMustRefresh();
+
+            piece.Piece.Parent = parent.Piece.Master;
+            track.Piece.Parent = parent.track.Piece;
+
+            track.Piece.albumMustRefresh();
+            parent.track.Piece.albumMustRefresh();
+        }
+
+        public void fusion(TrackListViewModel toDelete)
+        {
+            App.Db.List.fusion(piece.Piece, toDelete.Piece);
+
+        }
+
+
+
+
+
+        #region key
+        private TrackIdentity key;
+        public TrackIdentity Key
+        {
+            get
+            {
+                if (key == null)
+                    keyGener();
+                return key;
+            }
+        }
+        private void keyGener()
+        {
+            key = new TrackIdentity(this);
+        }
+
+        #endregion
+
+
+        public List<string> RelativesPath
+        {
+            get { return track.RelativesPath; }
+        }
+
+        public DateTime? UpdateClassement { get { return PieceGen.UpdateClassement; } }
+        public DateTime? AlbumUpdateClassement { get { return PieceGen.AlbumUpdateClassement; } }
+
+        public DateTime? LastRead { get { return PieceGen.LastRead; } }
+        public DateTime? AlbumLastRead { get { return PieceGen.AlbumLastRead; } }
+
+        public int NbClass { get { return PieceGen.NbClass; } }
+
+        public List<DateTime> DatesClassementBrut
+        {
+            get
+            {
+                return track.DatesClassementBrut;
+            }
+        }
+
+
+        public string getLocation()
+        {
+            return piece.getLocation();
+        }
     }
-}]]></content>
+}
+]]></content>
   </file>
-  <file path="\PieceDb.Db\CDb.cs">
+    <file path="\PieceDb.Db\CDb.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
 using System.IO;
@@ -2532,6 +1922,934 @@ namespace pdb.db
 }
 
 
+]]></content>
+  </file>
+  <file path="\PieceDb.Db\piece\data\CPieceData.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Xml;
+using pdb.db.obj;
+using pdb.db.piece.value;
+using pdb.db.piece.version;
+using pdb.util;
+
+
+
+namespace pdb.db.piece.data
+{
+
+    /// <summary>
+    /// Donnée + liste des versions
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public abstract class CPieceData<T> : IData, IEnumerable<CPieceDataVersion<T>>
+    {
+        /// <summary>
+        /// Liste des versions
+        /// </summary>
+        protected List<CPieceDataVersion<T>> m_list = new List<CPieceDataVersion<T>>();
+        private static CDataVersionComparerInv c_comparerInv = new CDataVersionComparerInv();
+
+        private bool m_bOverride = false;
+        public abstract string getToken();
+        public abstract T getNullValue();
+        public abstract CPieceDataValue<T> createPieceDataValue(XmlElement a_node);
+        public abstract CPieceDataValue<T> createPieceDataValue(string a_value);
+        public abstract CPieceDataValue<T> createPieceDataValueT(T value);
+        // protected Bool empty = Bool.not_defined;
+        //   protected static DateTime _now = DateTime.Now;
+
+        protected IDataObserver observer;
+        public IDataObserver Observer { set { observer = value; } }
+
+        public bool Override { get { return m_bOverride; } }
+
+
+        public static DateTime Now
+        {
+            get
+            {
+                return ChronoData.Now;
+            }
+        }
+
+        #region signaux
+
+        //public class PieceDataChangeNativeEventArgs : EventArgs
+        //{
+        //    public PieceDataChangeNativeEventArgs(T value) { this.Value = value; }
+        //    readonly public T Value;
+        //}
+
+        //public class PieceDataChangeLocalEventArgs : EventArgs
+        //{
+        //    public PieceDataChangeLocalEventArgs(T Old, T New) { this.Old = Old; this.New = New; }
+        //    readonly public T Old;
+        //    readonly public T New;
+        //}
+
+        //  public event EventHandler<PieceDataChangeNativeEventArgs> changeNativeValue;
+        private void OnchangeNativeValue(T value) { if (observer != null) changeNativeValue(value); }
+        protected abstract void changeNativeValue(T value);
+
+        //  public event EventHandler<PieceDataChangeLocalEventArgs> changeLocalValueByRemote;
+        private void OnChangeLocalByRemote(T Old, T New)// { if (changeLocalValueByRemote != null) changeLocalValueByRemote(this, new PieceDataChangeLocalEventArgs(Old, New)); }
+        {
+            if (observer != null)
+                observer.changeByRemote(getToken(), Old, New);
+        }
+        //  public event EventHandler<PieceDataChangeLocalEventArgs> changeLocalValueByNative;
+        private void OnChangeLocalByNative(T Old, T New) // { if (changeLocalValueByNative != null) changeLocalValueByNative(this, new PieceDataChangeLocalEventArgs(Old, New)); }
+        {
+            if (observer != null)
+                observer.changeByNative(getToken(), Old, New);
+        }
+        //public event EventHandler<PieceDataChangeLocalEventArgs> cannotMerge;
+        private void OnCannotMerge(T Old, T New) { }
+
+        // public event EventHandler change;
+        private void onChange() { if (observer != null) observer.RefChange(); }
+        #endregion
+
+
+        public CPieceData(CPieceData<T> o)
+        {
+            foreach (CPieceDataVersion<T> v in o.m_list)
+                m_list.Add(new CPieceDataVersion<T>(v)); 
+        }
+
+        public CPieceData(string a_value)
+        {
+            CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(a_value, this);
+            m_list.Add(l_version);
+
+        }
+
+        public CPieceData(T value)
+        {
+            CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(value, this);
+            m_list.Add(l_version);
+        }
+
+        public CPieceData()
+        {
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Ajoute si nécessaire les versions réciproques 
+        /// </summary>
+        /// <param name="a_list"></param>
+        /// <remarks>On ne prend en compte que les versions de date définie</remarks>
+        /// 
+
+
+
+
+        public void mergeOnlyVersion(CPieceData<T> a_list)
+        {
+            foreach (CPieceDataVersion<T> l_version in a_list.m_list)
+            {
+                check(l_version);
+            }
+            sortAndCompact();
+            foreach (CPieceDataVersion<T> l_remote in this.m_list)
+            {
+                a_list.check(l_remote);
+            }
+            a_list.sortAndCompact();
+        }
+
+        public void mergeAll(CPieceData<T> other, mergePriority a_priority)
+        {
+            T valueOrg = Value;
+            mergeOnlyVersion(other);
+            if (!this.Equals(other))
+            {
+                mergePriority l_ret = this.isMaster(other, a_priority);
+                if (l_ret == mergePriority.left)
+                {
+                    OnChangeLocalByNative(other.Value, this.Value);
+                    other.eraseSingleFrom(this);
+                }
+                else if (l_ret == mergePriority.right)
+                {
+                    this.eraseSingleFrom(other);
+                }
+                else
+                {
+                    OnCannotMerge(this.Value, other.Value);
+                }
+            }
+
+            if (!Value.Equals(valueOrg))
+            {
+                onChange();
+            }
+        }
+
+        /// <summary>
+        /// Synchronise les infos de deux pieces (local-distant)
+        /// </summary>
+        /// <param name="remote">Piece sur fichier pdb_export</param>
+        /// <remarks>on teste le cgangement de valeur</remarks>
+        public virtual void Consolid(CPieceData<T> remote, mergePriority a_priority)
+        {
+            sortAndCompact();
+            remote.sortAndCompact();
+            T l_valueOrg = Value;
+            mergeAll(remote, a_priority);
+
+            if (!l_valueOrg.Equals(Value))
+            {
+                m_bOverride = true;
+                OnChangeLocalByRemote(l_valueOrg, Value);
+            }
+
+            sortAndCompact();
+            remote.sortAndCompact();
+
+        }
+
+        public bool Imported
+        {
+            get { return m_bOverride; }
+        }
+
+        protected virtual void LegacyConsolidByNative(CPieceData<T> local)
+        {
+            local.eraseSingleFrom(this);
+        }
+
+        protected virtual bool canErase()
+        {
+            return false;
+        }
+
+        public void removeVersions()
+        {
+            sortAndCompact();
+            if (m_list.Count > 1)
+            {
+                m_list = new List<CPieceDataVersion<T>> { m_list[0] };
+            }
+        }
+
+
+
+
+
+
+        public virtual void LegacyConsolid(CPieceData<T> local)
+        {
+            if (!this.Equals(local))
+            {
+                mergePriority l_merge = checklegacyModif(local);
+
+                if (l_merge == mergePriority.right)
+                {
+                    this.m_bOverride = true;
+                    this.eraseSingleFrom(local);
+                    // this.empty = Bool.not_defined;
+                    OnchangeNativeValue(Value);
+                }
+                else
+                {
+                    OnChangeLocalByNative(local.Value, this.Value);
+                    if ((local.Significant || canErase()) && Now != local.LastModif)
+                    {
+                        CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(Now, m_list[0].Data);
+                        local.m_list.Add(l_version);
+                        local.sortAndCompact();
+                    }
+                    else
+                    {
+                        local.eraseSingleFrom(this);
+                    }
+                    //    local.empty = Bool.not_defined;
+                }
+
+            }
+        }
+
+        public virtual void SynchroNative(T native)
+        {
+            if (native != null && isSignificant(native) && !Value.Equals(native))
+            {
+                bool update = true;
+                if (native is string)
+                {
+                    if (native.ToString().Trim().Equals(Value.ToString().Trim()))
+                        update = false;
+                }
+
+                if (update)
+                {
+                    OnChangeLocalByNative(this.Value, native);
+                    CPieceDataValue<T> newValue = createPieceDataValueT(native);
+                    CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(Now, newValue);
+                    m_list.Add(l_version);
+                    sortAndCompact();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Dans le cas d'une égalité de principe, tenter une comparaison basée sur la complétude
+        /// </summary>
+        /// <param name="remote "></param>
+        /// <returns>Indique si la comparaison a été faite</returns>
+        /// <remarks></remarks>
+        public bool choose(CPieceData<T> remote)
+        {
+            mergeAll(remote, mergePriority.none);
+            // si le merge est effectif (ie l'un des deux a une date définie alors le erge est fait
+            // pour provoquer un merge manuel il faut que les deux soient sans date et différents
+            return Equals(remote);
+        }
+        public void mergeManual(CPieceData<T> other)
+        {
+            //Console.WriteLine("master ? 1 (final:1)   2 ( final:2 ) n:no");
+            //string l_resp = Console.ReadLine();
+            //if (l_resp == "1")
+            //{
+            //    Console.WriteLine("merge from first to second");
+            //    //Console.WriteLine("merge from second to first")
+            //    other.eraseSingleFrom(this);
+
+            //}
+            //else if (l_resp == "2")
+            //{
+            //    Console.WriteLine("merge from second to first");
+            //    this.eraseSingleFrom(other);
+            //}
+            //else
+            //{
+            Console.WriteLine("abort merge");
+            //Return choice.no
+            //}
+        }
+
+        /// <summary>
+        /// Parfois, des valeurs identiques sont indiquées commme des modifications. 
+        /// Ordonnancement par ordre chronomogique, et élimination des doublons
+        /// </summary>
+        protected void sortAndCompact()
+        {
+            if (m_list.Count < 2) return;
+            m_list.Sort(c_comparerInv);
+            CPieceDataVersion<T> last = m_list[m_list.Count - 1];
+            List<CPieceDataVersion<T>> aux = new List<CPieceDataVersion<T>>(m_list);
+            for (int i = m_list.Count - 2; i >= 0; i--)
+            {
+                CPieceDataVersion<T> current = m_list[i];
+                if (current.Data.Equals(last.Data))
+                    aux.Remove(current);
+                last = current;
+            }
+            m_list = aux;
+
+        }
+
+        private void eraseSingleFrom(CPieceData<T> a_list)
+        {
+
+
+            if (m_list.Count == 0)
+            {
+                CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(a_list.m_list[0].Date, a_list.m_list[0].Data);
+                m_list.Add(l_version);
+
+            }
+            else
+            {
+                m_list[0].Data = a_list.m_list[0].Data;
+            }
+            //  empty = Bool.not_defined;
+
+            onChange();
+
+
+        }
+
+
+
+        public bool Equals(CPieceData<T> obj)
+        {
+            return Value.Equals(obj.Value);
+        }
+
+        /// <summary>
+        /// détermine quelle info est maitre dans la perspective de les merger
+        /// </summary>
+        /// <param name="remote"></param>
+        /// <param name="a_priority"></param>
+        /// <returns>True  : Je suis maître</returns>
+        /// <remarks>Pre-condition:  me != remote</remarks>
+        private mergePriority isMaster(CPieceData<T> remote, mergePriority a_priority)
+        {
+            if (this.Equals(remote))
+                throw new PieceDbException(this.ToString() + " and " + remote.ToString() + " are equivalent");
+
+            mergePriority l_consistencyComp = compareByConsistency(remote);
+            if (l_consistencyComp != mergePriority.none)
+                return l_consistencyComp;
+
+            if (LastModif == System.DateTime.MinValue && remote.LastModif == System.DateTime.MinValue)
+            {
+                return a_priority;
+            }
+            else
+            {
+                return mergePriority.none;
+                //  throw new PieceDbException("meme date de modif pourtant les fichiers sont différents!");
+            }
+        }
+        protected virtual bool CheckLegacyConsistency()
+        {
+            return true;
+        }
+        private mergePriority checklegacyModif(CPieceData<T> local)
+        {
+            if (CheckLegacyConsistency())
+            {
+                mergePriority l_consistencyComp = compareByConsistency(local);
+                if (l_consistencyComp != mergePriority.none)
+                    return l_consistencyComp;
+            }
+
+            if (local.Imported) return mergePriority.right;
+            return mergePriority.left;
+        }
+
+        private mergePriority checklegacyModif(T native)
+        {
+            if (CheckLegacyConsistency())
+            {
+                mergePriority l_consistencyComp = compareByConsistency(native);
+                if (l_consistencyComp != mergePriority.none)
+                    return l_consistencyComp;
+                //right = native qui est master
+            }
+            if (this.Imported) return mergePriority.left;
+            return mergePriority.right;
+        }
+
+
+        private mergePriority compareByConsistency(CPieceData<T> other)
+        {
+            if (!Significant && other.Significant)
+                return mergePriority.right;
+            if (Significant && !other.Significant)
+                return mergePriority.left;
+
+            if (Empty && !other.Empty)
+                return mergePriority.right;
+            if (!Empty && other.Empty)
+                return mergePriority.left;
+
+            return mergePriority.none;
+        }
+
+        private mergePriority compareByConsistency(T native)
+        {
+            if (!Significant && isSignificant(native))
+                return mergePriority.right;
+            if (Significant && !isSignificant(native))
+                return mergePriority.left;
+
+            return mergePriority.none;
+        }
+
+        public System.DateTime LastModif
+        {
+            get
+            {
+                if (Empty)
+                    return System.DateTime.MinValue;
+                //  sortAndCompact();
+                return m_list[0].Date;
+            }
+        }
+
+        public T Value
+        {
+            get
+            {
+                if (Empty)
+                    return getNullValue();
+                //sortAndCompact();
+                int i = 0;
+                while (true)
+                {
+                    var version = m_list[i];
+                    if (!version.Consider)
+                    {
+                        i++;
+                        continue;
+                    }
+                    return version.Data.Value;
+                }
+
+            }
+            set
+            {
+                if (value.Equals(Value)) return;
+                m_list.Insert(0, new CPieceDataVersion<T>(Now, createPieceDataValueT(value)));
+                sortAndCompact();
+
+            }
+        }
+
+        public void removeLastVersion()
+        {
+            int count = m_list.Count;
+            if (count <= 1)
+                return;
+            m_list.RemoveAt(0);
+            sortAndCompact();
+        }
+
+        public T LastValue
+        {
+            get
+            {
+                if (Empty)
+                    return getNullValue();
+                int count = m_list.Count;
+                if (count < 2)
+                    return getNullValue();
+                int i = 1;
+                while (true)
+                {
+                    var version = m_list[i];
+                    if (!version.Consider)
+                    {
+                        i++;
+                        if (i >= count)
+                        {
+                            return getNullValue();
+                        }
+                        continue;
+                    }
+                    return version.Data.Value;
+                }
+
+            }
+
+        }
+
+
+        private bool Simple
+        {
+            get { return (m_list.Count == 1 && m_list[0].Date == System.DateTime.MinValue) || Empty; }
+        }
+        public bool Empty
+        {
+            get
+            {
+                //if (empty == Bool.not_defined)
+                //{
+                bool ret = m_list.Count == 0 || m_list[0].Empty;
+                return ret;
+                //    empty = ret ? Bool.True : Bool.False;
+                //    return ret;
+                //}
+                //return empty == Bool.True;
+
+            }
+        }
+
+        public bool Significant
+        {
+            get
+            {
+                if (m_list.Count > 1)
+                    return true;
+                return m_list.Count == 1 && m_list[0].Significant;
+            }
+        }
+        public abstract bool isSignificant(T value);
+
+
+
+        public void checkList(CPieceData<T> other)
+        {
+            foreach (CPieceDataVersion<T> version in other)
+            {
+                check(version);
+            }
+            sortAndCompact();
+        }
+
+
+        /// <summary>
+        /// indique si la liste contient déja la version
+        /// </summary>
+        /// <param name="a_version">version testée</param>
+        /// <returns>True : si version connue</returns>
+        /// <remarks>On ne prend en compte que les dates définies</remarks>
+        private bool Contains(CPieceDataVersion<T> a_version)
+        {
+            foreach (CPieceDataVersion<T> l_elt in this)
+            {
+                System.DateTime l_date = l_elt.Date;
+                if (l_date > System.DateTime.MinValue && a_version.Date == l_date)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private void check(CPieceDataVersion<T> a_version)
+        {
+            if (!Contains(a_version))
+            {
+                if (a_version.Date > System.DateTime.MinValue)
+                {
+                    if (a_version.Consider)
+                    {
+                        m_list.Add(a_version);
+                        //     empty = Bool.not_defined;
+                    }
+                }
+            }
+
+        }
+
+
+        public CPieceData(System.Xml.XmlElement a_node)
+        {
+
+            bool l_bSingle = false;
+
+            XmlElement l_Mynode = XMLTool.NodeLookUp(a_node, getToken());
+
+            if (l_Mynode == null)
+                return;
+
+            XmlAttribute att = l_Mynode.Attributes[CPieceDataValue<T>.TOKEN];
+            if (att != null)
+            {
+                l_bSingle = true;
+            }
+
+
+
+
+            foreach (XmlNode l_node in l_Mynode)
+            {
+                if (!l_bSingle)
+                {
+
+                    if (l_node is XmlElement && l_node.Name == CPieceDataVersion<T>.VERSION)
+                    {
+                        XmlElement l_elt = (XmlElement)l_node;
+                        CPieceDataVersion<T> l_version = new CPieceDataVersion<T>(l_elt, this);
+                        if ((!l_version.Data.Empty || canErase()))
+                        {
+                            m_list.Add(l_version);
+                        }
+                    }
+                    else
+                    {
+                        l_bSingle = true;
+                        // break; // TODO: might not be correct. Was : Exit For
+                    }
+                }
+            }
+
+            if (l_bSingle)
+            {
+                CPieceDataVersion<T> l_version = null;
+                if (l_Mynode != null)
+                    l_version = new CPieceDataVersion<T>(l_Mynode, this);
+                else
+                    l_version = new CPieceDataVersion<T>(att.Value, this);
+                m_list.Add(l_version);
+            }
+            sortAndCompact();
+        }
+
+
+
+
+        public void write(ITextWriter a_sw)
+        {
+            if (Empty)
+                return;
+            XMLTool.openBalise(a_sw, getToken());
+            if (Simple)
+            {
+                a_sw.Append(m_list[0].Data.ToString());
+            }
+            else
+            {
+                sortAndCompact();
+                //    m_list.Sort(c_comparerInv); 
+                foreach (CPieceDataVersion<T> l_version in m_list)
+                {
+                    l_version.write(a_sw);
+                }
+            }
+            XMLTool.closeBalise(a_sw, getToken());
+        }
+
+        protected virtual void writeSimple(XmlWriter w)
+        {
+            w.WriteElementString(getToken(), m_list[0].Data.ToString());
+            //  w.WriteAttributeString(getToken(), m_list[0].Data.ToString()); 
+        }
+
+        public void write(XmlWriter w)
+        {
+            if (Empty)
+                return;
+            //  w.WriteStartElement(getToken()); 
+
+            if (Simple)
+            {
+                writeSimple(w);
+
+
+            }
+            else
+            {
+                w.WriteStartElement(getToken());
+                sortAndCompact();
+                //    m_list.Sort(c_comparerInv); 
+                foreach (CPieceDataVersion<T> l_version in new List<CPieceDataVersion<T>>(m_list))
+                {
+                    l_version.write(w);
+                }
+                w.WriteEndElement();
+            }
+
+        }
+
+        public bool HasChange(CPieceData<T> lastFull)
+        {
+            if (lastFull.Value == null || !lastFull.Value.Equals(Value))
+                return true;
+            return false;
+        }
+
+        public void writeDiff(XmlWriter w, CPieceData<T> lastFull)
+        {
+            //if (Empty)
+            //    return;
+            ////  w.WriteStartElement(getToken()); 
+
+            sortAndCompact();
+            lastFull.sortAndCompact();
+
+            if (Value == null)
+            {
+                if (lastFull.Value == null)
+                    return;
+            }
+
+            if (lastFull.Value == null || !lastFull.Value.Equals(Value))
+            {
+
+                if (Simple)
+                {
+                    if (lastFull.m_list.Count < 1 || m_list.Count < 1 || !(lastFull.m_list[0].Data.Value.Equals(m_list[0].Data.Value)))
+                    {
+                        writeSimple(w);
+                        return;
+                    }
+
+
+                }
+                else
+                {
+                    w.WriteStartElement(getToken());
+
+                    //    m_list.Sort(c_comparerInv); 
+
+                    //int count = lastFull.m_list.Count;
+                    //int count0 = count; 
+                    //if (m_list.Count > count)
+                    //    count = m_list.Count;
+
+                    //for (int i = count -1 ; i >=0; i++)
+                    //{
+                    //    CPieceDataVersion<T> my = m_list[i];
+                    //    CPieceDataVersion<T> old = null;
+                    //    if (i < count0 - 1)
+                    //        old = lastFull.m_list[i]; 
+
+                    //    if (old == null)
+
+
+
+                    //}
+                    foreach (CPieceDataVersion<T> l_version in new List<CPieceDataVersion<T>>(m_list))
+                    {
+                        bool found = false;
+                        foreach (CPieceDataVersion<T> l_version_old in new List<CPieceDataVersion<T>>(lastFull.m_list))
+                        {
+                            if (l_version_old.Date == l_version.Date && l_version_old.Data.Equals(l_version.Data))
+                            {
+                                found = true;
+                                break;
+                            }
+
+                        }
+
+                        if (found)
+                            continue;
+                        l_version.write(w);
+                    }
+                    w.WriteEndElement();
+                }
+            }
+
+        }
+
+
+
+        public virtual CListDate Dates
+        {
+            get
+            {
+                CListDate dates = new CListDate();
+                foreach (CPieceDataVersion<T> data in m_list)
+                {
+                    dates.check(data.Date);
+                }
+                return dates;
+            }
+        }
+        //private class CDataVersionComparer : IComparer<CPieceDataVersion<T>>
+        //{
+
+
+        //    public int Compare(CPieceDataVersion<T> x, CPieceDataVersion<T> y)
+        //    {
+        //        return System.DateTime.Compare(x.Date, y.Date);
+        //    }
+        //}
+        private class CDataVersionComparerInv : IComparer<CPieceDataVersion<T>>
+        {
+            public int Compare(CPieceDataVersion<T> x, CPieceDataVersion<T> y)
+            {
+                if (!x.Consider)
+                {
+                    if (!y.Consider)
+                        return -1 * System.DateTime.Compare(x.Date, y.Date);
+                    return 1;
+                }
+                if (!y.Consider)
+                    return -1;
+
+                return -1 * System.DateTime.Compare(x.Date, y.Date);
+            }
+        }
+
+        public System.Collections.IEnumerator GetEnumerator1()
+        {
+            return m_list.GetEnumerator();
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator1();
+        }
+
+        public System.Collections.Generic.IEnumerator<CPieceDataVersion<T>> GetEnumerator()
+        {
+            return m_list.GetEnumerator();
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Db\piece\value\CPieceDataValueString.cs">
+    <content><![CDATA[using System.Xml;
+using pdb.util;
+using System;
+
+namespace pdb.db.piece.value
+{
+    public class CPieceDataValueString : CPieceDataValue<string>
+    {
+
+        public void new_(string a_str)
+        {
+
+            // QU'est-ce que cest que ce TRUC!!!!
+            m_data = XMLTool.FromXml(a_str.Trim());
+            //DateTime dt = DateTime.MinValue;
+            
+            //if (DateTime.TryParse(a_str.Trim(), out dt))
+            //    m_data = "";
+
+        }
+
+        public CPieceDataValueString(string a_str)
+        {
+            new_(a_str);
+        }
+
+        public override CPieceDataValue<string> createCopy()
+        {
+            return new CPieceDataValueString(m_data);
+        }
+        public CPieceDataValueString(XmlElement a_node)
+        {
+            XmlElement l_v2 = XMLTool.NodeLookUp(a_node, TOKEN);
+            var att = a_node.Attributes[TOKEN];
+            if (l_v2 != null)
+            {
+                new_(l_v2.InnerText);
+            }
+            else if (att != null)
+            {
+                new_(att.Value);
+            }
+            else
+                new_(a_node.InnerText); 
+        }
+        public override bool Empty
+        {
+            get { return m_data == null || m_data == ""; }
+        }
+
+
+
+        protected override void writeDb(ITextWriter a_sw)
+        {
+            XMLTool.writeValue(a_sw, TOKEN, XMLTool.RefToXml(m_data));
+        }
+
+        //protected override void writeDb(XmlWriter w)
+        //{
+        //    w.WriteElementString(TOKEN, m_data);
+        //}
+
+        public override string ToString()
+        {
+            return XMLTool.RefToXml(m_data);
+        }
+
+        //public override bool Significant
+        //{
+        //    get
+        //    {
+        //        if (!base.Significant)
+        //            return false; 
+        //        string value
+        //    }
+        //}
+    }
+}
 ]]></content>
   </file>
 </db>
