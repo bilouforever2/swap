@@ -10,6 +10,7 @@ using pdb.db;
 using System.IO;
 using pdb.util.list;
 using pdb.util;
+using pdb.gen;
 
 namespace pdb.player.model
 {
@@ -27,36 +28,39 @@ namespace pdb.player.model
     {
         private Dictionary<string, Img> dicttagLib = new Dictionary<string, Img>();
         private Dictionary<string, Img> dictDir = new Dictionary<string, Img>();
+        private Dictionary<string, Img> dictAlbum = new Dictionary<string, Img>();
         private Dictionary<int, BitmapImage> dictPiece = new Dictionary<int, BitmapImage>();
         private static Logger log = Logger.getLogger("Img");
 
 
-        public BitmapImage get(CPiece p)
+        public BitmapImage get(Piece p)
         {
 
-
+            var piece = p.Track as CPiece; 
             if (p == null)
-                return null;  
+                return null;
             if (dictPiece.ContainsKey(p.MasterId))
             {
-                return dictPiece[p.MasterId];
-               
+                var i = dictPiece[p.MasterId]; 
+                log.log("récup img par id "); 
+                return i;
+
             }
 
             dictPiece.Add(p.MasterId, null);
-            Img max = null; 
+            Img max = null;
 
 
-            
-            foreach (CFile f in p.Files)
+
+            foreach (CFile f in piece.Files)
             {
                 var filename = f.Path;
                 if (dicttagLib.ContainsKey(filename))
                 {
                     var _l = dicttagLib[filename];
-                    if (_l != null && ( max == null || _l.size > max.size))
+                    if (_l != null && (max == null || _l.size > max.size))
                     {
-                        max = _l; 
+                        max = _l;
                     }
                     continue;
                 }
@@ -87,8 +91,8 @@ namespace pdb.player.model
                                     {
                                         var img = new Img(i, size);
                                         max = img;
-                                        dicttagLib[filename] = max; 
-                                   
+                                        dicttagLib[filename] = max;
+
                                     }
 
                                     log.log("load img from tagLib {0} {1}", filename, FileUtil.HumanReadableSize(size, -1));
@@ -110,7 +114,7 @@ namespace pdb.player.model
             }
 
 
-            foreach (CFile f in p.Files)
+            foreach (CFile f in piece.Files)
             {
                 var dir = Path.GetDirectoryName(f.Path);
 
@@ -119,7 +123,7 @@ namespace pdb.player.model
                     var _l = dictDir[dir];
                     if (_l != null && (max == null || _l.size > max.size))
                     {
-                        max = _l; 
+                        max = _l;
                     }
                     continue;
                 }
@@ -146,21 +150,22 @@ namespace pdb.player.model
                                     i.EndInit();
                                     i.Freeze();
                                     var size = bin.LongLength;
-                                   
+
                                     var img = new Img(i, size);
 
                                     if (max == null || size > max.size)
                                     {
-                                        max = img; 
+                                        max = img;
                                     }
 
                                     var item = dictDir[dir];
                                     if (item == null || size > item.size)
                                     {
-                                        dictDir[dir] = img; 
+                                        log.log("récup img par dir {0} {1}", dir,FileUtil.HumanReadableSize(size, -1));
+                                        dictDir[dir] = img;
                                     }
 
-                                  
+
                                     log.log("load img from src {0} {1}", fimg.FullName, FileUtil.HumanReadableSize(size, -1));
 
                                 }
@@ -181,25 +186,469 @@ namespace pdb.player.model
                 }
 
             }
-            //if (list.Count > 0)
-            //{
-            //    list.Sort((x, y) => x.size.CompareTo(y.size));
-            //    list.Reverse();
-            //    var ll = new SimpleLinkedList<BitmapImage>();
-            //    foreach (Img img in list)
-            //    {
-            //        ll.add(img.img);
-            //        ret.Add(img.img);
-            //    }
-            //    dictPiece[p.MasterId] = ll;
-            //}
+
+            if (dictAlbum.ContainsKey(p.PieceAlbum.Key))
+            {
+                var img = dictAlbum[p.PieceAlbum.Key];
+                if (max == null || img.size > max.size)
+                {
+                    log.log("récup img par album {0} {1}", p.PieceAlbum.Key, FileUtil.HumanReadableSize(img.size, -1));
+                    max = img;
+                }
+            }
+
+        
+            
             if (max == null)
                 return null;
-            dictPiece[p.MasterId] = max.img; 
-            return max.img  ; 
+
+            if (dictAlbum.ContainsKey(p.PieceAlbum.Key))
+            {
+                dictAlbum[p.PieceAlbum.Key] = max;
+            }
+            else
+                dictAlbum.Add(p.PieceAlbum.Key, max); 
+
+            dictPiece[p.MasterId] = max.img;
+            return max.img;
         }
     }
 }
+]]></content>
+  </file>
+  <file path="\pdb.player\ViewModel\DetailAlbumViewModel.cs">
+    <content><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Windows.Input;
+using pdb.player.ViewModel.Commande.PlayList;
+using pdb.gen.albums;
+using System.Text.RegularExpressions;
+using pdb.player.ViewModel.Commande.Link;
+using pdb.player.ViewModel.Commande;
+using pdb.db;
+using System.Windows.Media.Imaging;
+using System.IO;
+using pdb.util;
+using System.Windows.Media;
+using pdb.player.model;
+using System.Collections.ObjectModel;
+
+
+namespace pdb.player.ViewModel
+{
+
+    public enum albumMode
+    {
+        identique,
+        origine,
+        origineSiVirtuel,
+        plusLong,
+        plusCourt
+    }
+    class DetailAlbumViewModel : ViewModelBase
+    {
+        private static ArtWorkManager artworkManager = new ArtWorkManager(); 
+        private TrackListViewModel humanSelected;
+        private Album currentAlbum;
+        private List<TrackListViewModel> tracks;
+        private albumMode mode;
+        private static Logger log = Logger.getLogger("Img");
+
+
+        public albumMode Mode
+        {
+            get
+            {
+                return mode;
+            }
+            set
+            {
+                if (value != mode)
+                {
+                    mode = value;
+                    init();
+                    OnPropertyChanged("");
+                }
+            }
+        }
+
+        public DetailAlbumViewModel()
+        {
+            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentSelectedChanged);
+        }
+
+
+      //  private ObservableCollection<ImageSource> images; 
+      
+        private void init()
+        {
+            tracks = null;
+            img = null; 
+            //images = new ObservableCollection<ImageSource>() ;
+          //  long sizeImgMax = 0;
+            humanSelected = TrackListViewModel.HumanSelected;
+            if (humanSelected != null)
+            {
+                var p = humanSelected.PieceGen;
+
+                switch (mode)
+                {
+                    case albumMode.identique:
+                        break;
+                    case albumMode.origine: p = p.Master;
+                        break;
+                    case albumMode.origineSiVirtuel:
+                        if (p.Virtual)
+                            p = p.Master;
+                        break;
+                    case albumMode.plusLong:
+                        if (p.Virtual)
+                        {
+                            var virt = p.PieceAlbum.Count;
+                            var master = p.Master.PieceAlbum.Count;
+                            if (master > virt)
+                                p = p.Master;
+                        }
+
+                        break;
+
+                    case albumMode.plusCourt:
+                        if (p.Virtual)
+                        {
+                            var virt = p.PieceAlbum.Count;
+                            var master = p.Master.PieceAlbum.Count;
+                            if (master < virt)
+                                p = p.Master;
+                        }
+
+                        break;
+
+
+                    default:
+                        break;
+                }
+                //foreach (CFile f in humanSelected.Piece.Files)
+                //{
+                //    try
+                //    {
+                //        if (f.exists())
+                //        {
+                //            var filename = f.Path;
+                //            var file = TagLib.File.Create(filename);
+
+                //            foreach (var pict in file.Tag.Pictures)
+                //            {
+                //                try
+                //                {
+                //                    var bin = pict.Data.Data;
+                //                    if (bin.LongLength > sizeImgMax)
+                //                    {
+                //                        using (var stream = new MemoryStream(bin))
+                //                        {
+                //                            BitmapImage i = new BitmapImage();
+                //                            i.BeginInit();
+                //                            i.StreamSource = stream;
+                //                            i.CacheOption = BitmapCacheOption.OnLoad;
+                //                            i.EndInit();
+                //                            i.Freeze();
+                //                            img = i;
+                //                            sizeImgMax = bin.LongLength;
+                //                            log.log("load img from tagLib {0} {1}", filename, FileUtil.HumanReadableSize(sizeImgMax, -1));
+
+                //                        }
+                //                    }
+                //                }
+                //                catch (Exception ex)
+                //                {
+                //                }
+                //            }
+                            
+                //        }
+
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //    }
+                //}
+
+
+                //foreach (CFile f in humanSelected.Piece.Files)
+                //{
+                //    try
+                //    {
+                //        if (f.exists())
+                //        {
+                //            var fdir = FileRegister.CheckDir(f.Path);
+                //            foreach (FileValue fimg in fdir.imgs)
+                //            {
+                //                try
+                //                {
+                //                    var bin = File.ReadAllBytes(fimg.FullName);
+                //                    if (bin.LongLength > sizeImgMax)
+                //                    {
+
+                //                        using (var stream = new MemoryStream(bin))
+                //                        {
+                //                            BitmapImage i = new BitmapImage();
+                //                            i.BeginInit();
+                //                            i.StreamSource = stream;
+                //                            i.CacheOption = BitmapCacheOption.OnLoad;
+                //                            i.EndInit();
+                //                            i.Freeze();
+                //                            img = i;
+                //                            sizeImgMax = bin.LongLength;
+                //                            log.log("load img from src {0} {1}", fimg.FullName, FileUtil.HumanReadableSize(sizeImgMax, -1));
+                                           
+                //                        }
+
+                //                    }
+                //                }
+
+                //                catch (Exception ex)
+                //                {
+                //                }
+                //            }
+                //        }
+
+
+
+                //    }
+
+                //    catch (Exception ex)
+                //    {
+                //    }
+                   
+                //}
+                img = artworkManager.get(humanSelected.PieceGen); 
+                
+                currentAlbum = p.PieceAlbum;
+            }
+            else
+            {
+                currentAlbum = null;
+                //tracks = new List<TrackListViewModel>();
+            }
+        }
+
+        //public ObservableCollection<ImageSource> Images
+        //{
+        //    get
+        //    {
+        //        return images; 
+        //    }
+        //}
+
+        void TrackListViewModel_CurrentSelectedChanged(object sender, System.EventArgs e)
+        {
+            if (humanSelected != TrackListViewModel.HumanSelected)
+            {
+                init();
+
+            }
+        }
+
+        public List<TrackListViewModel> Album
+        {
+            get
+            {
+                //if (tracks != null)
+                //    return tracks;
+                tracks = new List<TrackListViewModel>(); ;
+                if (currentAlbum == null)
+                {
+                    //tracks = new List<TrackListViewModel>();
+                }
+                else
+                {
+                    // var ll = new List<TrackListViewModel>();
+
+                    int index = 0;
+                    foreach (var t in currentAlbum.Tracks)
+                    {
+                        index++;
+                        TrackListViewModel trackList = PlayListViewModel.findTrack(App.bib.Musique, t.PieceId);
+                        if (trackList == null)
+                            continue;
+                        trackList.Index = index;
+                        if (t.MasterId == humanSelected.MasterId)
+                            trackList.IsSelected = true;
+                        else
+                            trackList.IsSelected = false;
+                        tracks.Add(trackList);
+                    }
+                }
+                return tracks;
+
+            }
+        }
+
+        public TrackListViewModel SelectedTrackInAlbumView
+        {
+            get
+            {
+
+                if (humanSelected == null)
+                    return null;
+                var tracks = Album;
+                if (tracks == null || tracks.Count == 0)
+                    return null;
+                var tt = tracks.Find(t => t.MasterId == humanSelected.MasterId);
+                return tt;
+            }
+            set
+            {
+                humanSelected = value;
+                if (humanSelected != null)
+                    humanSelected.IsSelected = true;
+                TrackListViewModel.setHumanSelected(App.bib.Musique, value); // HumanSelected = value;
+
+                //var old = SelectedTrackInAlbumView; 
+                //if (value !=old)
+                //{
+                //    if (old != null)
+                //        old.IsSelected = false;
+                //    humanSelected = value;
+                //    SelectedTrackInAlbumView.IsSelected = true; 
+
+                //}
+            }
+        }
+
+
+        #region cmd
+
+        private ICommand _contextCmdCheck;
+        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
+
+        private ICommand _contextCmdUnCheck;
+        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
+
+
+        private ICommand _contextLinkFather;
+        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
+
+        private ICommand _contextLinkChild;
+        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
+
+        private ICommand _contextLinkFusion;
+        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
+
+        private ICommand _contextUnLink;
+        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
+
+        private ICommand _contextDelete;
+        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
+
+        private ICommand _contexExplorer;
+        public ICommand Explorer { get { if (_contexExplorer == null) _contexExplorer = new Explorer(); return _contexExplorer; } }
+
+
+
+        private ICommand _ContextCmdAddToList;
+        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
+
+        private ICommand _ContextCmdDbDeleteClassement;
+        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
+
+        private ICommand _ContextCmdDbDeleteRead;
+        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
+
+
+        #endregion
+
+        //  static Regex reg = new Regex(@"\[(.*)\]");
+        /// <summary>
+        /// moche mais pour l'instant on s'en contente
+        /// </summary>
+        public string Grouping
+        {
+            get
+            {
+                return getGrouping(false);
+            }
+        }
+
+        private string getGrouping(bool albumVirt)
+        {
+            if (humanSelected == null)
+                return "";
+            var t = humanSelected.PieceGen;
+            if (albumVirt)
+                t = humanSelected.PieceGen.Master;
+
+            var a = t.PieceAlbum;
+            if (a == null)
+                return "";
+            string delta = "-";
+            var updateClassement = a.UpdateClassement;
+            if (updateClassement != null)
+                delta = ((int)(DateTime.Now.Date - updateClassement.Value.Date).TotalDays).ToString();
+
+            return string.Format("{0} {1} [{2}] {3}", t.StackIndex, delta, t.RankAlbumReverse, a.EquivLight);
+
+            //var str = t.Grouping;
+
+            //if (!reg.IsMatch(str))
+            //    return str;
+
+            //return reg.Match(str).Groups[1].Value;
+        }
+
+        public string GroupingAlt
+        {
+            get
+            {
+                return getGrouping(true);
+            }
+        }
+
+        public bool WithVirtualAlbum
+        {
+            get
+            {
+                if (humanSelected == null)
+                    return false;
+                return humanSelected.PieceGen.PieceAlbum != currentAlbum;
+            }
+        }
+
+        public string Name
+        {
+            get
+            {
+                if (humanSelected == null)
+                    return "";
+                return humanSelected.Album;
+            }
+        }
+
+        public string NameAlt
+        {
+            get
+            {
+                if (currentAlbum == null)
+                    return "";
+                return currentAlbum.Name;
+            }
+        }
+
+        #region image
+        private ImageSource img;
+        public bool HasArtWork
+        {
+            get
+            {
+                return img != null;
+            }
+        }
+
+        public ImageSource ArtWork { get { return img; } }
+        #endregion
+    }
+}
+
 ]]></content>
   </file>
 </db>
