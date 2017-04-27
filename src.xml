@@ -1,390 +1,731 @@
 <db path="C:\Bernard\db1\pdb4">
-  <file path="\pdb.player\ViewModel\DetailAlbumViewModel.cs">
+  <file path="\PieceDb.Consolid\Piece.cs">
     <content><![CDATA[using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Input;
-using pdb.player.ViewModel.Commande.PlayList;
-using pdb.gen.albums;
-using System.Text.RegularExpressions;
-using pdb.player.ViewModel.Commande.Link;
-using pdb.player.ViewModel.Commande;
-using pdb.db;
-using System.Windows.Media.Imaging;
-using System.IO;
+using System.Globalization;
+using pdb.gen.conf;
+using pdb.gen.Tuning;
+using pdb.obj;
 using pdb.util;
-using System.Windows.Media;
-using pdb.player.model;
-using System.Collections.ObjectModel;
+using pdb.gen.albums;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
-
-namespace pdb.player.ViewModel
+namespace pdb.gen
 {
-
-    public enum albumMode
+    public enum infoMedianne : short
     {
-        identique,
-        origine,
-        origineSiVirtuel,
-        plusLong,
-        plusCourt
+        none = 0,
+        med = 1,
+        medLight = 2,
+        border = 4,
+        borderEff = 8,
+        borderMin = 16
     }
-    class DetailAlbumViewModel : ViewModelBase
+    /// <summary>
+    /// Ajout de données utiles Ranq
+    /// </summary>
+    public class Piece : ITrackMetaData, IFile, ITrackNativeDates, IEnumerable<Piece>
     {
-        private static ArtWorkManager artworkManager = new ArtWorkManager(); 
-        private TrackListViewModel humanSelected;
-        private Album currentAlbum;
-        private List<TrackListViewModel> tracks;
-        private albumMode mode;
-        private static Logger log = Logger.getLogger("Img");
+        private ITrackNativeDates track;
+        public bool Virtual { get { return PieceId < 0; } }
+        public virtual bool VirtualByArtist { get { return false; } }
+        // private String className = "";
+        private static CultureInfo en = new CultureInfo("en-US");
+        //  private static List<displayCategory> minCategories;
 
+        protected static Consolid gen;
+        public static Consolid Gen { set { gen = value; } }
 
-        public albumMode Mode
+        static Piece()
+        {
+            //   minCategories = new List<displayCategory> { displayCategory.rankTime, displayCategory.timeValue, displayCategory.dates, displayCategory.pertinentDates };
+        }
+
+        public ITrackNativeDates Track { get { return track; } }
+
+        #region Rank
+        private CRank m_rank = new CRank();
+
+        public CRank Rank
         {
             get
             {
-                return mode;
+                if (parent == null)
+                    return m_rank;
+                return parent.m_rank;
             }
+        }
+
+        private infoMedianne _infoMedianne;
+        public void eraseInfoMedianne() { _infoMedianne = infoMedianne.none; }
+        public infoMedianne InfoMedianne { get { return _infoMedianne; } }
+        public bool Medianne
+        {
+            get
+            {
+                return _infoMedianne.HasFlag(infoMedianne.med);
+            }
+
             set
             {
-                if (value != mode)
-                {
-                    mode = value;
-                    init();
-                    OnPropertyChanged("");
-                }
+                if (!value)
+                    throw new ApplicationException();
+                if (Medianne)
+                    return;
+                _infoMedianne |= infoMedianne.med;
             }
         }
-
-        public DetailAlbumViewModel()
+        public bool MedianneLight
         {
-            TrackListViewModel.CurrentHumanSelectedChanged += new EventHandler(TrackListViewModel_CurrentSelectedChanged);
+            get
+            {
+                return _infoMedianne.HasFlag(infoMedianne.medLight);
+            }
+
+            set
+            {
+                if (!value)
+                    throw new ApplicationException();
+                if (MedianneLight)
+                    return;
+                _infoMedianne |= infoMedianne.medLight;
+            }
         }
 
-
-      //  private ObservableCollection<ImageSource> images; 
-      
-        private void init()
+        public bool Border
         {
-            tracks = null;
-            img = null; 
-            //images = new ObservableCollection<ImageSource>() ;
-          //  long sizeImgMax = 0;
-            humanSelected = TrackListViewModel.HumanSelected;
-            if (humanSelected != null)
+            get
             {
-                var p = humanSelected.PieceGen;
-
-                switch (mode)
-                {
-                    case albumMode.identique:
-                        break;
-                    case albumMode.origine: p = p.Master;
-                        break;
-                    case albumMode.origineSiVirtuel:
-                        if (p.Virtual)
-                            p = p.Master;
-                        break;
-                    case albumMode.plusLong:
-                        if (p.Virtual)
-                        {
-                            var virt = p.PieceAlbum.Count;
-                            var master = p.Master.PieceAlbum.Count;
-                            if (master > virt)
-                                p = p.Master;
-                        }
-
-                        break;
-
-                    case albumMode.plusCourt:
-                        if (p.Virtual)
-                        {
-                            var virt = p.PieceAlbum.Count;
-                            var master = p.Master.PieceAlbum.Count;
-                            if (master < virt)
-                                p = p.Master;
-                        }
-
-                        break;
-
-
-                    default:
-                        break;
-                }
-                //foreach (CFile f in humanSelected.Piece.Files)
-                //{
-                //    try
-                //    {
-                //        if (f.exists())
-                //        {
-                //            var filename = f.Path;
-                //            var file = TagLib.File.Create(filename);
-
-                //            foreach (var pict in file.Tag.Pictures)
-                //            {
-                //                try
-                //                {
-                //                    var bin = pict.Data.Data;
-                //                    if (bin.LongLength > sizeImgMax)
-                //                    {
-                //                        using (var stream = new MemoryStream(bin))
-                //                        {
-                //                            BitmapImage i = new BitmapImage();
-                //                            i.BeginInit();
-                //                            i.StreamSource = stream;
-                //                            i.CacheOption = BitmapCacheOption.OnLoad;
-                //                            i.EndInit();
-                //                            i.Freeze();
-                //                            img = i;
-                //                            sizeImgMax = bin.LongLength;
-                //                            log.log("load img from tagLib {0} {1}", filename, FileUtil.HumanReadableSize(sizeImgMax, -1));
-
-                //                        }
-                //                    }
-                //                }
-                //                catch (Exception ex)
-                //                {
-                //                }
-                //            }
-                            
-                //        }
-
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //    }
-                //}
-
-
-                //foreach (CFile f in humanSelected.Piece.Files)
-                //{
-                //    try
-                //    {
-                //        if (f.exists())
-                //        {
-                //            var fdir = FileRegister.CheckDir(f.Path);
-                //            foreach (FileValue fimg in fdir.imgs)
-                //            {
-                //                try
-                //                {
-                //                    var bin = File.ReadAllBytes(fimg.FullName);
-                //                    if (bin.LongLength > sizeImgMax)
-                //                    {
-
-                //                        using (var stream = new MemoryStream(bin))
-                //                        {
-                //                            BitmapImage i = new BitmapImage();
-                //                            i.BeginInit();
-                //                            i.StreamSource = stream;
-                //                            i.CacheOption = BitmapCacheOption.OnLoad;
-                //                            i.EndInit();
-                //                            i.Freeze();
-                //                            img = i;
-                //                            sizeImgMax = bin.LongLength;
-                //                            log.log("load img from src {0} {1}", fimg.FullName, FileUtil.HumanReadableSize(sizeImgMax, -1));
-                                           
-                //                        }
-
-                //                    }
-                //                }
-
-                //                catch (Exception ex)
-                //                {
-                //                }
-                //            }
-                //        }
-
-
-
-                //    }
-
-                //    catch (Exception ex)
-                //    {
-                //    }
-                   
-                //}
-                img = artworkManager.get(humanSelected.PieceGen); 
-                
-                currentAlbum = p.PieceAlbum;
-               albums = initAlbums(); 
+                return _infoMedianne.HasFlag(infoMedianne.border);
             }
-            else
+
+            set
             {
-                currentAlbum = null;
-                //tracks = new List<TrackListViewModel>();
+                if (!value)
+                    throw new ApplicationException();
+                if (Border)
+                    return;
+                _infoMedianne |= infoMedianne.border;
             }
         }
 
-        //public ObservableCollection<ImageSource> Images
+        public bool BorderEffect
+        {
+            get
+            {
+                return _infoMedianne.HasFlag(infoMedianne.borderEff);
+            }
+
+            set
+            {
+                if (!value)
+                    throw new ApplicationException();
+                if (BorderEffect)
+                    return;
+                _infoMedianne |= infoMedianne.borderEff;
+            }
+        }
+
+        public bool BorderMin
+        {
+            get
+            {
+                return _infoMedianne.HasFlag(infoMedianne.borderMin);
+            }
+
+            set
+            {
+                if (!value)
+                    throw new ApplicationException();
+                if (BorderMin)
+                    return;
+                _infoMedianne |= infoMedianne.borderMin;
+            }
+        }
+
+
+        public virtual void initRank()
+        {
+            //  _classementCache = null; 
+            //_infoMedianne = infoMedianne.none;
+            // _classementProvisoireRecent = null;
+
+            // _lnClassement = int.MinValue; 
+            Rank.init();
+        }
+
+        public int QRank
+        {
+            get { return Rank.Quality; }
+            set { Rank.Quality = value; }
+        }
+
+        public int LRank
+        {
+            get { return Rank.Lenght; }
+            set { Rank.Lenght = value; }
+        }
+
+        public int QLRank
+        {
+            get { return Rank.Twice; }
+            set { Rank.Twice = value; }
+        }
+
+        public int RankAllAlbum
+        {
+            get { return m_rank.RankAllAlbum; }
+            set { m_rank.RankAllAlbum = value; }
+        }
+
+        public int RankAlbum { get { if (album == null) return 0; return album.Rank.Sort; } }
+        public int RankAlbumSt { get { if (album == null) return 0; return album.RankSt; } }
+
+        public bool AlbumAbsent { get { if (album == null) return true; return album.Absent; } }
+
+        //public int nbInAlbum(exportState state ) { if (album == null) return -1; return album.nbInAlbum(state);  }
+        public int NbExportPresents { get { if (album == null) return -1; return album.NbExportPresents; } }
+
+        //public bool SameAlbum(Piece x)
         //{
-        //    get
+        //    if (x == null)
+        //        return false; 
+        //    return album == x.album; 
+        //}
+
+        public int IndexExport { get { if (album == null) return -1; return album.IndexExport(this); } }
+
+        //  public TuningData TuningData { get { return m_rank.Rest; } set { m_rank.Rest = value; } }
+        #endregion
+
+
+
+        public bool FirstClass { get { return track.FirstClass; } set { track.FirstClass = value; } }
+        private Album album;
+
+        public Album PieceAlbum { get { return album; } set { album = value; } }
+        public int StackValue { get { if (album == null) return 0; return album.StackValue; } }
+        public int StackIndex { get { if (album == null) return 0; return album.StackIndex; } }
+        public bool Moved { get { if (album == null) return false; return album.Moved && SelectedMotif == selectedCoeff.noCoeff; } set { if (album != null) album.Moved = value; } }
+        public bool MovedM
+        {
+            get
+            {
+                if (album == null) return false;
+                switch (SelectedMotif)
+                {
+                    case selectedCoeff.none:
+                        return false;
+                    case selectedCoeff.noCoeff:
+                        return false;
+                    case selectedCoeff.main:
+                    case selectedCoeff.min:
+                        return album.Moved;
+                    default:
+                        return false;
+                }
+            }
+        }
+
+        public bool isEmpeached()
+        {
+            if (album == null) return false;
+            return album.Empeached;
+        }
+
+        public bool Empeached { get { if (album == null) return false; return album.Empeached && SelectedMotif == selectedCoeff.noCoeff; } set { if (album != null) album.Empeached = value; } }
+        public bool EmpeachedM
+        {
+            get
+            {
+                if (album == null) return false;
+                switch (SelectedMotif)
+                {
+                    case selectedCoeff.none:
+                        return false;
+                    case selectedCoeff.noCoeff:
+                        return false;
+                    case selectedCoeff.main:
+                    case selectedCoeff.min:
+                        return album.Empeached;
+                    default:
+                        return false;
+                }
+            }
+        }
+        /// <summary>
+        /// Premier empêché
+        /// </summary>
+        public bool Empeached1 { get { if (album == null) return false; return album.Empeached1 && this == album.Next; } set { if (album != null) album.Empeached1 = value; } }
+        public bool AlmostFree { get { if (album == null) return false; return album.AlmostFree && this == album.Next; } }
+        public bool AlmostFree1 { get { if (album == null) return false; return album.AlmostFree1 && this == album.Next; } }
+
+        public bool AlbumRecentlyUpdated { get { return StackValue > 0 && SelectedMotif == selectedCoeff.noCoeff; } }
+        public bool AlbumRecentlyUpdatedMain
+        {
+            get
+            {
+                if (StackValue == 0) return false;
+                switch (SelectedMotif)
+                {
+                    case selectedCoeff.none:
+                        return false;
+                    case selectedCoeff.noCoeff:
+                        return false;
+                    case selectedCoeff.main:
+                    case selectedCoeff.min:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
+
+        //private static int _sID = 0;
+        //private int _dID;
+        internal Piece(ITrackNativeDates track)
+        {
+            //_sID++;
+            //_dID = _sID;
+            if (track == null)
+                Debugger.Launch();
+            this.track = track; initRank();
+
+#if VOL
+            int volumeMin = CConf.VolumeMin;
+            if (Volume < volumeMin)
+                Volume = volumeMin;
+#endif
+        }
+
+        ///// <summary>
+        ///// Tri des listes classement et détermination de la liste classement pertinente
+        ///// </summary>
+        //public void setClassPlayList()
+        //{
+        //    List<CPlayList> classLists = track.ClassPlayLists;
+        //    if (classLists.Count > 0)
         //    {
-        //        return images; 
+        //        classLists.Sort(new CPlayListComparer());
+        //        className = classLists[0].Name;
         //    }
         //}
 
-        void TrackListViewModel_CurrentSelectedChanged(object sender, System.EventArgs e)
+        public String ClassName { get { return track.ClassName; } set { track.ClassName = value; } }
+
+        public void setClassement(string className, int rating)
         {
-            if (humanSelected != TrackListViewModel.HumanSelected)
-            {
-                init();
+            if (className == null)
+                return;
+            track.setClassement(className, rating);
+            invalidateCache();
 
-            }
         }
-
-        public List<TrackListViewModel> Album
+        private static ClassementHash classementHash = new ClassementHash();
+        private ClassementCache _classementCache;
+        private ClassementCache ClassementCache
         {
             get
             {
-                //if (tracks != null)
-                //    return tracks;
-                tracks = new List<TrackListViewModel>(); ;
-                if (currentAlbum == null)
-                {
-                    //tracks = new List<TrackListViewModel>();
-                }
-                else
-                {
-                    // var ll = new List<TrackListViewModel>();
 
-                    int index = 0;
-                    foreach (var t in currentAlbum.Tracks)
+
+                if (_classementCache == null)
+                {
+                    if (parent != null)
+                        _classementCache = parent.ClassementCache;
+                    if (_classementCache == null)
+                        _classementCache = classementHash.getCache(track.ClassName, track.Rating);
+                }
+                return _classementCache;
+            }
+        }
+        public virtual void invalidateCache()
+        {
+
+            //_classNameAndRating = null;
+            //_classementValueDecimal = -1;
+            //_rapportClassement = -1;
+            //  _classementProvisoireRecent = null;
+
+            if (parent != null)
+                parent.invalidateCache();
+            else
+            {
+                _classementCache = null;
+                foreach (Piece p in childs)
+                {
+                    p._classementCache = null;
+                }
+            }
+
+
+        }
+
+        //public bool belongsTo(string a_list)
+        //{
+        //    foreach (CPlayList l_pl in track.PLayLists)
+        //    {
+        //        if (l_pl.isSubList(a_list))
+        //            return true;
+        //    }
+        //    return false;
+        //}
+
+        #region CPieceComparer compatibilité
+        public List<CPlayList> ClassPlayLists
+        {
+            get { return track.ClassPlayLists; }
+        }
+        /// <summary>
+        /// ClassList principale
+        /// </summary>
+        public CPlayList ClassPlayList
+        {
+            get
+            {
+                List<CPlayList> classLists = track.ClassPlayLists;
+                if (classLists.Count > 0)
+                    return classLists[0];
+                return null;
+            }
+        }
+
+
+        public int RatingCmp
+        {
+            get
+            {
+                int rating = track.Rating;
+                if (rating < 0)
+                    return 0;
+                return rating;
+            }
+        }
+        /// <summary>
+        /// la classList est-elle numérique?
+        /// </summary>
+        public bool isClassListNumeric
+        {
+            get
+            {
+                return ClassName.isInteger();
+            }
+        }
+
+        // private string _classNameAndRating;
+        public String ClassNameAndRating
+        {
+            get
+            {
+                return ClassementCache.ClassNameAndRating;
+            }
+        }
+
+        // private decimal _classementValueDecimal = -1;
+        public decimal ClassementValueDecimal
+        {
+            get
+            {
+                return ClassementCache.ClassementValueDecimal;
+            }
+        }
+        //private double _classementValue = -1; 
+        //public double ClassementValue
+        //{
+        //    get
+        //    {
+        //        if (_classementValue == -1)
+        //        {
+        //            if (!isClassListNumeric)
+        //                _classementValue = 0;
+        //            else
+        //            {
+        //                string classNameAndRating = ClassNameAndRating.Insert(1, ",");
+        //                _classementValue= Convert.ToDouble(classNameAndRating);
+        //            }
+        //        }
+
+        //        return _classementValue; 
+        //    }
+        //}
+
+        public static decimal getRapport(decimal base6)
+        {
+            string str = base6.ToString("0.######").Replace(",", "");
+            return getRapport(str);
+        }
+
+        public static decimal getRapport(string classNameAndRating)
+        {
+            decimal resultat = 0m;
+            char[] tab = classNameAndRating.ToCharArray();
+
+            decimal K = 1;
+            int count = tab.GetLength(0);
+
+
+            for (int i = 0; i < count; i++)
+            {
+                K = K * 6;
+                int c = Convert.ToInt32(tab[i].ToString());
+                resultat += (decimal)c / K;
+            }
+
+            return resultat;
+        }
+
+        // private decimal _rapportClassement = -1;
+        public decimal RapportClassement
+        {
+            get
+            {
+                return ClassementCache.RapportClassement;
+                //if (parent != null)
+                //    return parent.RapportClassement;
+                //if (_rapportClassement != -1)
+                //    return _rapportClassement;
+
+                //decimal resultat = 0;
+                //try
+                //{
+                //    return getRapport(ClassNameAndRating);
+                //}
+                //catch
+                //{
+                //}
+                //_rapportClassement = resultat;
+                //// _classementVirtuel = resultat; 
+                //return _rapportClassement;
+            }
+        }
+
+
+        //private decimal _lnClassement = -1;
+        //public decimal LnClassement
+        //{
+        //    get
+        //    {
+        //        if (_lnClassement == int.MinValue)
+        //        {
+        //            var rapport = RapportClassement;
+        //            if (rapport <= 0m)
+        //                _lnClassement = 0m;
+        //            else
+        //                _lnClassement = Math.Log10(rapport) + 10;
+        //        }
+        //        return _lnClassement; 
+        //    }
+        //}
+        static int NB_DEC = 4;
+        public static string getReadableCl(string str)
+        {
+            int count = str.Length;
+            if (count < 4)
+                return str;
+
+            var tab = str.ToCharArray();
+            var sb = new StringBuilder();
+            int i = 0;
+
+            bool pt = false;
+            for (int ii = 0; ii < count; ii++)
+            {
+                var c = tab[ii];
+                if (c == '.')
+                    pt = true;
+
+                if (!pt)
+                {
+                    if (c != ' ')
                     {
-                        index++;
-                        TrackListViewModel trackList = PlayListViewModel.findTrack(App.bib.Musique, t.PieceId);
-                        if (trackList == null)
-                            continue;
-                        trackList.Index = index;
-                        if (t.MasterId == humanSelected.MasterId)
-                            trackList.IsSelected = true;
-                        else
-                            trackList.IsSelected = false;
-                        tracks.Add(trackList);
+                        if (i >= NB_DEC)
+                        {
+                            i = 0;
+                            sb.Append(" ");
+                        }
+                        i++;
                     }
                 }
-                return tracks;
-
+                sb.Append(c);
             }
+
+            return sb.ToString();
         }
 
-        public TrackListViewModel SelectedTrackInAlbumView
+        public static string getClassementEquiv(decimal valRapport)
+        {
+            if (valRapport < 0)
+                return "";
+            if (valRapport == 0m)
+                return "0";
+            decimal v = 0;
+            decimal r = valRapport;
+            StringBuilder sb = new StringBuilder();
+            int _ok = Int16.MaxValue;
+
+            int lastNotNull = 0;
+            int firstNotNull = -1; 
+            int i = 0;
+            for (; i < 13; i++)
+            {
+                v = 6 * r;
+                int a = (int)(v + 0.0001m);
+                if (a > 0 && i < _ok)
+                {
+                    _ok = i;
+                }
+                r = v - a;
+                if (r < 0)
+                    r = 0;
+                sb.Append(a);
+
+                if (a > 0)
+                {
+                    lastNotNull = i;
+                    if (firstNotNull < 0)
+                        firstNotNull = i; 
+                }
+                if (i >= _ok + 5)
+                    break;
+            }
+            var str = sb.ToString();
+            sb = new StringBuilder();
+            int indexPt = lastNotNull-1;
+            if ((lastNotNull - firstNotNull) > 4)
+                indexPt--; 
+            //if (str.Length == 5)
+            //    indexPt--; 
+
+            for (int j = 0; j <= lastNotNull; j++)
+            {
+              
+                sb.Append(str[j]);
+                if (j == indexPt)
+                    sb.Append('.');
+                 
+            }
+            str = sb.ToString(); // str.Insert(str.Length - 1, ".");
+            return getReadableCl(str);
+        }
+
+
+
+
+        public decimal RapportClassementDecimal
         {
             get
             {
+                if (parent != null)
+                    return parent.RapportClassementDecimal;
+                decimal resultat = 0;
+                try
+                {
+                    string str = ClassNameAndRating;
+                    char[] tab = str.ToCharArray();
 
-                if (humanSelected == null)
-                    return null;
-                var tracks = Album;
-                if (tracks == null || tracks.Count == 0)
-                    return null;
-                var tt = tracks.Find(t => t.MasterId == humanSelected.MasterId);
-                return tt;
+                    decimal K = 1m;
+                    int count = tab.GetLength(0);
+
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        K = K * 6;
+                        int c = Convert.ToInt32(tab[i].ToString());
+                        resultat += (decimal)c / K;
+                    }
+                }
+                catch
+                {
+                }
+                return resultat;
+            }
+        }
+
+        public int classPrecision()
+        {
+            string classNameAndRating = ClassNameAndRating;
+            int precision = 0;
+            char[] tab = classNameAndRating.ToCharArray();
+            int count = tab.GetLength(0);
+
+            int iIndexDepart = -1;
+            int iIndexFin = -1;
+            for (int i = 0; i < count; i++)
+            {
+                Char c = tab[i];
+                if (iIndexDepart < 0)
+                {
+                    if (c != '0')
+                        iIndexDepart = i;
+                }
+
+                if (c != '0')
+                    iIndexFin = i;
+            }
+
+            precision = iIndexFin - iIndexDepart + 1;
+
+            return precision;
+        }
+        #endregion
+
+        #region compatibilité CList
+        /// <summary>
+        /// vérifie si les deux pieces n'en sont qu'une
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>True si doublon</returns>
+        /// <remarks></remarks>
+        //public bool checkIdentity(ITrackIdentity other)
+        //{
+        //    //return track.Location == other.Location; 
+        //    String location = track.Location;
+        //    return (location.Equals((other.Location)) || CUtil.DefinedEquals(track.Artist, track.Album, track.Name, track.TrackNumber, other.Artist, other.Album, other.Name, other.TrackNumber));
+        //}
+        #endregion
+
+        #region ITrackNative Membres
+
+        public string Artist
+        {
+            get
+            {
+                return track.Artist;
             }
             set
             {
-                humanSelected = value;
-                if (humanSelected != null)
-                    humanSelected.IsSelected = true;
-                TrackListViewModel.setHumanSelected(App.bib.Musique, value); 
+                if (track.Artist != value)
+                {
+                    try
+                    {
+                        //                 misc.log("change artist from '{0}' to'{1}'", track.Artist, value);
+                        track.Artist = value;
+                    }
+                    catch { misc.log("unable to change artist {0}  {1}", track.Artist, value); }
+                }
             }
         }
 
-
-        #region cmd
-
-        private ICommand _contextCmdCheck;
-        public ICommand ContextCmdCheck { get { if (_contextCmdCheck == null) _contextCmdCheck = new CheckCmd(); return _contextCmdCheck; } }
-
-        private ICommand _contextCmdUnCheck;
-        public ICommand ContextCmdUnCheck { get { if (_contextCmdUnCheck == null) _contextCmdUnCheck = new UnCheckCmd(); return _contextCmdUnCheck; } }
-
-
-        private ICommand _contextLinkFather;
-        public ICommand LinkFather { get { if (_contextLinkFather == null) _contextLinkFather = new LinkFather(); return _contextLinkFather; } }
-
-        private ICommand _contextLinkChild;
-        public ICommand LinkChild { get { if (_contextLinkChild == null) _contextLinkChild = new LinkChild(); return _contextLinkChild; } }
-
-        private ICommand _contextLinkFusion;
-        public ICommand LinkFusion { get { if (_contextLinkFusion == null) _contextLinkFusion = new LinkFusion(); return _contextLinkFusion; } }
-
-        private ICommand _contextUnLink;
-        public ICommand LinkReset { get { if (_contextUnLink == null) _contextUnLink = new LinkReset(); return _contextUnLink; } }
-
-        private ICommand _contextDelete;
-        public ICommand DeleteTrack { get { if (_contextDelete == null) _contextDelete = new DeleteCmd(); return _contextDelete; } }
-
-        private ICommand _contexExplorer;
-        public ICommand Explorer { get { if (_contexExplorer == null) _contexExplorer = new Explorer(); return _contexExplorer; } }
-
-
-
-        private ICommand _ContextCmdAddToList;
-        public ICommand ContextCmdAddToList { get { if (_ContextCmdAddToList == null) _ContextCmdAddToList = new AddToList(App.Instance); return _ContextCmdAddToList; } }
-
-        private ICommand _ContextCmdDbDeleteClassement;
-        public ICommand ContextCmdDbDeleteClassement { get { if (_ContextCmdDbDeleteClassement == null) _ContextCmdDbDeleteClassement = new DbDeleteLastClassement(); return _ContextCmdDbDeleteClassement; } }
-
-        private ICommand _ContextCmdDbDeleteRead;
-        public ICommand ContextCmdDbDeleteRead { get { if (_ContextCmdDbDeleteRead == null) _ContextCmdDbDeleteRead = new DbDeleteLastRead(); return _ContextCmdDbDeleteRead; } }
-
-
-        #endregion
-
-        //  static Regex reg = new Regex(@"\[(.*)\]");
-        /// <summary>
-        /// moche mais pour l'instant on s'en contente
-        /// </summary>
-        public string Grouping
+        public virtual string Album
         {
             get
             {
-                return getGrouping(false);
+                return track.Album;
             }
-        }
-
-        private string getGrouping(bool albumVirt)
-        {
-            if (humanSelected == null)
-                return "";
-            var t = humanSelected.PieceGen;
-            if (albumVirt)
-                t = humanSelected.PieceGen.Master;
-
-            var a = t.PieceAlbum;
-            if (a == null)
-                return "";
-            string delta = "-";
-            var updateClassement = a.UpdateClassement;
-            if (updateClassement != null)
-                delta = ((int)(DateTime.Now.Date - updateClassement.Value.Date).TotalDays).ToString();
-
-            return string.Format("{0} {1} [{2}] {3}", t.StackIndex, delta, t.RankAlbumReverse, a.EquivLight);
-
-            //var str = t.Grouping;
-
-            //if (!reg.IsMatch(str))
-            //    return str;
-
-            //return reg.Match(str).Groups[1].Value;
-        }
-
-        public string GroupingAlt
-        {
-            get
+            set
             {
-                return getGrouping(true);
-            }
-        }
-
-        public bool WithVirtualAlbum
-        {
-            get
-            {
-                if (humanSelected == null)
-                    return false;
-                return humanSelected.PieceGen.PieceAlbum.Virtual; 
+                if (track.Album != value)
+                {
+                    try
+                    {
+                        //                   misc.log("change Album from '{0}' to'{1}'", track.Album, value);
+                        track.Album = value;
+                    }
+                    catch { misc.log("unable to change album {0}  {1}", track.Album, value); }
+                }
             }
         }
 
@@ -392,103 +733,2994 @@ namespace pdb.player.ViewModel
         {
             get
             {
-                if (humanSelected == null)
-                    return "";
-                return humanSelected.Album;
-            }
-        }
-
-        public string NameAlt
-        {
-            get
-            {
-                if (humanSelected == null)
-                    return "";
-                return humanSelected.Piece.Master.Album;
-            }
-        }
-
-        #region image
-        private ImageSource img;
-        public bool HasArtWork
-        {
-            get
-            {
-                return img != null;
-            }
-        }
-
-        public ImageSource ArtWork { get { return img; } }
-
-        #region albums
-        public List<TrackListViewModel> Albums { get { return albums  ; } }
-        private List<TrackListViewModel> albums = new List<TrackListViewModel>();
-        public List<TrackListViewModel> initAlbums()
-        {
-           var albums = new List<TrackListViewModel>();
-            if (humanSelected == null)
-                return albums ;
-            var pl = PlayListViewModel.SelectedPlayList ; 
-            if (pl== null)
-                return albums;
-            foreach (var p in humanSelected.PieceGen.Master)
-            {
-                albums.Add(pl.FindTrack(p.PieceId));
-            }
-            albums.Sort(new AlbumComparer());
-
-            foreach (TrackListViewModel t in albums)
-            {
-                t.IsSelected = t.PieceId == humanSelected.PieceId;
-            }
-            return albums;
-
-          
-        }
-
-
-        public TrackListViewModel SelectedTrackInAlbumsView
-        {
-            get
-            {
-                return humanSelected; 
-               
+                return track.Name;
             }
             set
             {
-                humanSelected = value;
-                //if (humanSelected != null)
-                //    humanSelected.IsSelected = true;
-             //   TrackListViewModel.setHumanSelected(App.bib.Musique, value); // HumanSelected = value;
-            
+                if (track.Name != value)
+                {
+                    try
+                    {
+                        //                 misc.log("change Name from '{0}' to'{1}'", track.Name, value);
+                        track.Name = value;
+                    }
+                    catch { misc.log("unable to change name {0}  {1}", track.Name, value); }
+                }
             }
         }
 
-       
-        private class AlbumComparer : IComparer<TrackListViewModel>
+        public virtual int TrackNumber
         {
-            //private int theOne; 
-            //public AlbumComparer(TrackListViewModel humanselected)
+            get
+            {
+                return track.TrackNumber;
+            }
+            set
+            {
+                if (track.TrackNumber != value)
+                {
+                    try
+                    {
+                        //              misc.log("change TrackNumber from '{0}' to'{1}'", track.TrackNumber, value);
+                        track.TrackNumber = value;
+                    }
+                    catch { misc.log("unable to change TrackNumber {0}  {1}", track.TrackNumber, value); }
+                }
+            }
+        }
+
+        public int Rating
+        {
+            get
+            {
+                return track.Rating;
+            }
+            set
+            {
+                if (track.Rating != value)
+                {
+                    try
+                    {
+                        //                misc.log("change Rating from '{0}' to'{1}'", track.Rating, value);
+                        track.Rating = value;
+                    }
+                    catch { misc.log("unable to change Rating {0}  {1}", track.Rating, value); }
+                }
+            }
+        }
+
+        public int Year
+        {
+            get
+            {
+                return track.Year;
+            }
+            set
+            {
+                if (track.Year != value)
+                {
+                    try
+                    {
+                        //         misc.log("change Year from '{0}' to'{1}'", track.Year, value);
+                        track.Year = value;
+                    }
+                    catch { misc.log("unable to change Year {0}  {1}", track.Year, value); }
+                }
+            }
+        }
+
+#if VOL
+        public int Volume
+        {
+            get
+            {
+                int volumeMin = CConf.VolumeMin;
+                int trackVolume = track.Volume;
+                if (trackVolume < volumeMin)
+                {
+                    Volume = volumeMin;
+                }
+                return trackVolume;
+            }
+            set
+            {
+                if (track.Volume != value)
+                {
+                    int volumeMin = CConf.VolumeMin;
+                    int _value = Math.Max(value, volumeMin);
+                    try
+                    {
+                        //         misc.log("change Year from '{0}' to'{1}'", track.Year, value);
+                        track.Volume = _value;
+                    }
+                    catch { misc.log("unable to change Volume {0}  {1}", track.Volume, _value); }
+                }
+            }
+        }
+#endif
+
+        //public string Comment
+        //{
+        //    get
+        //    {
+        //        //if (string.IsNullOrEmpty(track.Comment))
+        //        //    gen.writeComment(this);
+        //        return track.Comment;
+        //    }
+        //    set
+        //    {
+        //        //if (track.Comment != value)
+        //        //{
+        //        try
+        //        {
+        //            //   misc.log("change Comment from '{0}' to'{1}'", track.Comment, value);
+        //            track.Comment = value;
+        //        }
+        //        catch { misc.log("unable to change Comment {0}  {1}", track.Comment, value); }
+        //        //}
+        //    }
+        //}
+
+        //public virtual string Grouping
+        //{
+        //    get
+        //    {
+        //        if (string.IsNullOrEmpty(track.Grouping))
+        //        {
+        //            gen.writeGrouping(this);
+        //        }
+        //        return track.Grouping;
+        //    }
+        //    //set
+        //    //{
+        //    //    //if (track.Grouping != value)
+        //    //    //{
+        //    //        try
+        //    //        {
+        //    //            //   misc.log("change Comment from '{0}' to'{1}'", track.Comment, value);
+        //    //            track.Grouping = value;
+        //    //        }
+        //    //        catch { misc.log("unable to change Grouping {0}  {1}", track.Grouping, value); }
+        //    //    //}
+        //    //}
+
+        //}
+
+
+
+
+
+        //public virtual void setGrouping(string value, bool prior)
+        //{
+        //    try
+        //    {
+        //        //   misc.log("change Comment from '{0}' to'{1}'", track.Comment, value);
+        //        track.setGrouping(value, prior);
+        //    }
+        //    catch { misc.log("unable to change Grouping {0}  {1}", track.Grouping, value); }
+        //}
+
+        public bool Enabled
+        {
+            get
+            {
+                return track.Enabled;
+            }
+            set
+            {
+                if (track.Enabled != value)
+                {
+                    try
+                    {
+                        //      misc.log("change Enabled from '{0}' to'{1}'", track.Enabled, value);
+                        track.Enabled = value;
+                    }
+                    catch { misc.log("unable to change Enabled {0}  {1}", track.Enabled, value); }
+                }
+            }
+        }
+
+
+
+        public bool isPodcast
+        {
+            get { return track.isPodcast; }
+        }
+
+        public DateTime PlayedDate
+        {
+            get { return track.PlayedDate; }
+        }
+
+        public string Location
+        {
+            get { return track.Location; }
+        }
+        public string getLocation()
+        {
+            return track.getLocation();
+        }
+
+        public TimeSpan Duration
+        {
+            get { return track.Duration; }
+            set { track.Duration = value; }
+        }
+
+        #endregion
+
+        public List<DateTime> Dates
+        {
+            get { return track.Dates; }
+        }
+        public string ArtWork
+        {
+            get { return track.ArtWork; }
+            set { track.ArtWork = value; }
+        }
+
+        public DateTime FirstAcces
+        {
+            get
+            {
+                var min = DateTime.MaxValue;
+                foreach (DateTime dt in Dates)
+                {
+                    if (dt < min && dt > DateTime.MinValue)
+                        min = dt;
+                }
+                foreach (DateTime dt in DatesClassementBrut)
+                {
+                    if (dt < min && dt > DateTime.MinValue)
+                        min = dt;
+                }
+
+                return min;
+            }
+        }
+
+        public DateTime Added
+        {
+            get
+            {
+                return track.Added;
+            }
+        }
+
+        public virtual DateTime AlbumAdded
+        {
+            get
+            {
+                return album.AlbumAdded;
+            }
+        }
+
+        public List<DateTime> DatesClassement { get { return track.DatesClassement; } }
+        public DateTime? UpdateClassement
+        {
+            get
+            {
+
+                var dc = CalcDate.getLastModif(DatesClassement);
+                if (dc == DateTime.MaxValue || dc == DateTime.MaxValue)
+                    return null;
+                return dc;
+            }
+        }
+
+        public bool LastClassementRecent
+        {
+            get
+            {
+
+                foreach (DateTime dt in track.DatesClassementBrut)
+                {
+                    if (dt > Piece.SeuilProvisoire)
+                        return true;
+                }
+                return false;
+
+            }
+        }
+        public DateTime? AlbumUpdateClassement
+        {
+            get
+            {
+                if (album == null)
+                    return null;
+                return album.UpdateClassement;
+            }
+        }
+
+        public DateTime? LastRead
+        {
+            get
+            {
+
+                var dc = CalcDate.getLastModif(Dates);
+                if (dc == DateTime.MaxValue || dc == DateTime.MaxValue)
+                    return null;
+                return dc;
+            }
+        }
+
+        public DateTime? AlbumLastRead
+        {
+            get
+            {
+                if (album == null)
+                    return null;
+                return album.LastRead;
+            }
+        }
+
+        public String ClassEvol { get { return track.ClassEvol; } }
+
+
+
+
+        //public void writeCommentGrouping()
+        //{
+        //    var mode = CConf.ConfGen.WriteComment;
+        //    writeComment(mode);
+        //    var modeg = CConf.ConfGen.WriteGrouping;
+        //    writeGrouping(modeg);
+
+        //}
+
+        //public List<CPlayList> PLayLists
+        //{
+        //    get { return track.PLayLists; }
+        //}
+
+        /// <summary>
+        /// Calculer le commentaire
+        /// </summary>
+        //public void writeComment(writeGrouping mode)
+        //{
+        //    if (parent != null)
+        //        return;
+        //    if (mode == Tuning.writeGrouping.none)
+        //        return;
+
+
+        //    if (mode == Tuning.writeGrouping.mix)
+        //    {
+        //        StringBuilder sbEnd = new StringBuilder();
+
+        //        sbEnd.Append(ClassName);
+        //        sbEnd.Append(".");
+        //        sbEnd.Append((RatingCmp / 20).ToString());
+        //        sbEnd.Append(ClassEvol);
+        //        string strEnd = sbEnd.ToString();
+        //        string found = "";
+
+        //        string[] tab = Comment.Split(' ');
+        //        int count = tab.GetLength(0);
+        //        if (count > 0)
+        //        {
+        //            found = tab[count - 1];
+        //            if (found.Equals(strEnd))
+        //                return;
+        //        }
+        //        writeComment(Tuning.writeGrouping.all);
+        //    }
+
+        //    StringBuilder sb = new StringBuilder();
+        //    //string l_pref = "";
+        //    //string l_str = "";
+
+        //    string l_strList = ClassName;
+        //    //if (ClassPlayList != null)
+        //    //    l_strList = ClassName;
+
+        //    ////if (m_classement.Imported)
+        //    ////{
+        //    //if (l_strList != ClassName)
+        //    //{
+        //    //    sb.Append("m (");
+        //    //    sb.Append(ClassName);
+        //    //    sb.Append(") "); 
+        //    //  //  l_pref = "m (" + ClassName + ") ";
+        //    //}
+        //    ////}
+        //    int l_rank = Rank.Twice;
+
+        //    if (l_rank > 0)
+        //    {
+        //        CTuning.format(sb, l_rank);
+        //        sb.Append(" ");
+        //        //    if (l_rank < 1000)
+        //        //    {
+        //        //        if (CTuning.Total > 1000)
+        //        //        {
+        //        //            l_str += "0";
+        //        //        }
+        //        //        if (l_rank < 100)
+        //        //        {
+        //        //            l_str += "0";
+        //        //            if (l_rank < 10)
+        //        //            {
+        //        //                l_str += "0";
+        //        //            }
+        //        //        }
+        //        //    }
+
+
+        //        var r = CTuning.Rapport(Rank.Quality);
+
+
+
+
+
+
+        //        var quality = CConf.Select.Quality;
+        //        //if (quality.Mode != listMode.substract || quality.Exp != 1 || quality.Offset != 0 || CConf.Select.TimePriority != 0)
+        //        //{
+        //        double tx0 = Convert.ToInt32(1000 * r);
+        //        sb.Append(tx0.ToString());
+        //        sb.Append(" ");
+        //        //}
+
+        //        //  double l_tx = Convert.ToInt32(1000 * CTuning.Calc(m_rank, CConf.Select)); //   RapportNorm(m_rank.Quality, CConf.Sort.Quality));
+        //        var l_tx = CConf.ConfGen.Vie.TotalDays() / CTuning.Calc(m_rank, CConf.Select);
+        //        //  double l_tx2 = Convert.ToInt32(100 * CTuning.RapportNorm(m_rank.Lenght, CConf.Sort.Length));
+        //        //CInt(100 * CDbl(1 + CTuning.Total - m_rank.Lenght) / CTuning.Total)
+        //        //getTx(m_rank.Lenght)
+        //        //     l_str += l_rank.ToString() + "  " + l_tx.ToString() + " " + l_tx2.ToString() + "  " + l_strList + "." + (RatingCmp / 20).ToString();
+
+
+        //        sb.Append(l_tx.FormatCustom(3, 4)); //   ToString("G2", en));
+        //        //if (l_tx < 100 || l_tx >= 1000)
+        //        //    sb.Append(l_tx.ToString("G2", en));
+        //        //else
+        //        //    sb.Append(Convert.ToInt64(l_tx).ToString("D", en)); 
+
+
+
+        //        sb.Append(" ");
+        //        var rest = r;
+
+        //        for (int i = 0; i < 4; i++)
+        //        {
+        //            var ee = rest * 6.0m;
+        //            int e = (int)System.Math.Floor(ee);
+        //            rest = ee - e;
+        //            sb.Append(e);
+        //        }
+
+
+
+        //        sb.Append(" ");
+
+
+        //        //sb.Append(l_tx2.ToString());
+        //        //sb.Append(" ");
+        //        //sb.Append((100 * m_rank.SortValue).ToString("0"));
+        //        //sb.Append(" ");
+
+        //        //sb.Append(Dates.Count.ToString()); sb.Append(" ");
+
+        //        //sb.Append(DatesClassement.Count.ToString()); sb.Append(" ");
+
+        //        //sb.Append(ListSelection.buildListReadOrClassementModified(this).Count.ToString()); sb.Append(" ");
+
+        //        //   sb.Append((100 * m_rank.TimeRest).ToString("0")); sb.Append(" ");
+
+
+
+        //        sb.Append(l_strList);
+        //        sb.Append(".");
+        //        sb.Append((RatingCmp / 20).ToString());
+
+        //    }
+
+        //    sb.Append(ClassEvol);
+
+
+
+        //    Comment = sb.ToString();
+        //    //Comment = l_pref + l_str + ClassEvol;
+        //}
+
+        public override string ToString()
+        {
+            return track.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            Piece p = obj as Piece;
+            if (p == null)
+                return false;
+            return PieceId.Equals(p.PieceId);
+        }
+
+        private decimal _classementVirtuel;
+
+        public string ClassementVirtuel { get { return Piece.getClassementEquiv(_classementVirtuel); } }
+        public decimal VirtualClassement { get { return _classementVirtuel; } }
+        public void setClassementVirtuel(decimal virt)
+        {
+            _classementVirtuel = virt;
+        }
+
+        public decimal CoeffVirtuel
+        {
+            get
+            {
+                if (_classementVirtuel == 0)
+                    return 0;
+                return RapportClassement / _classementVirtuel;
+            }
+        }
+
+        private decimal _classementVirtuel2;
+
+        public string ClassementVirtuel2 { get { return Piece.getClassementEquiv(_classementVirtuel2); } }
+        public decimal VirtualClassement2 { get { return _classementVirtuel2; } }
+        public void setClassementVirtuel2(decimal virt)
+        {
+            _classementVirtuel2 = virt;
+        }
+
+        public decimal CoeffVirtuel2
+        {
+            get
+            {
+                if (_classementVirtuel2 == 0)
+                    return 0;
+                return RapportClassement / _classementVirtuel2;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return PieceId.GetHashCode();
+        }
+
+        //private bool haveToUpdateGrouping = false;
+        //public void MarkAsUpdateGrouping() { haveToUpdateGrouping = true; }
+
+        //public void writeGrouping(writeGrouping writeGrouping)
+        //{
+        //    var cat = CConf.ConfGen.DisplayCategories;
+        //    //if (!CConf.ConfGen.WithOrder)
+        //    //    cat = minCategories; 
+        //    if (writeGrouping == Tuning.writeGrouping.none)
+        //        return;
+
+        //    //if (m_rank.Twice <= 0)
+        //    //    return;
+        //    if (haveToUpdateGrouping)
+        //    {
+        //        setGrouping(getGroup(cat), true);
+        //    }
+
+        //    else if (writeGrouping == Tuning.writeGrouping.mix)
+        //    {
+        //        bool haveToUpdate = false;
+        //        string org = Grouping;
+        //        if (org != null)
+        //        {
+        //            string[] data = org.Split(' ');
+
+        //            try
+        //            {
+        //                foreach (datesMode mode in Enum.GetValues(typeof(datesMode))) //  CConf.ConfGen.Modes) //  Enum.GetValues(typeof(datesMode)))
+        //                {
+        //                    DisplayGrouping found = cat.Find(c => (int)c.category == (int)mode);
+        //                    //displayCategory found = cat.Find(c => (int)c == (int)mode);
+        //                    if (found != null)
+        //                    {
+        //                        int indexOfTime = cat.IndexOf(found);
+
+        //                        string timeValue = data[indexOfTime];
+        //                        string newValue = getTimeValue(mode, found.mode);
+        //                        if (!newValue.Equals(timeValue))
+        //                        {
+        //                            haveToUpdate = true;
+        //                            break;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //            catch
+        //            {
+        //                haveToUpdate = true;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            haveToUpdate = true;
+        //        }
+        //        if (haveToUpdate)
+        //            setGrouping(getGroup(cat), true);
+        //    }
+        //    else
+        //        setGrouping(getGroup(cat), false);
+        //}
+
+
+
+        private string getTimeValue(datesMode modeDates, timeMode modeTime)
+        {
+            switch (modeTime)
+            {
+                case timeMode.simple: return (CConf.ConfGen.Vie.TotalDays.toDecimal() * ListSelection.getTuningDateValues(this, modeDates)).FormatCustomTs(2);
+                case timeMode.complex: return (CConf.ConfGen.Vie.TotalDays.toDecimal() * ListSelection.getTuningDateValues(this, modeDates) / CTuning.Calc(m_rank, CConf.Select)).FormatCustomTs(2);
+                case timeMode.last:
+                case timeMode.equiv:
+                case timeMode.equivNorm:
+                    var ts = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, false);
+                    if (modeTime == timeMode.equivNorm)
+                        return ts.FormatCustomTs(3, 2, 4);
+                    return ts.FormatCustomTs(2);
+
+                case timeMode.delta:
+                case timeMode.deltaNorm:
+
+                    var ts0 = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, false);
+                    var tsf = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, true);
+                    var delta = tsf - ts0;
+                    delta = delta * 100;
+                    //if (modeTime == timeMode.deltaNorm)
+                    //    return delta.FormatCustom(3, 2, 4);
+                    return "(" + delta.FormatCustomTs(2) + ")";
+                default:
+                    throw new NotImplementedException();
+
+            }
+
+            //if (modeTime == timeMode.complex)
+            //    return (CConf.ConfGen.Vie.TotalDays * ListSelection.getTuningDateValues(this, modeDates) / CTuning.Calc(m_rank, CConf.Select)).FormatCustom(2);
+            //else if (modeTime == Tuning.timeMode.simple)
+            //    return (CConf.ConfGen.Vie.TotalDays * ListSelection.getTuningDateValues(this, modeDates)).FormatCustom(2);
+            ////   return m_rank.TimeRest.FormatCustom(2); //.ToString("G2", en); 
+            //else if (modeTime == timeMode.equiv || modeTime == timeMode.equivNorm)
             //{
-            //    theOne = humanselected.PieceId; 
+            //    var ts = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, false);
+
+            //    if (modeTime == timeMode.equivNorm || modeTime == timeMode.deltaNorm)
+            //        return ts.FormatCustom(3, 2, 4);
+            //    return ts.FormatCustom(2);
+            //}
+            //else
+            //{
+            //    var ts0 = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, false);
+            //    var tsf = ListSelection.getTuningDatesEquiv(this, modeDates, modeTime, true);
+            //    var delta = tsf - ts0;
+
+            //    if (modeTime == timeMode.equivNorm)
+            //        return delta.FormatCustom(3, 2, 4);
+            //    return delta.FormatCustom(2);
+            //}
+        }
+
+        public int RankAlbumReverse
+        {
+            get
+            {
+                if (album != null)
+                {
+                    int rank = album.Rank.Sort;
+                    rank = 1 + gen.Albums.Count - rank;
+                    return rank;
+                }
+                return 0;
+            }
+        }
+
+        private string getGroup(List<DisplayGrouping> categories)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            bool begin = false;
+
+            displayCategory last = displayCategory.none;
+            foreach (var category in categories)
+            {
+                try
+                {
+                    if (begin //&& (int)category.category <= (int)displayCategory.pipe
+                        && last != displayCategory.croc1 && last != displayCategory.par1
+                        && category.category != displayCategory.croc2 && category.category != displayCategory.par2)
+                        sb.Append(" ");
+                    begin = true;
+
+                    switch (category.category)
+                    {
+                        case displayCategory.rankSort:
+                            CTuning.format(sb, Rank.Sort); break;
+                        case displayCategory.rankDelta:
+                            CTuning.format(sb, Rank.RankDelta); break;
+                        case displayCategory.rankTime:
+                            CTuning.format(sb, Rank.RankRest); break;
+                        case displayCategory.rankAllAlbum:
+                            CTuning.format(sb, RankAllAlbum); break;
+                        case displayCategory.rankAlbum:
+                            if (album != null)
+                                sb.Append(album.Rank.Sort); break;
+                        case displayCategory.rankAlbumReverse:
+                            sb.Append(RankAlbumReverse);
+                            break;
+                        case displayCategory.rankEquiv:
+                            if (album != null)
+                                sb.Append(album.Equiv);
+                            break;
+                        case displayCategory.rankEquivLight:
+                            if (album != null)
+                                sb.Append(album.EquivLight);
+                            break;
+                        case displayCategory.rankEquivLight0:
+                            if (album != null)
+                                sb.Append(album.EquivLight0);
+                            break;
+                        case displayCategory.albumMoy:
+                            if (album != null)
+                            {
+                                sb.Append(album.Moyenne);
+                            }
+                            break;
+                        case displayCategory.lenght:
+                            sb.Append(Convert.ToInt32(100 * CTuning.Rapport(Rank.Lenght))); break; //   CTuning.RapportNorm(m_rank.Lenght, CConf.Sort.Length))); break;
+                        case displayCategory.sortValue:
+                            sb.Append((1000 * Rank.SortValue).ToString("####", en)); break;
+                        case displayCategory.tplay:
+                            sb.Append(getTimeValue(datesMode.play, category.mode)); break;
+                        case displayCategory.tclass:
+                            sb.Append(getTimeValue(datesMode.@class, category.mode)); break;
+                        case displayCategory.tclassMin:
+                            sb.Append(getTimeValue(datesMode.classMin, category.mode)); break;
+                        case displayCategory.tmix:
+                            sb.Append(getTimeValue(datesMode.mix, category.mode)); break;
+                        case displayCategory.tmixMin:
+                            sb.Append(getTimeValue(datesMode.mixMin, category.mode)); break;
+                        case displayCategory.timeCoeff:
+                            sb.Append((100 * Rank.TimeCoeff).ToString("G3", en)); break;
+                        case displayCategory.dplay:
+                            sb.Append(ListSelection.getPlayDates(this).Count.ToString()); break;
+                        case displayCategory.dclass:
+                            sb.Append(ListSelection.getDatesClassement(this).Count.ToString());
+                            break;
+                        case displayCategory.dclassMin:
+                            sb.Append(ListSelection.getClassDatesMin(this).Count.ToString()); break;
+                        case displayCategory.dmix:
+                            sb.Append(ListSelection.buildListReadOrClassementModified(this, false).Count.ToString());
+                            break;
+                        case displayCategory.dmixMin:
+                            sb.Append(ListSelection.buildListReadOrClassementModified(this, true).Count.ToString());
+                            break;
+                        case displayCategory.pipe:
+                            sb.Append("|");
+                            break;
+                        case displayCategory.par1: sb.Append("("); break;
+                        case displayCategory.par2: sb.Append(")"); break;
+                        case displayCategory.croc1: sb.Append("["); break;
+                        case displayCategory.croc2: sb.Append("]"); break;
+
+                        default:
+                            break;
+                    }
+
+
+                    last = category.category;
+                }
+
+                catch (Exception ex)
+                {
+                    misc.log("writeGrouping::" + ex.ToString());
+                }
+            }
+            return sb.ToString();
+        }
+
+        public virtual int PieceId
+        {
+            get
+            {
+                return track.PieceId;
+            }
+        }
+
+        public void albumMustRefresh()
+        {
+            foreach (Piece p in Master)
+            {
+                if (p.album != null)
+                    p.album.mustRefresh();
+            }
+        }
+
+
+        protected Piece parent;
+        public virtual Piece Parent
+        {
+            get { return parent; }
+            set
+            {
+                if (value == parent)
+                    return;
+                var old = parent;
+                if (old != null)
+                    old.albumMustRefresh();
+                parent = value;
+                if (parent == null)
+                {
+                    if (old != null)
+                    {
+                        old.removeChild(this);
+                        this.PieceParentId = -1;
+                    }
+                }
+                else
+                {
+                    parent = parent.Master;
+                    this.PieceParentId = value.MasterId;
+                    parent.addChild(this);
+                }
+                if (album != null)
+                    this.album.mustRefresh();
+            }
+        }
+        public Piece Master
+        {
+            get
+            {
+                if (parent == null)
+                    return this;
+                return parent;
+            }
+        }
+
+        public int MasterId { get { return Master.PieceId; } }
+
+        private List<Piece> childs = new List<Piece>();
+        public List<Piece> Childs { get { return childs; } }
+        protected void addChild(Piece child)
+        {
+            if (child != null && parent != null)
+                throw new ApplicationException(string.Format("on ne doit pas affecter un enfant à un non-maitre. enfant:{0} parent {1}", child, parent));
+
+            //if (childs.Contains(child))
+            //{
+            //    throw new ApplicationException("enfant déjà enregistré"));
+            //}
+            childs.Add(child);
+        }
+
+        public void consolidChild()
+        {
+            if (parent != null)
+            {
+                parent.addChild(this);
+            }
+        }
+
+        private void removeChild(Piece child)
+        {
+            childs.Remove(child);
+        }
+
+        public virtual int PieceParentId
+        {
+            get { return track.PieceParentId; }
+            set { track.PieceParentId = value; }
+        }
+
+
+        #region key
+        private TrackIdentity key;
+        public TrackIdentity Key
+        {
+            get
+            {
+                if (key == null)
+                    keyGener();
+                return key;
+            }
+        }
+        private void keyGener()
+        {
+            key = new TrackIdentity(this);
+        }
+
+        #endregion
+
+
+        public exportState ExportStatus
+        {
+            get
+            {
+                return track.ExportStatus; // exportState;
+            }
+            set
+            {
+                track.ExportStatus = value;
+            }
+        }
+
+
+
+
+        public List<string> RelativesPath
+        {
+            get { return track.RelativesPath; }
+        }
+
+        public void buildVirtualAlbums(List<Piece> list)
+        {
+
+            foreach (var path in track.RelativesPath)
+            {
+
+                var tab = path.Split('\\');
+                var sb = new StringBuilder();
+
+                sb.Append(@"\");
+                var count = tab.GetLength(0);
+                for (int i = 0; i < count; i++)
+                {
+                    var _s = tab[i];
+                    if (string.IsNullOrEmpty(_s))
+                        continue;
+
+                    var virt = createVirtualAlbum(sb.ToString(), false);
+
+                    if (virt != null)
+                        list.Add(virt);
+
+                    if (i > 0)
+                        sb.Append(@"\");
+                    sb.Append(_s);
+
+
+
+
+                }
+            }
+
+            if (CConf.ConfGen.ArtistVirtual)
+            {
+                foreach (Piece p in this)
+                {
+                    var virt = createVirtualAlbum(p.Artist, true);
+                    if (virt == null)
+                        continue;
+                    list.Add(virt);
+                }
+
+            }
+
+        }
+
+        private Piece createVirtualAlbum(string path, bool artist)
+        {
+            if (string.IsNullOrEmpty(path))
+                return null;
+            if (path.Length < 2)
+                return null;
+            var virt = new VirtualAlbumPiece(track, Master, path, artist);
+            return virt;
+        }
+
+
+
+        public bool IsNext
+        {
+            get
+            {
+                if (album == null)
+                    return false;
+                return this == album.Next;
+            }
+        }
+        const int NB_CHAR_COMPLETE = 4;
+
+        //public bool AutoCoeff1 { get { if (album == null) return false; return album.SelectedByCoeff; } }
+        //public bool AutoCoeff2 { get { if (album == null) return false; return album.SelectedByCoeff2; } }
+        public selectedCoeff SelectedMotif
+        {
+            get
+            {
+                if (album == null || !IsNext) return selectedCoeff.none;
+                return album.SelectedCoeff;
+            }
+        }
+
+
+        public static DateTime SeuilProvisoire;
+        // private bool? _classementProvisoireRecent;
+        public bool ClassementProvisoireRecent
+        {
+            get
+            {
+                foreach (DateTime dt in track.DatesClassementBrut)
+                {
+                    if (dt > SeuilProvisoire)
+                        return true;
+                }
+                return false;
+                //return getClassementProvisoireRecent();
+                //if (_classementProvisoireRecent == null)
+                //    _classementProvisoireRecent = getClassementProvisoireRecent();
+                //return _classementProvisoireRecent.Value;
+
+
+
+            }
+        }
+
+        //private bool getClassementProvisoireRecent()
+        //{
+        //    if (!ClassementProvisoire)
+        //        return false;
+        //    var list = DatesClassement;
+        //    var last = CalcDate.getLastModif(list);
+        //    if (last > SeuilProvisoire)
+        //        return true;
+        //    return false;
+        //}
+
+        public int NbClass { get { return DatesClassement.Count<DateTime>(t => t >= Piece.SeuilProvisoire); } }
+
+        public bool ClassementProvisoire
+        {
+            get
+            {
+                if (RapportClassement == 0)
+                    return false;
+                var str = ClassName;
+                int count = str.Length;
+                if (count < 4)
+                    return true;
+                if (count >= 8)
+                    return false;
+
+                var tab = str.ToCharArray();
+                int nb = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    if (nb > 0)
+                        nb++;
+                    else
+                    {
+                        if (tab[i] != '0')
+                        {
+                            nb++;
+                        }
+                    }
+                }
+                if (nb >= NB_CHAR_COMPLETE)
+                    return false;
+
+                return true;
+
+            }
+        }
+
+        private class PieceEnumerator : IEnumerator<Piece>
+        {
+            private IEnumerator<Piece> childEnumerator;
+            private Piece current;
+            private Piece piece;
+
+            public PieceEnumerator(Piece piece) { this.piece = piece; }
+            public Piece Current
+            {
+                get { return current; }
+            }
+
+            public void Dispose()
+            {
+                if (childEnumerator != null)
+                    childEnumerator.Dispose();
+            }
+
+            object System.Collections.IEnumerator.Current
+            {
+                get { return current; }
+            }
+
+            public bool MoveNext()
+            {
+                if (childEnumerator == null)
+                {
+                    childEnumerator = piece.childs.GetEnumerator();
+                    current = piece;
+                    return true;
+                }
+                var ret = childEnumerator.MoveNext();
+                if (!ret)
+                    return false;
+                current = childEnumerator.Current;
+                return true;
+            }
+
+            public void Reset()
+            {
+                if (childEnumerator != null)
+                    childEnumerator.Reset();
+                childEnumerator = null;
+            }
+        }
+
+
+        public IEnumerator<Piece> GetEnumerator()
+        {
+            return new PieceEnumerator(this);
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new PieceEnumerator(this);
+        }
+
+        public List<DateTime> DatesClassementBrut
+        {
+            get
+            {
+                return track.DatesClassementBrut;
+            }
+        }
+    }
+
+
+
+
+}
+
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\Album.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using pdb.util;
+using System;
+using System.Globalization;
+using pdb.gen.Tuning;
+using pdb.gen.conf;
+using System.Linq;
+using pdb.obj;
+using System.Text.RegularExpressions;
+
+namespace pdb.gen.albums
+{
+
+
+    public class Album : IEnumerable<Piece>
+    {
+        private static Logger logger = Logger.getLogger("album");
+        private string name;
+        private string key;
+        private static decimal medianne = 0.5m;
+        private static decimal medianneRest = 0.5m;
+        // public static decimal Medianne { get { return medianne; } set { medianne = value; } }
+        private decimal classementValue;
+        private decimal classementValueLight;
+        /// <summary>
+        /// classementValue redressé par la quarantaine
+        /// </summary>
+        private decimal classementValueLightSt;
+        public decimal ClassementValueLightSt { get { return classementValueLightSt; } }
+        private decimal classMoy; public decimal ClassementMoy { get { return classMoy; } }
+        public decimal ClassementValue { get { return classementValue; } }
+        public decimal ClassementValueLight { get { return classementValueLight; } }
+        private decimal durationValue = 0;
+        public decimal DurationValue { get { return durationValue; } }
+        private static ConfGen conf = CConf.ConfGen;
+        private bool _virtual;
+        public bool Virtual { get { return _virtual; } set { _virtual = value; } }
+        private bool _virtualByArtist;
+        public bool VirtualByArtist { get { return _virtualByArtist; } set { _virtualByArtist = value; } }
+        private int stackValue;
+        public int StackValue { get { return stackValue; } set { stackValue = value; } }
+        public int StackIndex { get; set; }
+        //  private int rankCorrig; public int Rank2 { get { return rankCorrig; } set { rankCorrig = value; } }
+        private Piece next;
+
+
+        public Piece Next
+        {
+            get { return next; }
+            set
+            {
+                next = value;
+            }
+        }
+
+
+
+
+        private HashSet<Piece> list = new HashSet<Piece>();
+        private HashSet<Piece> masters = new HashSet<Piece>();
+
+        #region cache
+        HashList<Piece> trackSortedByExportPriority;
+        private HashList<Piece> _tracksSortByClassement;
+        #endregion
+
+        private static int _sID = 0;
+        private int _dID;
+
+        public string Key
+        {
+            // set { key = value; }
+            get
+            {
+                if (key == null)
+                    key = getKey(name, VirtualByArtist);
+                return key;
+            }
+        }
+
+        public Album(string name, string key)
+        {
+            _sID++;
+            _dID = _sID;
+            this.name = name;
+            this.key = key;
+
+            m_rank.init();
+        }
+
+        public string Name { get { return name; } }
+
+        public override string ToString()
+        {
+            return name;
+        }
+
+        // private string equiv = "";
+        public string Equiv { get { return Piece.getClassementEquiv(classementValue); } }
+
+        //  private string equivLight = "";
+        public string EquivLight { get { return Piece.getClassementEquiv(classementValueLight); ; } }
+
+        //private string equivLight0 = "";
+        public string EquivLight0 { get { return Piece.getClassementEquiv(_med0.d); } }
+
+        // private string moyenne = "";
+        public string Moyenne { get { return Piece.getClassementEquiv(classMoy); } }
+
+        public bool Moved { get; set; }
+        /// <summary>
+        /// Empeché par la quarantaine
+        /// </summary>
+        public bool Empeached { get; set; }
+        /// <summary>
+        /// Premier empêché
+        /// </summary>
+        public bool Empeached1 { get; set; }
+        private static int stackSize = 20;
+        private static ConfAlbumSort confAlbumSort;
+        public static ConfAlbumSort ConfAlbumSort
+        {
+            set
+            {
+                confAlbumSort = value;
+                if (confAlbumSort != null)
+                    stackSize = confAlbumSort.stackSize;
+            }
+        }
+
+        public bool AlmostFree { get { return stackValue == stackSize; } }
+        public bool AlmostFree1 { get { return stackValue == stackSize - 1; } }
+
+        //private Piece equiv;
+
+
+
+        public bool add(Piece piece)
+        {
+            piece.PieceAlbum = this;
+            if (build)
+                return true;
+
+            // misc.log("{0} ajout {1}", name, piece); 
+            //if (list.Contains(piece))
+            //{
+            //    int yoyo = 0;
+            //}
+            if (!masters.Add(piece.Master))
+            {
+                var status = "";
+                if (_virtual)
+                    status = "v";
+                if (_virtualByArtist)
+                    status = "va";
+                logger.log("{0}\t{1}:doublon id=\"{2}\" parent=\"{3}\" Nom={4} {5}", status, name, piece.PieceId, piece.MasterId, piece.Name, piece);
+                return false;
+            }
+            if (piece.Enabled)
+                atLeastOneEnabled = true;
+            list.Add(piece);
+
+            return true;
+        }
+
+        private bool build;
+
+        public void checkBuild()
+        {
+            if (!build)
+            {
+                Clear();
+                m_rank.init();
+            }
+        }
+
+        public void Clear()
+        {
+            //misc.log("album.Clear {0}",name);
+            //foreach (Piece p in this)
+            //{
+            //    if (p.Virtual)
+            //        p.Parent = null; 
+            //}
+            list.Clear();
+            masters.Clear();
+        }
+
+        public bool buildDone()
+        {
+
+            build = true;
+            return list.Count > 0;
+        }
+
+
+        public HashList<Piece> Tracks
+        {
+            get
+            {
+                if (_tracksSortByClassement == null)
+                {
+                    var l = new List<Piece>(list);
+                    l.Sort(new PieceClassementComparer(false));
+                    _tracksSortByClassement = new HashList<Piece>(l);
+                }
+                return _tracksSortByClassement;
+            }
+        }
+
+        public int Count { get { return list.Count; } }
+
+        //public int IndexClass(Piece p)
+        //{
+        //    return Tracks.IndexOf(p);
+        //}
+
+        //public List<Piece> TracksReverse
+        //{
+        //    get
+        //    {
+        //        var l = new List<Piece>(list);
+        //        l.Sort(new PieceClassementComparerInv());
+        //        return l;
+        //    }
+        //}
+
+        private class PieceExportComparer : IComparer<Piece>
+        {
+            private HashList<Piece> source;
+            private Piece next;
+            private int inext = -1;
+            private int ifirstZero = -1;
+            private bool sortlasts;
+            private bool sortFirsts;
+            private Album album;
+            public PieceExportComparer(Album album, HashList<Piece> source, Piece next)
+            {
+                this.album = album;
+                this.source = source;
+                this.next = next;
+                if (next != null)
+                    inext = source.IndexOf(next);
+                sortlasts = CConf.Export.sortLasts;
+                sortFirsts = CConf.Export.sortFirsts;
+                int count = source.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var p = source[i];
+                    if (p.Enabled && p.RapportClassement == 0)
+                    {
+                        ifirstZero = i;
+                        break;
+                    }
+                }
+
+            }
+            public int Compare(Piece x, Piece y)
+            {
+                //    t = 1.CompareTo(2) -> -1              
+                //  t = true.CompareTo(false) ->1
+                if (x == y)
+                    return 0;
+                if (x == next)
+                    return -1;
+                if (y == next)
+                    return 1;
+                int ix = source.IndexOf(x);
+                int iy = source.IndexOf(y);
+                if (ix == iy)
+                    return 0;
+
+                if (next != null)
+                {
+                    int cmp = 0;
+
+
+                    cmp = (x.Enabled.CompareTo(y.Enabled));
+                    if (cmp != 0)
+                    {
+                        if (sortFirsts)
+                        {
+                            //true puis false;
+                            return -cmp;
+                        }
+                        if (sortlasts)
+                        {
+                            if (!x.Enabled && x.VirtualClassement < album.ClassementValueLight)
+                                return 1;
+                            if (!y.Enabled && y.VirtualClassement < album.ClassementValueLight)
+                                return -1;
+                        }
+                    }
+
+                    //if (dx * dy < 0)
+                    //{
+                    //    if (sortlasts)
+                    //    {
+                    //        if (dx > 0 && !x.Enabled)
+                    //            return 1;
+                    //        if (dy > 0 && !y.Enabled)
+                    //            return -1;
+                    //    }
+                    //    if (sortFirsts)
+                    //    {
+                    //        if (dx < 0 && !x.Enabled)
+                    //            return 1;
+                    //        if (dy < 0 && !y.Enabled)
+                    //            return -1;
+                    //    }
+                    //}
+
+                    int dx = ix - inext;
+                    int dy = iy - inext;
+                    dx *= dx;
+                    dy *= dy;
+
+                    if (ifirstZero >= 0)
+                    {
+                        dx += ((ix - ifirstZero) * (ix - ifirstZero));
+                        dy += ((iy - ifirstZero) * (iy - ifirstZero));
+                    }
+
+                    cmp = dx.CompareTo(dy);
+                    if (cmp != 0)
+                        return cmp;
+                    //ici même distance
+                    cmp = x.Enabled.CompareTo(y.Enabled);
+                    if (cmp != 0) return -cmp;
+
+                    cmp = ix.CompareTo(iy);
+                    return cmp;
+                }
+
+                return source.IndexOf(x).CompareTo(source.IndexOf(y));
+            }
+        }
+        public HashList<Piece> TrackSortedByExportPriority
+        {
+            get
+            {
+                if (trackSortedByExportPriority == null)
+                {
+
+                    var source = new HashList<Piece>(Tracks);
+                    if (next == null)
+                        trackSortedByExportPriority = source;
+                    else
+                    {
+                        var cmp = new PieceExportComparer(this, source, next);
+                        var l = source.List;
+                        l.Sort(cmp);
+
+                        trackSortedByExportPriority = new HashList<Piece>(l);
+
+
+                    }
+
+
+
+                    //var source = Tracks;
+                    //if (next == null)
+                    //    trackSortedByExportPriority = new HashList<Piece>(source);
+                    //else
+                    //{
+                    //    trackSortedByExportPriority = new HashList<Piece>();
+                    //    int indexNext = source.IndexOf(next);
+                    //    trackSortedByExportPriority.Add(next);
+
+                    //    int count = source.Count;
+                    //    int offset = 0;
+                    //    while (true)
+                    //    {
+                    //        offset++;
+                    //        bool _continue = false;
+                    //        // on prend le précédent et le suivant
+                    //        var index = indexNext - offset;
+
+                    //        if (index >= 0 && index < count)
+                    //        {
+                    //            trackSortedByExportPriority.Add(source[index]); _continue = true;
+                    //        }
+                    //        index = indexNext + offset;
+                    //        if (index >= 0 && index < count)
+                    //        {
+                    //            trackSortedByExportPriority.Add(source[index]); _continue = true;
+                    //        }
+
+                    //        if (!_continue)
+                    //            break;
+                    //  }
+
+                    //}
+                }
+                return trackSortedByExportPriority;
+            }
+
+        }
+
+
+
+        public int IndexExport(Piece p)
+        {
+            return TrackSortedByExportPriority.IndexOf(p);
+        }
+        public List<Piece> TrackByNumber
+        {
+            get
+            {
+                var l = new List<Piece>(list);
+                l.Sort(new PieceTrackNumberComparer());
+                return l;
+            }
+        }
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        private bool classed;
+        /// <summary>
+        /// Au moins un track est classé
+        /// </summary>
+        public bool Classed { get { return classed; } }
+
+        /// <summary>
+        /// Le track Selectionné est malheureusement absent
+        /// </summary>
+        public bool Absent
+        {
+            get
+            {
+                if (next == null)
+                    return true;
+                if (FileRegister.Exist(next.Location))
+                    return false;
+                return true;
+            }
+        }
+
+        //public int nbInAlbum(exportState state)
+        //{
+        //    return list.Count(p => p.ExportStatus == state); 
+        //}
+
+        public int NbExportPresents { get { return list.Count(p => p.ExportStatus == exportState.present || p.ExportStatus == exportState.copy); } }
+
+        private bool atLeastOneEnabled;
+        public bool AtLeastOneEnabled { get { return atLeastOneEnabled; } }
+
+        private selectedCoeff selectedCoeff;
+        public selectedCoeff SelectedCoeff { get { return selectedCoeff; } }
+
+
+        //  private bool sortDone;
+        DecimalIndex _med0;
+        DecimalIndex med;
+        public void makeSort(ConfAlbumSort conf, ConfMedianne mode, ConfMedianne mode0) //IList<double> reference, IList<Piece> pieces)
+        {
+            trackSortedByExportPriority = null;
+            _tracksSortByClassement = null;
+
+            try
+            {
+                //if (!sortDone)
+                //    misc.log("make sort {0}", name);
+                //misc.log("make sort SortValue {0}", name); 
+                selectedCoeff = util.selectedCoeff.noCoeff;
+
+                var list = this.list.ToList<Piece>();
+                int count = list.Count;
+                if (count == 0)
+                    return;
+
+                for (int i = 0; i < count; i++)
+                {
+                    list[i].eraseInfoMedianne();
+                }
+
+                //if (name == "The College Dropout")
+                //{
+                //}
+                decimal offset = Album.conf.AlbumMoyOffset;
+                //if (!sortDone)
+                //{
+
+
+
+                list.Sort(new PieceSortComparer());
+                var listSortedValues = new List<decimal>();
+                classed = false;
+                for (int i = 0; i < count; i++)
+                {
+                    listSortedValues.Add(list[i].Rank.SortValue);
+                    if (!classed && list[i].isClassListNumeric) // && FileRegister.Exist(list[i].Location))
+                        classed = true;
+                }
+                //misc.log("make sort Duration {0}", name); 
+                m_rank.SortValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+
+                listSortedValues = new List<decimal>();
+                list.Sort(new PieceDurationValueComparer());
+                for (int i = 0; i < count; i++)
+                    listSortedValues.Add(list[i].Duration.TotalMilliseconds());
+                durationValue = CalcMedianne.getMedianne(listSortedValues, medianne).d;
+                //}
+                decimal moy = 0m;
+                #region calcul brut
+                #region init
+                // misc.log("make sort calcul brut init {0}", name); 
+                for (int i = 0; i < count; i++)
+                {
+                    var p = list[i];
+                    var rapportClassement = p.RapportClassement;
+                    //if (coeffEnabled != 1m && p.Enabled)
+                    //{
+                    //    rapportClassement /= coeffEnabled;
+                    //}
+                    p.setClassementVirtuel(list[i].RapportClassement);
+
+                    list[i].eraseInfoMedianne();
+
+                    moy += rapportClassement;
+                    if (offset > 0m && rapportClassement > 0.0m)
+                        moy += offset;
+                }
+
+                if (count > 0)
+                    moy /= count;
+                classMoy = moy;
+
+
+                this.med = AlbumMedianne.getMedianne(new List<Piece>(list), medianne);
+
+
+                _med0 = AlbumMedianne.getMedianneLight(new List<Piece>(list), conf, mode0, false);
+                //equivLight0 = Piece.getClassementEquiv(_med0.d);
+
+
+                //list.Sort(new PieceClassementComparer(false));
+                //listSortedValues = new List<decimal>();
+                //for (int i = 0; i < count; i++)
+                //    listSortedValues.Add(list[i].VirtualClassement);
+
+                classementValue = this.med.d;
+                if (classementValue > 0m)
+                    list[this.med.index].Medianne = true;
+
+                #endregion
+
+
+
+
+                //misc.log("make sort calcul brut medianne {0}", name); 
+
+
+
+
+
+
+
+
+
+                #endregion
+                #region calcul virtuel
+                //misc.log("make sort calcul virtuel {0}", name); 
+                #region init (prise en compte coeff des enabled)
+                //var coeffEnabled = conf.coeffEnabled;
+                //for (int i = 0; i < count; i++)
+                //{
+                //    var p = list[i];
+                //    var rapportClassement = p.RapportClassement;
+                //    if (coeffEnabled != 1m && p.Enabled && (!conf.oldAsZero || !p.LastClassementRecent))
+                //    {
+                //        rapportClassement *= coeffEnabled;
+                //    }
+                //    p.setClassementVirtuel(rapportClassement);
+                //    p.setClassementVirtuel2(rapportClassement);
+                //}
+                //list.Sort(new PieceClassementComparer(false));
+                #endregion
+                int i0 = 0;
+                AlbumMedianne.buildVirtual(new List<Piece>(list), mode, mode.Min, conf, false, ref i0);
+
+                var med = AlbumMedianne.getMedianneLight(new List<Piece>(list), conf, mode, true);
+                classementValueLight = med.d;
+
+                #endregion
+
+                //equiv = Piece.getClassementEquiv(classementValue); // (10000 * m_rank.SortValue).ToString("00000.0", cu); 
+
+
+                //moyenne = Piece.getClassementEquiv(classMoy);
+                var modeMin = mode.cmpMin;
+
+
+                if (modeMin == util.modeMin.orphelin)
+                {
+                    Piece min = null;
+                    decimal _min = int.MaxValue;
+                    foreach (Piece p in list)
+                    {
+                        var v = p.RapportClassement;
+
+                        if (p.Enabled) // && FileRegister.Exist(p.Location))
+                        {
+                            if (v < _min)
+                            {
+                                _min = v;
+                                min = p;
+                            }
+                        }
+                    }
+
+                    if (min != null)
+                    {
+                        Next = min;
+                        _min = min.VirtualClassement2;
+                        if (_min > classementValueLight)
+                            classementValueLight = _min;
+                    }
+                }
+                else if (modeMin == util.modeMin.toujours)
+                {
+                    if (mode.Main.oldAsZero)
+                        list.Sort(new PieceClassementComparer(true));
+                    Piece nextZero1 = null;
+                    Piece nextZero2 = null;
+
+                    Piece min1 = null;
+                    Piece min2 = null;
+                    Piece min = null;
+                    decimal _min1 = int.MaxValue;
+                    decimal _min2 = int.MaxValue;
+                    decimal _minzero1 = int.MaxValue;
+                    decimal _minzero2 = int.MaxValue;
+                    bool realZero = false;
+                    foreach (Piece p in list)
+                    {
+                        var v1 = p.VirtualClassement;
+                        var v2 = p.VirtualClassement2;
+
+                        if (p.Enabled) // && FileRegister.Exist(p.Location))
+                        {
+                            if (v1 == 0 || (mode.Main.oldAsZero && !p.LastClassementRecent))
+                            {
+                                if (v1 < _minzero1)
+                                {
+                                    _minzero1 = v1;
+                                    nextZero1 = p;
+                                    if (v1 == 0)
+                                        realZero = true;
+                                }
+                            }
+
+                            if (v2 == 0 || (mode.Main.oldAsZero && !p.LastClassementRecent))
+                            {
+                                if (v2 < _minzero2)
+                                {
+                                    _minzero2 = v2;
+                                    nextZero2 = p;
+                                    if (v2 == 0)
+                                        realZero = true;
+                                }
+
+                            }
+
+
+
+                            if (v1 > 0 && v1 < _min1)
+                            {
+                                _min1 = v1;
+                                min1 = p;
+                            }
+
+                            if (v2 > 0 && v2 < _min2)
+                            {
+                                _min2 = v2;
+                                min2 = p;
+                            }
+                        }
+                    }
+                    decimal _min = 0;
+                    if (_min1 <= _min2)
+                    {
+                        min = min1;
+                        _min = _min1;
+                    }
+                    else
+                    {
+                        min = min2;
+                        _min = _min2;
+                    }
+
+                    Piece nextZero = null;
+                    decimal _minzero = int.MaxValue;
+                    if (_minzero1 <= _minzero2)
+                    {
+                        nextZero = nextZero1; _minzero = _minzero1;
+                    }
+                    else
+                    {
+                        nextZero = nextZero2; _minzero = _minzero2;
+                    }
+
+                    if (nextZero != null)
+                    {
+
+                        if (realZero)
+                        {
+                            // le min trouvé est éventuellement tres élevé (pas prise en compte des éléments non encore notés
+                            // j'applique le seuil que s'il est inférieur à la médiane
+                            if (_min < classementValueLight)
+                            {
+                                if (min != null)
+                                {
+                                    Next = min;
+                                    classementValueLight = _min;
+                                    if (Next.CoeffVirtuel > 1)
+                                        selectedCoeff = selectedCoeff.main;
+                                    if (_min < _min1)
+                                        selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                                }
+                            }
+                            else
+                            {
+                                //  var p = list[med.index];
+                                if (_med0.d > med.d) // if (p.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main; // selectedByCoeff = true; 
+                                Next = nextZero;
+                                //if (Next.CoeffVirtuel > 1)
+                                //    selectedCoeff = selectedCoeff.main; 
+                                //if (_min < _min1)
+                                //    selectedCoeff = selectedCoeff.min; 
+                            }
+                        }
+                        else
+                        {
+                            if (_min < classementValueLight)
+                            {
+                                if (min != null)
+                                {
+                                    Next = min;
+                                    classementValueLight = _min;
+
+                                    if (Next.CoeffVirtuel > 1)
+                                        selectedCoeff = selectedCoeff.main;
+                                    if (_min < _min1)
+                                        selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                                }
+
+                            }
+                            else if (_minzero < classementValueLight)
+                            {
+                                Next = nextZero;
+                                classementValueLight = _minzero;
+
+                                if (Next.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main;
+                                if (_minzero < _minzero1)
+                                    selectedCoeff = selectedCoeff.min; // selectedByCoeff2 = true;
+                            }
+
+                            else
+                            {
+                                Next = min;
+                                classementValueLight = _min;
+                                //  var p = list[med.index];
+                                if (Next.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main;
+                                if (_med0.d > med.d) // if (p.CoeffVirtuel > 1)
+                                    selectedCoeff = selectedCoeff.main; // selectedByCoeff = true; 
+
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // tous notés => on prend le plus faible
+                        Next = min;
+                        if (min != null)
+                        {
+                            classementValueLight = _min;
+                            // if (min.CoeffVirtuel2 > 1) // if (min.CoeffVirtuel2 > 1)
+                            //if (Next.CoeffVirtuel > 1)
+                            //    selectedCoeff = selectedCoeff.main; 
+                            //if (_min < _min1)
+                            //    selectedCoeff = selectedCoeff.min; //selectedByCoeff2 = true;
+                        }
+
+                    }
+
+                }
+
+                //if (modeMin > modeMin.non)
+                //{
+                //    int nb = 0;
+                //    Piece min = null;
+                //    decimal _min = int.MaxValue;
+                //    foreach (Piece p in list)
+                //    {
+                //        var v = p.RapportClassement;
+                //        if (v > 0 && !p.Enabled)
+                //            nb++;
+                //        if (modeMin == util.modeMin.orphelin || v > 0)
+                //        {
+                //            if (p.Enabled && FileRegister.Exist(p.Location))
+                //            {
+
+                //                if (v < _min)
+                //                {
+                //                    _min = v;
+                //                    min = p;
+                //                }
+                //            }
+                //        }
+                //    }
+
+                //    if (min != null)
+                //    {
+                //        _min = min.VirtualClassement;
+                //        if (nb > 0)
+                //            _min *= (decimal)nb / (decimal)count;
+                //        if (modeMin == modeMin.toujours || _min > classementValueLight)
+                //            classementValueLight = _min;
+                //    }
+
+
+                //}
+                // equivLight = Piece.getClassementEquiv(classementValueLight);
+
+                //  sortDone = true;
+
+                if (confAlbumSort != null && confAlbumSort.stackEnabled && confAlbumSort.stackSize > 1 && stackValue < confAlbumSort.stackSize && stackValue > 0)
+                {
+                    classementValueLightSt = classementValueLight * (decimal)confAlbumSort.stackSize / (decimal)stackValue;
+                }
+                else
+                    classementValueLightSt = classementValueLight; 
+            }
+            catch (Exception ex)
+            {
+                misc.log("impossible de faire le makeSort de l'album " + name + " " + ex.ToString());
+            }
+
+
+
+        }
+
+        public void mustRefresh()
+        {
+            build = false;
+            //   sortDone = false;
+            selectionDone = false;
+            atLeastOneEnabled = false;
+            _tracksSortByClassement = null;
+
+        }
+
+
+
+        public decimal getTrackSortValue(int index, List<Piece> list)
+        {
+            if (index < 0 || index >= list.Count)
+                return 0;
+            return list[index].RapportClassement;
+        }
+
+        decimal firstTrackSortValue = -1;
+        public decimal getFirstTrackSortValue()
+        {
+            if (firstTrackSortValue == -1)
+            {
+                int count = list.Count;
+                if (count == 0)
+                    return -1;
+                var _list = new List<Piece>(list);
+                _list.Sort(new PieceSortComparer());
+                firstTrackSortValue = _list[count - 1].Rank.SortValue;
+            }
+            return firstTrackSortValue;
+        }
+        private bool selectionDone;
+        public void makeSelection()
+        {
+            Moved = false;
+            //if (selectionDone)
+            //    return;
+            var list = this.list.ToList<Piece>();
+            list.Sort(new PieceRestComparer());
+            var listSortedValues = new List<decimal>();
+            for (int i = 0; i < list.Count; i++)
+                listSortedValues.Add(list[i].Rank.TimeRest);
+            m_rank.TimeRest = CalcMedianne.getMedianne(listSortedValues, medianneRest).d;
+            selectionDone = true;
+        }
+
+        public List<Piece> Sort()
+        {
+            var _list = new List<Piece>(list);
+            _list.Sort(new PieceInAlbumComparer());
+            return _list;
+        }
+
+        public TimeSpan Duration
+        {
+            get
+            {
+                TimeSpan d = new TimeSpan();
+                foreach (Piece piece in list)
+                    d += piece.Duration;
+                return d;
+            }
+        }
+
+
+        #region Rank
+        private CRank m_rank = new CRank();
+
+        public CRank Rank { get { return m_rank; } }
+
+        private int rankStack = -1;
+        public int RankSt { get { return rankStack; } set { rankStack = value; } }
+
+        private void initRank()
+        {
+            m_rank.init();
+            rankStack = -1; 
+        }
+
+        public int QRank
+        {
+            get { return m_rank.Quality; }
+            set { m_rank.Quality = value; }
+        }
+
+        public int LRank
+        {
+            get { return m_rank.Lenght; }
+            set { m_rank.Lenght = value; }
+        }
+
+        public int QLRank
+        {
+            get { return m_rank.Twice; }
+            set { m_rank.Twice = value; }
+        }
+
+
+        #endregion
+
+        #region tri
+
+
+
+        #endregion
+
+        public void sortVirtual()
+        {
+            var list = this.list.ToList<Piece>();
+            list.Sort(new PieceInVirtualAlbumComparer());
+            int nb = 0;
+            foreach (var piece in list)
+            {
+                nb++;
+                piece.TrackNumber = nb;
+            }
+        }
+
+        public bool isSameOf(Album o)
+        {
+            if (list.Count != o.list.Count)
+                return false;
+
+            foreach (Piece p in masters)
+            {
+                if (!o.masters.Contains(p))
+                    return false;
+            }
+            return true;
+
+        }
+
+        public override bool Equals(object obj)
+        {
+            var o = obj as Album;
+            if (o == null)
+                return false;
+            return Key.Equals(o.Key) && _virtual == o._virtual && _virtualByArtist == o._virtualByArtist;
+        }
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
+        }
+
+        public DateTime? UpdateClassement
+        {
+            get
+            {
+                DateTime? dt = null;
+                foreach (Piece p in new List<Piece>(list))
+                {
+
+                    var _dt = p.UpdateClassement; // CalcDate.getLastModif(p.DatesClassement);
+                    if (_dt != null && (dt == null || _dt > dt))
+                        dt = _dt;
+                }
+                return dt;
+            }
+        }
+
+        public DateTime? LastRead
+        {
+            get
+            {
+                DateTime? dt = null;
+                foreach (Piece p in list)
+                {
+                    var _dt = p.LastRead; // CalcDate.getLastModif(p.DatesClassement);
+                    if (_dt != null && (dt == null || _dt > dt))
+                        dt = _dt;
+                }
+                return dt;
+            }
+        }
+
+        public IEnumerator<Piece> GetEnumerator()
+        {
+            return list.GetEnumerator();
+        }
+
+        public DateTime AlbumAdded
+        {
+            get
+            {
+                DateTime min = DateTime.MaxValue;
+                foreach (Piece p in list)
+                {
+                    var dt = p.Added;
+                    if (dt > DateTime.MinValue)
+                    {
+                        if (dt < min)
+                            min = dt;
+                    }
+                    else
+                    {
+                        dt = p.FirstAcces;
+                        if (dt < min && dt > DateTime.MinValue)
+                            min = dt;
+                    }
+
+                }
+                return min;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return list.GetEnumerator();
+        }
+
+        public static string getKey(string _album, bool artist)
+        {
+            string __album = "-";
+            if (!string.IsNullOrEmpty(_album))
+            {
+                __album = _album.Trim().ToLower();
+
+
+                if (__album.StartsWith("the "))
+                    __album = Regex.Replace(__album, @"the\ ", "");
+                if (__album.StartsWith("les "))
+                    __album = Regex.Replace(__album, @"les\ ", "");
+                if (__album.Contains(" et "))
+                    __album = __album.Replace(" et ", " ");
+                if (__album.Contains(" and "))
+                    __album = __album.Replace(" and ", " & ");
+                __album = __album.removeAccent();
+                __album = Regex.Replace(__album, @"\ +", " ");
+                if (artist)
+                {
+                    __album = string.Format("$[{0}]", __album);
+                }
+
+            }
+            return __album;
+
+        }
+    }
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\AlbumComparer.cs">
+    <content><![CDATA[using System.Collections.Generic;
+using System.IO;
+using System;
+using pdb.gen.conf;
+using pdb.gen.Tuning;
+using pdb.util;
+
+namespace pdb.gen.albums
+{
+    //public enum albumSortMode
+    //{
+    //    /// <summary>
+    //    /// tri sur moyenne quand aucun des albums n'a défini sa médianne
+    //    /// </summary>
+    //    strict,
+    //    /// <summary>
+    //    /// tri sur medianne quand les deux albums ont défini leur médianne, sinon tri sur moyenne
+    //    /// </summary>
+    //    mix,
+    //    /// <summary>
+    //    /// Tri sur medianne quand les deux albums ont défini leur médianne, sinon tri sur medianne light
+    //    /// </summary>
+    //    mixLight,
+    //    /// <summary>
+    //    /// Tri sur medianne light quand les deux albums ont défini leur médianne, sinon tri sur moyenne
+    //    /// </summary>
+    //    mixLight2,
+    //    /// <summary>
+    //    /// Calcul médianne quasi strict, qq miettes pour éviter le zero
+    //    /// </summary>
+    //    medQuasi,
+    //    /// <summary>
+    //    /// Calcul Médianne moins strict
+    //    /// </summary>
+    //    medLight,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise un morceau au plus pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à deux morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe2,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à trois morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe3,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à 4 morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe4,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à 5 morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe5,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à 6 morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe6,
+    //    /// <summary>
+    //    /// Calcul medLight, on virtualise jusqu'à 10 morceaux pour avoir une estimation basse
+    //    /// </summary>
+    //    medLightSafe10,
+    //    /// <summary>
+    //    /// tri uniquement sur la moyenne
+    //    /// </summary>
+    //    light
+
+    //}
+    class AlbumClassComparer : IComparer<Album>
+    {
+        private ConfAlbumSort mode;
+        private bool useSt;
+        public AlbumClassComparer(ConfAlbumSort mode, bool useSt)
+        {
+            this.mode = mode;
+            this.useSt = useSt;
+        }
+        private void calc(ref decimal xx, ref decimal yy, Album x, Album y, ConfMedianne cmpt)
+        {
+            switch (cmpt.type)
+            {
+                case medianneMode.none:
+                    break;
+                case medianneMode.strict: xx = x.ClassementValue; yy = y.ClassementValue;
+                    break;
+                case medianneMode.light:
+                    if (useSt)
+                    {
+                        xx = x.ClassementValueLightSt; 
+                        yy = y.ClassementValueLightSt;
+                    }
+                    else
+                    {
+                        xx = x.ClassementValueLight; 
+                        yy = y.ClassementValueLight;
+                    }
+                    break;
+                case medianneMode.moy: xx = x.ClassementMoy; yy = y.ClassementMoy;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public int Compare(Album x, Album y)
+        {
+            if (x == y)
+                return 0;
+
+            if (x == null)
+                return 1;
+
+            if (y == null)
+                return -1;
+
+
+            int cmp = 0;
+
+
+
+
+            decimal xx = 0;
+            decimal yy = 0;
+
+            var composants = mode.ComposantsUtiles;
+            if (composants.Count > 1)
+            {
+                if (x.ClassementValue == 0m || y.ClassementValue == 0m)
+                {
+                    var cmpt2 = composants[1];
+                    calc(ref xx, ref yy, x, y, cmpt2);
+                    cmp = xx.CompareTo(yy);
+                    if (cmp != 0)
+                        return cmp;
+                }
+
+            }
+
+            var cmpt = composants[0];
+            calc(ref xx, ref yy, x, y, cmpt);
+
+            cmp = xx.CompareTo(yy);
+            if (cmp != 0)
+                return cmp;
+
+            //if (mode == albumSortMode.light)
+            //{
+            //    cmp = x.ClassementMoy.CompareTo(y.ClassementMoy);
+            //    if (cmp != 0)
+            //        return cmp;
+            //}
+            //else if (mode == albumSortMode.mix)
+            //{
+            //    if (x.ClassementValue == 0m || y.ClassementValue == 0m)
+            //    {
+            //        cmp = x.ClassementMoy.CompareTo(y.ClassementMoy);
+            //        if (cmp != 0)
+            //            return cmp;
+            //    }
             //}
 
-            public int Compare(TrackListViewModel x, TrackListViewModel y)
+            //else if (mode == albumSortMode.mixLight)
+            //{
+            //    if (x.ClassementValue == 0m || y.ClassementValue == 0m)
+            //    {
+            //        cmp = x.ClassementValueLight.CompareTo(y.ClassementValueLight);
+            //        if (cmp != 0)
+            //            return cmp;
+            //    }
+            //}
+
+            //else if (mode == albumSortMode.mixLight2)
+            //{
+            //    if (x.ClassementValue == 0m || y.ClassementValue == 0m)
+            //    {
+            //        cmp = x.ClassementMoy.CompareTo(y.ClassementMoy);
+            //        if (cmp != 0)
+            //            return cmp;
+            //    }
+            //    else
+            //    {
+            //        cmp = x.ClassementValueLight.CompareTo(y.ClassementValueLight);
+            //        if (cmp != 0)
+            //            return cmp;
+            //    }
+            //}
+
+            //else if (mode == albumSortMode.medLight
+            //    || mode == albumSortMode.medQuasi
+            //    || mode == albumSortMode.medLightSafe
+            //    || mode == albumSortMode.medLightSafe2
+            //    || mode == albumSortMode.medLightSafe3
+            //    || mode == albumSortMode.medLightSafe4
+            //    || mode == albumSortMode.medLightSafe5
+            //    || mode == albumSortMode.medLightSafe6
+            //    || mode == albumSortMode.medLightSafe10
+            //    )
+            //{
+            //    cmp = x.ClassementValueLight.CompareTo(y.ClassementValueLight);
+            //    if (cmp != 0)
+            //        return cmp;
+            //}
+
+
+
+            cmp = x.ClassementValue.CompareTo(y.ClassementValue);
+            if (cmp != 0)
+                return cmp;
+
+            cmp = x.ClassementValueLight.CompareTo(y.ClassementValueLight);
+            if (cmp != 0)
+                return cmp;
+
+            cmp = x.ClassementMoy.CompareTo(y.ClassementMoy);
+            if (cmp != 0)
+                return cmp;
+
+            int i = 0;
+            var t1 = -2m;
+            var t2 = -2m;
+
+            var lx = new List<Piece>(x);
+            var ly = new List<Piece>(y);
+            while (true)
             {
-              
-                //if (x.PieceId == theOne)
-                //    return -1;
-                //if (y.PieceId == theOne)
-                //    return 1;
-                return x.RankAlbumReverse.CompareTo(y.RankAlbumReverse); 
+                t1 = x.getTrackSortValue(i, lx);
+                t2 = y.getTrackSortValue(i, ly);
+
+                cmp = t1.CompareTo(t2);
+                if (cmp != 0)
+                    return cmp;
+
+
+
+                if (t1 == 0)
+                    break;
+
+                i++;
+
+            }
+            cmp = x.DurationValue.CompareTo(y.DurationValue);
+            if (cmp != 0)
+                return cmp;
+            return -x.Name.CompareTo(y.Name);
+
+        }
+    }
+
+    //class AlbumClassComparerStack : IComparer<Album>
+    //{
+    //    public int Compare(Album x, Album y)
+    //    {
+    //        //int cmp = x.StackIndex.CompareTo(y.StackIndex);
+    //        //if (cmp != 0)
+    //        //    return cmp;
+    //        return x.Rank.Sort.CompareTo(y.Rank.Sort);
+    //    }
+    //}
+
+    class AlbumClassComparer2 : IComparer<Album>
+    {
+        public int Compare(Album x, Album y)
+        {
+            if (x == y)
+                return 0;
+
+            if (x == null)
+                return 1;
+
+            if (y == null)
+                return -1;
+
+            return x.Rank.Sort.CompareTo(y.Rank.Sort);
+        }
+    }
+
+
+    class AlbumSortComparer : IComparer<Album>
+    {
+        public int Compare(Album x, Album y)
+        {
+            if (x == y)
+                return 0;
+
+            if (x == null)
+                return 1;
+
+            if (y == null)
+                return -1;
+
+            int cmp = x.Rank.SortValue.CompareTo(y.Rank.SortValue);
+            if (cmp != 0)
+                return cmp;
+
+            if (x.Rank.SortValue == 0)
+            {
+
+            }
+
+            var xx = x.getFirstTrackSortValue();
+            var yy = y.getFirstTrackSortValue();
+
+            return xx.CompareTo(yy);
+
+        }
+    }
+
+    class AlbumRestComparer : IComparer<Album>
+    {
+        static AlbumSortComparer subCmp = new AlbumSortComparer();
+        const decimal EPSILON = 0.00001m;
+        public int Compare(Album x, Album y)
+        {
+            var xx = x.Rank.TimeRest;
+            var yy = y.Rank.TimeRest;
+            int cmp = 0;
+            if (System.Math.Abs(xx - yy) >= EPSILON)
+                cmp = xx.CompareTo(yy);
+            if (cmp == 0)
+                return subCmp.Compare(x, y);
+            return cmp;
+        }
+    }
+
+    class PieceInVirtualAlbumComparer : IComparer<Piece>
+    {
+        public int Compare(Piece x, Piece y)
+        {
+            var xx = "";
+            var yy = "";
+            if (x != null && x.getLocation() != null) xx = x.getLocation();
+            if (y != null && y.getLocation() != null) yy = y.getLocation();
+            return xx.CompareTo(yy);
+        }
+    }
+
+    class PieceInAlbumComparer : IComparer<Piece>
+    {
+        private bool debile(int trackNumber)
+        {
+            return trackNumber <= 0 || trackNumber > 10000;
+        }
+
+        private bool debile(Piece piece)
+        {
+            return debile(piece.TrackNumber);
+        }
+        public int Compare(Piece x, Piece y)
+        {
+            if (debile(x))
+            {
+                if (debile(y))
+                {
+                    var f1 = Path.GetFileName(x.getLocation());
+                    var f2 = Path.GetFileName(y.getLocation());
+                    return f1.CompareTo(f2);
+                }
+                return -1;
+            }
+            if (debile(y))
+                return 1;
+            var cmp = x.TrackNumber.CompareTo(y.TrackNumber);
+            if (cmp != 0)
+                return cmp;
+            return x.getLocation().CompareTo(y.getLocation());
+        }
+    }
+
+    class AllPieceComparer : IComparer<Piece>
+    {
+        PieceInAlbumComparer pieceComp = new PieceInAlbumComparer();
+        IComparer<Album> albumcomp = new AlbumClassComparer2();
+
+        public int Compare(Piece x, Piece y)
+        {
+            int cmp = albumcomp.Compare(x.PieceAlbum, y.PieceAlbum);
+            if (cmp != 0)
+                return cmp;
+            return -pieceComp.Compare(x, y);
+        }
+    }
+
+    class AllPieceComparer2 : IComparer<Piece>
+    {
+        public int Compare(Piece x, Piece y)
+        {
+            return -x.RankAllAlbum.CompareTo(y.RankAllAlbum);
+        }
+    }
+
+    class AlbumNameComparer : IComparer<Album>
+    {
+        public int Compare(Album x, Album y)
+        {
+            return x.Name.CompareTo(y.Name);
+        }
+    }
+
+    //class AlbumLastModifClassementComparer : IComparer<Album>
+    //{
+    //    public int Compare(Album x, Album y)
+    //    {
+
+
+    //        var dtx = x.UpdateClassement;
+    //        var dty = y.UpdateClassement;
+    //        int cmp =0;
+    //        if (dtx == null)
+    //        {
+    //            if (dty == null)
+    //            {
+    //            }
+    //            else
+    //                cmp = -1;
+    //        }
+    //        else if (dty == null)
+    //            cmp = 1;
+    //        else
+    //            cmp = dtx.Value.CompareTo(dty.Value); 
+
+
+    //        if (cmp != 0)
+    //            return cmp;
+    //        return x.Name.CompareTo(y.Name);
+    //    }
+    //}
+
+    class VirtualAlbumComparer : IComparer<Album>
+    {
+        public int Compare(Album x, Album y)
+        {
+            var cmp = x.Name.Length.CompareTo(y.Name.Length);
+            if (cmp != 0)
+                return cmp;
+            return x.Name.CompareTo(y.Name);
+        }
+    }
+
+
+}
+]]></content>
+  </file>
+  <file path="\PieceDb.Consolid\albums\Albums.cs">
+    <content><![CDATA[using pdb.util;
+using System.Collections.Generic;
+using System;
+using pdb.obj;
+using pdb.gen.conf;
+using System.Text.RegularExpressions;
+
+namespace pdb.gen.albums
+{
+    public class Albums // : IAlbumInit
+    {
+        public Albums(Consolid consolid)
+        {
+            this.consolid = consolid;
+        }
+        private BgDictString<Album> dict = new BgDictString<Album>();
+        private Consolid consolid;
+        private StackAlbum stack = StackAlbum.Instance;
+        private static volatile object _lock = new object();
+        public static object Lock { get { return _lock; } }
+
+
+        public void checkBuild()
+        {
+            lock (_lock)
+            {
+                misc.log("albums.checkBuild();");
+                foreach (Album album in dict.Values)
+                {
+                    album.checkBuild();
+                }
             }
         }
-        #endregion
-        #endregion
+
+        private string getKey(string _album, bool artist)
+        {
+            return Album.getKey(_album, artist); 
+        }
+
+        public void buildDone()
+        {
+            lock (_lock)
+            {
+                foreach (Album album in new List<Album>(dict.Values))
+                {
+                    if (!album.buildDone())
+                    {
+                        misc.log("suppression album {0}", album.Name);
+                        dict.Remove(getKey(album.Name, album.VirtualByArtist));
+                    }
+                }
+            }
+        }
+
+        private bool check_(Piece piece, string albumOrg, bool virtualByArtist, IDictionary<string, Album> dict)
+        {
+            string __album = getKey(albumOrg, virtualByArtist);
+
+
+            var album = dict[__album];
+            if (album == null)
+            {
+                misc.log("creation album {0}", __album);
+                album = new Album(albumOrg,__album);
+                album.Virtual = piece.Virtual;
+                album.VirtualByArtist = piece.VirtualByArtist;
+                dict.Add(__album, album);
+            }
+
+         return album.add(piece);
+        }
+
+        private bool check_(Piece piece, IDictionary<string, Album> dict)
+        {
+            return check_(piece, piece.Album, piece.VirtualByArtist, dict);            
+        }
+
+        public int Count { get { return dict.Count; } }
+
+
+
+       
+
+        public void sortVirtual()
+        {
+            misc.log("sortVirtual");
+            foreach (Album album in dict.Values)
+            {
+                if (album.Virtual)
+                    album.sortVirtual();
+            }
+        }
+
+        public bool check(Piece piece)
+        {
+            return check_(piece, dict);
+        }
+
+        //public void check(Piece piece)
+        //{
+        //    check_(piece, dict);
+        //    foreach (Piece child in piece.Childs)
+        //        check_(child, dict);
+        //}
+
+        public void checkVirtual(Piece piece, IDictionary<string, Album> dict)
+        {
+
+            if (piece.Virtual)
+                check_(piece, dict);
+
+        }
+
+        public Album getAlbum(TrackList piece)
+        {
+            return piece.Piece.PieceAlbum;
+            string __album = "-";
+            var _album = piece.Album;
+            if (!string.IsNullOrEmpty(_album))
+            {
+                __album = _album.Trim();
+                return dict[__album];
+            }
+            return null;
+        }
+
+        public void buildStack()
+        {
+            // prise en compte de la stack
+            misc.log("stack.build();");
+            var confSort = consolid.SortAlbumMode;
+            int stackSize = confSort.stackSize;
+            stack.Capacity = stackSize;
+            Album.ConfAlbumSort = confSort ; 
+            stack.Enabled = confSort.stackEnabled;
+            stack.build();
+        }
+
+        public void makeSort()
+        {
+            misc.log("albums.make sort");
+          
+            ///check to find first light
+            ConfMedianne confMedianne = null;
+            var confSort = consolid.SortAlbumMode;
+            foreach (var cmp in confSort.ComposantsUtiles)
+            {
+                if (cmp.type == medianneMode.light || confMedianne == null)
+                    confMedianne = cmp;
+            }
+
+            var conf0 = new ConfMedianne(confMedianne, true);
+
+
+
+
+            var list = new List<Album>(dict.Values);
+            foreach (Album album in list)
+            {
+                album.makeSort(confSort, confMedianne, conf0); //listRef, reference); 
+            }
+
+            list.Sort(new AlbumClassComparer(consolid.SortAlbumMode,false));
+            list.Reverse();
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].Rank.Sort = i + 1;
+            }
+
+            list.Sort(new AlbumClassComparer(consolid.SortAlbumMode, true));
+            list.Reverse();
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].RankSt = i + 1;
+            }
+           
+            //var listStack = stack.Albums;
+            //foreach (Album s in listStack)
+            //{
+            //    string key = getKey(s.Name);
+            //    var alb = dict[key];
+            //    stack.merge(s, alb);
+            //}
+            //list.Sort(new AlbumClassComparerStack());
+            //for (int i = 0; i < list.Count; i++)
+            //{
+            //    list[i].Rank2 = i + 1; 
+            //}
+        }
+
+        public List<Album> makeSelection()
+        {
+            misc.log("albums.makeSelection");
+            var list = new List<Album>(dict.Values);
+            foreach (Album album in list)
+            {
+                album.makeSelection();
+            }
+            list.Sort(new AlbumRestComparer());
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].Rank.RankRest = i + 1;
+            }
+            return list;
+        }
+
+        public void changeAlbum(Piece p, string newA)
+        {
+            var currentAlb = dict[getKey(p.Album, false)];
+            if (currentAlb != null)
+                currentAlb.mustRefresh();
+            check_(p, newA,false, this.dict);    
+            var newAlb = dict[getKey(newA, false)];
+            if (newAlb != null)
+                newAlb.mustRefresh();
+            p.albumMustRefresh(); 
+        }
+
+        public void changeArtist(Piece p, string newA)
+        {
+            
+
+
+            var currentAlb = dict[getKey(p.Artist, true)];
+            if (currentAlb != null)
+                currentAlb.mustRefresh();
+
+            check_(p, newA, true, this.dict);           
+            var newAlb = dict[getKey(newA, true)];
+            if (newAlb != null)
+                newAlb.mustRefresh();
+            p.albumMustRefresh(); 
+        }
+
+        public void checkVirtuals(IEnumerable<Album> candidats, List<Piece> list)
+        {
+            foreach (Album candidat in candidats)
+            {
+                bool found = false;
+                foreach (Album album in dict.Values)
+                {
+                    if (album.isSameOf(candidat))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found)
+                {
+                    // on ne le prend pas (car identique à un existant)
+                    // on n'oublie pas de supprimer les fils
+                    candidat.Clear();
+                }
+                else
+                {
+                    // on le prend.
+                    dict.Add(getKey(candidat.Name, candidat.VirtualByArtist), candidat);
+                    foreach (Piece p in candidat)
+                    {
+                        p.consolidChild();
+                        list.Add(p);
+                    }
+                }
+            }
+        }
+
+
+
+
+        public List<Album> List
+        {
+            get
+            {
+                var list = new List<Album>();
+                foreach (Album album in dict.Values)
+                    list.Add(album);
+                list.Sort(new AlbumNameComparer());
+                return list;
+            }
+        }
+        //public List<Album> ListByUpdate
+        //{
+        //    get
+        //    {
+        //        var list = new List<Album>();
+        //        foreach (Album album in dict.Values)
+        //            list.Add(album);
+        //        list.Sort(new AlbumLastModifClassementComparer());
+
+        //        return list;
+        //    }
+        //}
+
+        public void signalClassChange(TrackList track)
+        {
+            track.Piece.albumMustRefresh(); 
+            //var album = getAlbum(track);
+            //if (album == null)
+            //    return;
+            //album.mustRefresh();
+
+            //var master = track.Piece.Master;
+            //master.PieceAlbum.mustRefresh();
+            //foreach (Piece child in master)
+            //    child.PieceAlbum.mustRefresh();
+            stack.Add(track.Piece);
+        }
+
+
 
     }
 }
-
 ]]></content>
   </file>
 </db>
