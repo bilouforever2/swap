@@ -1,871 +1,618 @@
 <?xml version="1.0" encoding="utf-8"?>
-<db version="3" seq_piece="37614">
+<db version="3" seq_piece="34020">
   <pieces>
-    <piece id="2357">
+    <piece id="618">
       <classement>
-        <version date="04/05/2017 16:59:40" value="0014511.3" />
+        <version date="20/09/2016 18:43:33" value="0004.1" />
+      </classement>
+    </piece>
+    <piece id="5011">
+      <classement>
+        <version date="20/09/2016 11:26:26" value="0003204.1" />
+      </classement>
+      <disabled />
+      <duration>482255</duration>
+    </piece>
+    <piece id="5145">
+      <duration>296496</duration>
+    </piece>
+    <piece id="5955">
+      <classement>
+        <version date="20/09/2016 10:32:20" value="00034.3" />
+      </classement>
+    </piece>
+    <piece id="7168">
+      <classement>
+        <version date="20/09/2016 10:35:09" value="0004.2" />
+      </classement>
+      <duration>311120</duration>
+    </piece>
+    <piece id="7209">
+      <classement>
+        <version date="20/09/2016 10:42:40" value="0003315.3" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="7243">
+      <classement>
+        <version date="20/09/2016 18:17:43" value="0004.0" />
+      </classement>
+      <duration>361746</duration>
+    </piece>
+    <piece id="7244">
+      <duration>370860</duration>
+    </piece>
+    <piece id="7415">
+      <dates>
+        <date>20/09/2016 18:40:45</date>
+      </dates>
+    </piece>
+    <piece id="8875">
+      <classement>
+        <version date="20/09/2016 14:36:04" value="0005.1" />
+      </classement>
+    </piece>
+    <piece id="9327">
+      <classement>
+        <version date="20/09/2016 10:33:29" value="0003454.0" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="9434">
+      <classement>
+        <version date="20/09/2016 10:36:21" value="0003.5" />
+      </classement>
+      <duration>166557</duration>
+    </piece>
+    <piece id="9539">
+      <classement>
+        <version date="20/09/2016 10:23:11" value="0002425.1" />
       </classement>
       <dates>
-        <date>04/05/2017 16:59:56</date>
+        <date>20/09/2016 14:48:35</date>
       </dates>
       <disabled />
     </piece>
-   
-    <piece id="4427">
+    <piece id="9552">
       <classement>
-        <version date="04/05/2017 11:45:54" value="0014111.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="4838">
-      <classement>
-        <version date="04/05/2017 15:43:39" value="0015031.2" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6091">
-      <classement>
-        <version date="04/05/2017 17:27:14" value="0015214.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6306">
-      <classement>
-        <version date="04/05/2017 14:01:02" value="00145104.3" />
-      </classement>
-    </piece>
-    <piece id="6405">
-      <classement>
-        <version date="04/05/2017 14:58:47" value="0015040.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6610">
-      <classement>
-        <version date="04/05/2017 15:52:35" value="0015043.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6651">
-      <classement>
-        <version date="04/05/2017 15:48:39" value="003314.3" />
-      </classement>
-      <duration>315329</duration>
-    </piece>
-    <piece id="6743">
-      <classement>
-        <version date="04/05/2017 15:02:26" value="0013241.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6840">
-      <classement>
-        <version date="04/05/2017 12:22:01" value="0011521.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6915">
-      <classement>
-        <version date="04/05/2017 12:03:53" value="0013541.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="6946">
-      <classement>
-        <version date="04/05/2017 14:52:55" value="0015431.4" />
-      </classement>
-    </piece>
-    <piece id="7288">
-      <classement>
-        <version date="04/05/2017 13:54:04" value="002035.4" />
-      </classement>
-    </piece>
-    <piece id="7344">
-      <classement>
-        <version date="04/05/2017 16:00:33" value="0011351.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="7501">
-      <classement>
-        <version date="04/05/2017 16:48:23" value="0012421.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="7913">
-      <classement>
-        <version date="04/05/2017 12:08:37" value="0013041.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="8123">
-      <classement>
-        <version date="04/05/2017 14:31:45" value="0020511.4" />
-      </classement>
-    </piece>
-    <piece id="8213">
-      <classement>
-        <version date="04/05/2017 14:54:09" value="002014.4" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="8300">
-      <classement>
-        <version date="04/05/2017 13:12:29" value="0015313.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="8908">
-      <classement>
-        <version date="04/05/2017 14:49:30" value="003253.1" />
-      </classement>
-    </piece>
-    <piece id="10612">
-      <classement>
-        <version date="04/05/2017 13:29:25" value="0013141.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="10613">
-      <classement>
-        <version date="04/05/2017 17:24:30" value="35.2" />
-      </classement>
-    </piece>
-    <piece id="10717">
-      <classement>
-        <version date="04/05/2017 17:53:24" value="00154143.3" />
+        <version date="20/09/2016 18:40:35" value="0003351.3" />
       </classement>
       <dates>
-        <date>04/05/2017 17:40:31</date>
-      </dates>
-    </piece>
-    <piece id="10790">
-      <classement>
-        <version date="04/05/2017 13:57:17" value="002142.2" />
-      </classement>
-    </piece>
-    <piece id="11193">
-      <classement>
-        <version date="04/05/2017 13:55:29" value="002224.3" />
-      </classement>
-      <duration>164138</duration>
-    </piece>
-    <piece id="11957">
-      <classement>
-        <version date="04/05/2017 14:25:28" value="0020114.1" />
-      </classement>
-    </piece>
-    <piece id="12080">
-      <classement>
-        <version date="04/05/2017 13:40:04" value="0015424.5" />
-      </classement>
-    </piece>
-    <piece id="12085">
-      <classement>
-        <version date="04/05/2017 13:34:44" value="0015124.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="12086">
-      <classement>
-        <version date="04/05/2017 18:55:13" value="00450.2" />
-      </classement>
-    </piece>
-    <piece id="12241">
-      <classement>
-        <version date="04/05/2017 11:30:09" value="01535.1" />
-      </classement>
-    </piece>
-    <piece id="13075">
-      <classement>
-        <version date="04/05/2017 14:51:14" value="003032.2" />
-      </classement>
-    </piece>
-    <piece id="13201">
-      <classement>
-        <version date="04/05/2017 13:02:22" value="0015301.3" />
-      </classement>
-      <dates>
-        <date>04/05/2017 12:56:03</date>
+        <date>20/09/2016 18:40:15</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="13790">
+    <piece id="9960">
       <classement>
-        <version date="04/05/2017 18:12:41" value="002235.3" />
+        <version date="20/09/2016 10:44:51" value="0003521.0" />
       </classement>
+      <disabled />
+      <duration>176641</duration>
     </piece>
-    <piece id="14038">
+    <piece id="10342">
       <classement>
-        <version date="04/05/2017 14:34:41" value="0015402.2" />
-      </classement>
-    </piece>
-    <piece id="14371">
-      <classement>
-        <version date="04/05/2017 13:31:27" value="0015224.3" />
+        <version date="20/09/2016 14:33:17" value="0003531.0" />
       </classement>
       <disabled />
     </piece>
-    <piece id="14923">
+    <piece id="11452">
       <classement>
-        <version date="04/05/2017 14:33:22" value="00144002.2" />
-      </classement>
-    </piece>
-    <piece id="15274">
-      <classement>
-        <version date="04/05/2017 12:45:56" value="002044.5" />
-      </classement>
-    </piece>
-    <piece id="15275">
-      <classement>
-        <version date="04/05/2017 16:07:04" value="0015235.1" />
-      </classement>
-    </piece>
-    <piece id="15350">
-      <classement>
-        <version date="04/05/2017 17:11:28" value="002002.5" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="16007">
-      <classement>
-        <version date="04/05/2017 15:10:51" value="0013341.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="16120">
-      <classement>
-        <version date="04/05/2017 15:09:37" value="0015003.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="16209">
-      <classement>
-        <version date="04/05/2017 14:39:54" value="0015400.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="16293">
-      <classement>
-        <version date="04/05/2017 13:26:44" value="002301.2" />
-      </classement>
-    </piece>
-    <piece id="16728">
-      <classement>
-        <version date="04/05/2017 15:20:51" value="0015115.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="17328">
-      <classement>
-        <version date="04/05/2017 15:42:20" value="004045.3" />
-      </classement>
-    </piece>
-    <piece id="17369">
-      <classement>
-        <version date="04/05/2017 12:20:04" value="0014543.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="17722">
-      <classement>
-        <version date="04/05/2017 17:02:10" value="0015440.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="18646">
-      <classement>
-        <version date="04/05/2017 11:36:53" value="0014523.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="19389">
-      <classement>
-        <version date="04/05/2017 14:15:41" value="0015341.2" />
-      </classement>
-    </piece>
-    <piece id="19441">
-      <classement>
-        <version date="04/05/2017 15:36:13" value="003142.1" />
-      </classement>
-    </piece>
-    <piece id="19825">
-      <classement>
-        <version date="04/05/2017 14:22:59" value="0015421.4" />
-      </classement>
-    </piece>
-    <piece id="19967">
-      <classement>
-        <version date="04/05/2017 13:58:56" value="0015020.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="20093">
-      <classement>
-        <version date="04/05/2017 12:11:45" value="0015030.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="20104">
-      <classement>
-        <version date="04/05/2017 15:07:19" value="0014533.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="20185">
-      <classement>
-        <version date="04/05/2017 15:13:27" value="00154142.1" />
-      </classement>
-    </piece>
-    <piece id="20899">
-      <classement>
-        <version date="04/05/2017 12:39:19" value="0015055.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="30839" parent="20899" />
-    <piece id="21003">
-      <classement>
-        <version date="04/05/2017 15:08:33" value="0013341.2" />
-      </classement>
-    </piece>
-    <piece id="21380">
-      <classement>
-        <version date="04/05/2017 11:23:00" value="00150301.1" />
-      </classement>
-    </piece>
-    <piece id="21590">
-      <classement>
-        <version date="04/05/2017 11:32:10" value="0015315.4" />
-      </classement>
-    </piece>
-    <piece id="21843">
-      <classement>
-        <version date="04/05/2017 14:45:16" value="002332.1" />
-      </classement>
-    </piece>
-    <piece id="22645">
-      <classement>
-        <version date="04/05/2017 16:02:13" value="0015023.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="22670">
-      <classement>
-        <version date="04/05/2017 14:38:47" value="0015400.4" />
+        <version date="20/09/2016 11:19:42" value="0010.5" />
       </classement>
       <dates>
-        <date>04/05/2017 14:37:33</date>
+        <date>20/09/2016 11:16:44</date>
+      </dates>
+      <duration>168773</duration>
+    </piece>
+    <piece id="11453">
+      <classement>
+        <version date="20/09/2016 14:43:57" value="013.3" />
+      </classement>
+      <duration>156200</duration>
+    </piece>
+    <piece id="12179">
+      <classement>
+        <version date="20/09/2016 19:01:49" value="0044.4" />
+      </classement>
+    </piece>
+    <piece id="12439">
+      <classement>
+        <version date="20/09/2016 16:38:37" value="014.2" />
+      </classement>
+    </piece>
+    <piece id="13423">
+      <classement>
+        <version date="20/09/2016 17:08:29" value="043.4" />
+      </classement>
+      <duration>259520</duration>
+    </piece>
+    <piece id="13797">
+      <classement>
+        <version date="20/09/2016 15:01:45" value="05.3" />
+      </classement>
+    </piece>
+    <piece id="13868">
+      <classement>
+        <version date="20/09/2016 10:44:11" value="15.4" />
+      </classement>
+    </piece>
+    <piece id="14275">
+      <classement>
+        <version date="20/09/2016 10:47:42" value="02.2" />
+      </classement>
+    </piece>
+    <piece id="15282">
+      <classement>
+        <version date="20/09/2016 18:56:48" value="0003.5" />
+      </classement>
+    </piece>
+    <piece id="16191">
+      <classement>
+        <version date="20/09/2016 16:47:39" value="0004.2" />
+      </classement>
+    </piece>
+    <piece id="16471">
+      <classement>
+        <version date="20/09/2016 10:53:49" value="0003301.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="16509">
+      <classement>
+        <version date="20/09/2016 11:32:12" value="0003234.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17024">
+      <classement>
+        <version date="20/09/2016 18:19:23" value="0003313.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17034">
+      <classement>
+        <version date="20/09/2016 14:45:30" value="0003400.3" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="17035">
+      <classement>
+        <version date="20/09/2016 16:36:08" value="00034.1" />
+      </classement>
+      <dates>
+        <date>20/09/2016 16:35:22</date>
       </dates>
     </piece>
-    <piece id="22730">
+    <piece id="17102">
       <classement>
-        <version date="04/05/2017 14:12:39" value="0015344.2" />
+        <version date="20/09/2016 18:28:56" value="0023.1" />
       </classement>
     </piece>
-    <piece id="22835">
+    <piece id="17136">
       <classement>
-        <version date="04/05/2017 16:49:52" value="0015244.3" />
+        <version date="20/09/2016 18:29:59" value="0005.3" />
+      </classement>
+    </piece>
+    <piece id="17188">
+      <classement>
+        <version date="20/09/2016 18:20:56" value="0004.4" />
+      </classement>
+    </piece>
+    <piece id="17196">
+      <classement>
+        <version date="20/09/2016 16:37:14" value="0003.5" />
+      </classement>
+    </piece>
+    <piece id="17222">
+      <classement>
+        <version date="20/09/2016 10:40:53" value="0004.3" />
+      </classement>
+      <disabled>false</disabled>
+    </piece>
+    <piece id="17225">
+      <classement>
+        <version date="20/09/2016 14:15:21" value="0011.2" />
+      </classement>
+    </piece>
+    <piece id="17805">
+      <classement>
+        <version date="20/09/2016 18:53:29" value="0003254.1" />
       </classement>
       <disabled />
     </piece>
-    <piece id="22980">
+    <piece id="26275" parent="17805">
+      <disabled />
+    </piece>
+    <piece id="17815">
+      <duration>389227</duration>
+    </piece>
+    <piece id="18422">
       <classement>
-        <version date="04/05/2017 17:10:20" value="0015500.3" />
+        <version date="20/09/2016 16:31:42" value="0005.2" />
+      </classement>
+    </piece>
+    <piece id="18683">
+      <classement>
+        <version date="20/09/2016 19:06:59" value="0005.2" />
+      </classement>
+    </piece>
+    <piece id="18797">
+      <classement>
+        <version date="20/09/2016 16:45:43" value="023.4" />
+      </classement>
+    </piece>
+    <piece id="18914">
+      <classement>
+        <version date="20/09/2016 14:51:09" value="0055.3" />
+      </classement>
+    </piece>
+    <piece id="19621">
+      <classement>
+        <version date="20/09/2016 16:52:07" value="0005.4" />
+      </classement>
+    </piece>
+    <piece id="19626">
+      <classement>
+        <version date="20/09/2016 14:53:11" value="0010.2" />
+      </classement>
+    </piece>
+    <piece id="20081">
+      <classement>
+        <version date="20/09/2016 14:38:43" value="0004.0" />
+      </classement>
+    </piece>
+    <piece id="20082">
+      <classement>
+        <version date="20/09/2016 16:21:32" value="003.3" />
+      </classement>
+    </piece>
+    <piece id="20447">
+      <classement>
+        <version date="20/09/2016 18:38:47" value="0003444.0" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="20639">
+      <classement>
+        <version date="20/09/2016 15:19:10" value="00035.3" />
       </classement>
       <dates>
-        <date>04/05/2017 17:08:27</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="22991">
-      <classement>
-        <version date="04/05/2017 15:06:19" value="0014144.4" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="23323">
-      <classement>
-        <version date="04/05/2017 13:51:20" value="0015144.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="23388">
-      <classement>
-        <version date="04/05/2017 11:27:35" value="0014313.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="23526">
-      <classement>
-        <version date="04/05/2017 14:56:05" value="00145110.1" />
-      </classement>
-    </piece>
-    <piece id="23763">
-      <classement>
-        <version date="04/05/2017 15:45:48" value="0020020.2" />
-      </classement>
-    </piece>
-    <piece id="23830">
-      <classement>
-        <version date="04/05/2017 17:20:57" value="0020032.1" />
-      </classement>
-    </piece>
-    <piece id="24645">
-      <classement>
-        <version date="04/05/2017 14:43:35" value="002404.4" />
-      </classement>
-    </piece>
-    <piece id="24735">
-      <classement>
-        <version date="04/05/2017 17:19:24" value="0020533.3" />
-      </classement>
-      <dates>
-        <date>04/05/2017 17:15:01</date>
-      </dates>
-    </piece>
-    <piece id="25905">
-      <classement>
-        <version date="04/05/2017 12:36:28" value="002033.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="25938">
-      <classement>
-        <version date="04/05/2017 13:21:23" value="0015101.3" />
-      </classement>
-    </piece>
-    <piece id="26032">
-      <classement>
-        <version date="04/05/2017 14:47:31" value="0015402.3" />
-      </classement>
-    </piece>
-    <piece id="27536">
-      <classement>
-        <version date="04/05/2017 12:14:09" value="0015134.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="28293">
-      <classement>
-        <version date="04/05/2017 11:48:51" value="0014413.1" />
-      </classement>
-      <dates>
-        <date>04/05/2017 11:48:36</date>
-      </dates>
-      <disabled />
-    </piece>
-    <piece id="28775">
-      <classement>
-        <version date="04/05/2017 16:40:46" value="0021510.1" />
-      </classement>
-    </piece>
-    <piece id="29328">
-      <classement>
-        <version date="04/05/2017 16:39:24" value="002523.1" />
-      </classement>
-    </piece>
-    <piece id="29374">
-      <classement>
-        <version date="04/05/2017 11:51:00" value="0014241.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="29881">
-      <classement>
-        <version date="04/05/2017 15:18:34" value="0020003.3" />
-      </classement>
-    </piece>
-    <piece id="29886">
-      <classement>
-        <version date="04/05/2017 11:25:30" value="00153133.3" />
-      </classement>
-    </piece>
-    <piece id="31182">
-      <classement>
-        <version date="04/05/2017 15:54:22" value="00145211.1" />
-      </classement>
-    </piece>
-    <piece id="31905">
-      <classement>
-        <version date="04/05/2017 13:15:41" value="0012021.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="31906">
-      <classement>
-        <version date="04/05/2017 16:46:15" value="004054.3" />
-      </classement>
-    </piece>
-    <piece id="32249">
-      <classement>
-        <version date="04/05/2017 16:43:19" value="0015204.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="33531">
-      <classement>
-        <version date="04/05/2017 15:55:46" value="0015100.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="34030">
-      <classement>
-        <version date="04/05/2017 13:25:20" value="0014443.1" />
-      </classement>
-      <disabled />
-      <duration>240814</duration>
-    </piece>
-    <piece id="34039">
-      <classement>
-        <version date="04/05/2017 11:33:00" value="0015324.4" />
-      </classement>
-    </piece>
-    <piece id="34299">
-      <classement>
-        <version date="04/05/2017 16:58:29" value="0014021.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="34539">
-      <classement>
-        <version date="04/05/2017 12:48:55" value="0014334.2" />
-      </classement>
-    </piece>
-    <piece id="34768">
-      <classement>
-        <version date="04/05/2017 17:31:29" value="0020311.4" />
-      </classement>
-    </piece>
-    <piece id="34855">
-      <classement>
-        <version date="04/05/2017 14:05:17" value="0015011.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="34938">
-      <classement>
-        <version date="04/05/2017 13:03:30" value="0015324.5" />
-      </classement>
-      <dates>
-        <date>04/05/2017 12:58:22</date>
+        <date>20/09/2016 15:15:04</date>
       </dates>
     </piece>
-    <piece id="34974">
+    <piece id="20931">
       <classement>
-        <version date="04/05/2017 11:34:22" value="0014213.1" />
+        <version date="20/09/2016 15:11:04" value="00034.2" />
+      </classement>
+    </piece>
+    <piece id="21128">
+      <classement>
+        <version date="20/09/2016 18:47:05" value="0002300.4" />
       </classement>
       <disabled />
     </piece>
-    <piece id="35016">
+    <piece id="21210">
       <classement>
-        <version date="04/05/2017 15:15:06" value="00151010.1" />
+        <version date="20/09/2016 14:07:33" value="0004.2" />
       </classement>
     </piece>
-    <piece id="35427">
+    <piece id="21247">
       <classement>
-        <version date="04/05/2017 15:29:12" value="0015125.3" />
+        <version date="20/09/2016 17:02:30" value="0003425.0" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="21621">
+      <classement>
+        <version date="20/09/2016 18:42:34" value="0041.4" />
+      </classement>
+    </piece>
+    <piece id="21658">
+      <classement>
+        <version date="20/09/2016 14:10:08" value="0004.0" />
+      </classement>
+    </piece>
+    <piece id="21681">
+      <classement>
+        <version date="20/09/2016 18:51:10" value="0113.3" />
+      </classement>
+    </piece>
+    <piece id="22018">
+      <classement>
+        <version date="20/09/2016 10:51:23" value="0003341.3" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22024">
+      <classement>
+        <version date="20/09/2016 14:37:19" value="0004.0" />
+      </classement>
+    </piece>
+    <piece id="22316">
+      <classement>
+        <version date="20/09/2016 19:05:11" value="0021.5" />
+      </classement>
+    </piece>
+    <piece id="22393">
+      <classement>
+        <version date="20/09/2016 18:25:31" value="0003415.0" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22558">
+      <classement>
+        <version date="20/09/2016 11:30:03" value="0003214.3" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22737">
+      <classement>
+        <version date="20/09/2016 16:18:42" value="0002115.4" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22738">
+      <classement>
+        <version date="20/09/2016 17:10:54" value="0003035.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="22739">
+      <classement>
+        <version date="20/09/2016 19:00:05" value="0003.5" />
+      </classement>
+    </piece>
+    <piece id="23062">
+      <classement>
+        <version date="20/09/2016 14:24:51" value="0003310.1" />
       </classement>
       <dates>
-        <date>04/05/2017 15:28:52</date>
+        <date>20/09/2016 14:24:37</date>
       </dates>
       <disabled />
     </piece>
-    <piece id="35775">
+    <piece id="23070">
+      <classement>
+        <version date="20/09/2016 17:06:51" value="0003342.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23265">
+      <classement>
+        <version date="20/09/2016 15:28:08" value="0005.1" />
+      </classement>
+    </piece>
+    <piece id="23334">
+      <classement>
+        <version date="20/09/2016 15:20:58" value="0023.5" />
+      </classement>
+    </piece>
+    <piece id="23335">
+      <classement>
+        <version date="20/09/2016 17:01:44" value="032.4" />
+      </classement>
+    </piece>
+    <piece id="23485">
+      <classement>
+        <version date="20/09/2016 18:23:41" value="0003.4" />
+      </classement>
+    </piece>
+    <piece id="23504">
+      <classement>
+        <version date="20/09/2016 18:31:44" value="015.2" />
+      </classement>
+    </piece>
+    <piece id="23533">
+      <classement>
+        <version date="20/09/2016 17:05:23" value="0004.3" />
+      </classement>
+    </piece>
+    <piece id="23658">
+      <classement>
+        <version date="20/09/2016 18:36:03" value="0003244.1" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23674">
+      <classement>
+        <version date="20/09/2016 15:30:46" value="10.4" />
+      </classement>
+    </piece>
+    <piece id="23697">
+      <classement>
+        <version date="20/09/2016 14:47:51" value="0003325.3" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="23758">
+      <classement>
+        <version date="20/09/2016 11:24:47" value="0030.1" />
+      </classement>
+    </piece>
+    <piece id="23988">
+      <classement>
+        <version date="20/09/2016 18:17:02" value="0005.0" />
+      </classement>
+    </piece>
+    <piece id="24001">
       <dates>
-        <date>04/05/2017 17:48:03</date>
+        <date>20/09/2016 17:47:25</date>
       </dates>
     </piece>
-    <piece id="35785">
+    <piece id="24656">
       <classement>
-        <version date="04/05/2017 18:09:40" value="0015435.4" />
+        <version date="20/09/2016 14:08:50" value="0010.1" />
+      </classement>
+    </piece>
+    <piece id="24657">
+      <classement>
+        <version date="20/09/2016 15:04:05" value="0031.5" />
       </classement>
       <dates>
-        <date>04/05/2017 17:44:07</date>
+        <date>20/09/2016 15:04:09</date>
       </dates>
     </piece>
-    <piece id="36171">
+    <piece id="24658">
       <classement>
-        <version date="04/05/2017 14:08:50" value="0015342.2" />
+        <version date="20/09/2016 16:50:47" value="003.2" />
+      </classement>
+    </piece>
+    <piece id="24709">
+      <classement>
+        <version date="20/09/2016 14:06:13" value="0005.3" />
+      </classement>
+    </piece>
+    <piece id="24733">
+      <classement>
+        <version date="20/09/2016 15:08:13" value="021.4" />
+      </classement>
+    </piece>
+    <piece id="26967">
+      <classement>
+        <version date="20/09/2016 15:05:56" value="0004.1" />
+      </classement>
+      <duration>283145</duration>
+    </piece>
+    <piece id="28384">
+      <classement>
+        <version date="20/09/2016 14:34:54" value="04.5" />
+      </classement>
+    </piece>
+    <piece id="28414">
+      <classement>
+        <version date="20/09/2016 14:11:46" value="0022.4" />
+      </classement>
+    </piece>
+    <piece id="28532">
+      <classement>
+        <version date="20/09/2016 18:34:53" value="011.2" />
+      </classement>
+    </piece>
+    <piece id="29024">
+      <classement>
+        <version date="20/09/2016 15:00:14" value="0005.1" />
       </classement>
       <dates>
-        <date>04/05/2017 14:07:24</date>
+        <date>20/09/2016 14:59:29</date>
       </dates>
     </piece>
-    <piece id="36381">
+    <piece id="29161">
       <classement>
-        <version date="04/05/2017 12:47:57" value="0014041.1" />
+        <version date="20/09/2016 14:13:44" value="0013.4" />
+      </classement>
+    </piece>
+    <piece id="29234">
+      <classement>
+        <version date="20/09/2016 18:48:14" value="0002545.3" />
       </classement>
       <disabled />
     </piece>
-    <piece id="36385">
+    <piece id="29545">
       <classement>
-        <version date="04/05/2017 16:10:01" value="0015145.3" />
+        <version date="20/09/2016 15:09:26" value="00035.3" />
+      </classement>
+    </piece>
+    <piece id="29568">
+      <classement>
+        <version date="20/09/2016 16:56:05" value="0104.1" />
+      </classement>
+    </piece>
+    <piece id="30266">
+      <classement>
+        <version date="20/09/2016 16:42:18" value="0003353.3" />
       </classement>
       <disabled />
     </piece>
-    <piece id="36444">
+    <piece id="30392">
       <classement>
-        <version date="04/05/2017 13:23:32" value="0014553.1" />
+        <version date="20/09/2016 18:54:59" value="00035.4" />
+      </classement>
+    </piece>
+    <piece id="30495">
+      <classement>
+        <version date="20/09/2016 19:08:07" value="0003303.1" />
       </classement>
       <disabled />
     </piece>
-    <piece id="36502">
+    <piece id="30679">
       <classement>
-        <version date="04/05/2017 15:38:37" value="0013441.1" />
+        <version date="20/09/2016 11:21:40" value="0021.4" />
+      </classement>
+    </piece>
+    <piece id="30768">
+      <classement>
+        <version date="20/09/2016 18:49:15" value="0003320.1" />
       </classement>
       <disabled />
     </piece>
-    <piece id="36559">
+    <piece id="31513">
       <classement>
-        <version date="04/05/2017 15:58:47" value="00152201.1" />
+        <version date="20/09/2016 16:58:29" value="00034.1" />
       </classement>
     </piece>
-    <piece id="36632">
+    <piece id="31897">
       <classement>
-        <version date="04/05/2017 16:05:27" value="0012321.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="36635">
-      <classement>
-        <version date="04/05/2017 12:35:27" value="00150111.1" />
+        <version date="20/09/2016 16:54:30" value="00120.3" />
       </classement>
     </piece>
-    <piece id="36896">
+    <piece id="32260">
       <classement>
-        <version date="04/05/2017 12:43:55" value="002204.4" />
-      </classement>
-    </piece>
-    <piece id="37033">
-      <classement>
-        <version date="04/05/2017 12:01:37" value="003302.1" />
-      </classement>
-    </piece>
-    <piece id="37044">
-      <classement>
-        <version date="04/05/2017 15:41:18" value="0015135.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37045">
-      <classement>
-        <version date="04/05/2017 13:14:14" value="0014350.4" />
-      </classement>
-    </piece>
-    <piece id="37069">
-      <classement>
-        <version date="04/05/2017 10:29:24" value="002005.5" />
-      </classement>
-    </piece>
-    <piece id="37074">
-      <classement>
-        <version date="04/05/2017 18:54:01" value="0005122.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37081">
-      <classement>
-        <version date="04/05/2017 13:19:02" value="0010504.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37082">
-      <classement>
-        <version date="04/05/2017 15:04:39" value="00145124.3" />
-      </classement>
-    </piece>
-    <piece id="37096">
-      <classement>
-        <version date="04/05/2017 13:09:38" value="0005302.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37100">
-      <classement>
-        <version date="04/05/2017 15:16:28" value="0010044.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37109">
-      <classement>
-        <version date="04/05/2017 12:16:50" value="0011104.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37114">
-      <classement>
-        <version date="04/05/2017 14:24:17" value="0012141.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37115">
-      <classement>
-        <version date="04/05/2017 16:42:16" value="0013504.1" />
-      </classement>
-    </piece>
-    <piece id="37135">
-      <classement>
-        <version date="04/05/2017 14:21:06" value="0005524.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37139">
-      <classement>
-        <version date="04/05/2017 15:46:55" value="0005212.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37140">
-      <classement>
-        <version date="04/05/2017 12:37:58" value="0011251.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37224">
-      <classement>
-        <version date="04/05/2017 13:42:31" value="0015433.2" />
-      </classement>
-    </piece>
-    <piece id="37239">
-      <classement>
-        <version date="04/05/2017 16:56:49" value="0012521.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37241">
-      <classement>
-        <version date="04/05/2017 11:19:15" value="0014111.1" />
-      </classement>
-    </piece>
-    <piece id="37242">
-      <classement>
-        <version date="04/05/2017 14:14:11" value="0015331.3" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37267">
-      <classement>
-        <version date="04/05/2017 13:36:06" value="003202.1" />
-      </classement>
-    </piece>
-    <piece id="37319">
-      <classement>
-        <version date="04/05/2017 17:26:11" value="0015254.3" />
-      </classement>
-    </piece>
-    <piece id="37321">
-      <classement>
-        <version date="04/05/2017 13:20:28" value="0014242.5" />
-      </classement>
-    </piece>
-    <piece id="37347">
-      <classement>
-        <version date="04/05/2017 10:27:42" value="0015325.2" />
-      </classement>
-    </piece>
-    <piece id="37348">
-      <classement>
-        <version date="04/05/2017 14:29:09" value="0020022.1" />
-      </classement>
-    </piece>
-    <piece id="37349">
-      <classement>
-        <version date="04/05/2017 18:28:16" value="0014450.2" />
-      </classement>
-    </piece>
-    <piece id="37373">
-      <classement>
-        <version date="04/05/2017 14:41:43" value="0015450.3" />
-      </classement>
-    </piece>
-    <piece id="37406">
-      <classement>
-        <version date="04/05/2017 14:11:10" value="003521.1" />
-      </classement>
-    </piece>
-    <piece id="37418">
-      <classement>
-        <version date="04/05/2017 12:06:19" value="0012541.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37443">
-      <classement>
-        <version date="04/05/2017 14:09:51" value="003242.1" />
-      </classement>
-    </piece>
-    <piece id="37457">
-      <classement>
-        <version date="07/02/2015 12:57:23" value="3145.2" />
-        <version date="08/07/2014 11:59:12" value="2012.2" />
-        <version date="29/01/2014 17:46:19" value="234.0" />
-        <version date="31/10/2013 21:08:15" value="14.0" />
-        <version date="11/10/2013 12:03:07" value="1.0" />
-      </classement>
-      <files>
-        <file>Tom Poisson\Tom Poisson - Discographie\Mon Coeur qui Penche.mp3</file>
-      </files>
-      <dates>
-        <date>19/12/2015 23:51:39</date>
-        <date>07/02/2015 12:48:57</date>
-        <date>07/02/2015 11:48:57</date>
-        <date>08/07/2014 11:58:43</date>
-        <date>29/01/2014 17:45:38</date>
-        <date>11/10/2013 12:49:21</date>
-        <date>11/10/2013 11:49:21</date>
-      </dates>
-    </piece>
-    <piece id="8705" parent="37457" />
-    <piece id="37471">
-      <classement>
-        <version date="04/05/2017 15:17:38" value="0004535.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37478">
-      <classement>
-        <version date="04/05/2017 13:07:34" value="0014341.1" />
-      </classement>
-      <disabled />
-    </piece>
-    <piece id="37482">
-      <classement>
-        <version date="04/05/2017 15:35:06" value="0012221.1" />
+        <version date="20/09/2016 14:42:25" value="10.3" />
       </classement>
       <dates>
-        <date>04/05/2017 15:34:49</date>
+        <date>20/09/2016 14:42:20</date>
       </dates>
+    </piece>
+    <piece id="32466">
+      <classement>
+        <version date="20/09/2016 11:33:51" value="0005.1" />
+      </classement>
+    </piece>
+    <piece id="32467">
+      <classement>
+        <version date="20/09/2016 14:57:20" value="14.2" />
+      </classement>
+    </piece>
+    <piece id="32917">
+      <classement>
+        <version date="20/09/2016 15:25:45" value="0003302.2" />
+      </classement>
       <disabled />
     </piece>
-    <piece id="37487">
+    <piece id="33015">
       <classement>
-        <version date="04/05/2017 13:00:55" value="0015015.3" />
+        <version date="20/09/2016 18:44:19" value="0002210.4" />
       </classement>
-      <dates>
-        <date>04/05/2017 12:52:42</date>
-      </dates>
       <disabled />
     </piece>
-    <piece id="37535">
+    <piece id="33433">
       <classement>
-        <version date="04/05/2017 16:08:41" value="0014403.1" />
+        <version date="20/09/2016 10:55:25" value="0002105.4" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="33723">
+      <classement>
+        <version date="20/09/2016 16:59:50" value="0003434.0" />
+      </classement>
+      <disabled />
+    </piece>
+    <piece id="33782">
+      <classement>
+        <version date="20/09/2016 18:32:59" value="0003.5" />
       </classement>
     </piece>
-    <piece id="37537">
+    <piece id="33785">
       <classement>
-        <version date="04/05/2017 13:37:53" value="0020052.1" />
+        <version date="20/09/2016 16:40:36" value="0003332.3" />
       </classement>
+      <disabled />
     </piece>
-    <piece id="37562">
+    <piece id="33852">
       <classement>
-        <version date="04/05/2017 16:03:59" value="0015101.4" />
+        <version date="20/09/2016 16:29:49" value="0003222.1" />
       </classement>
-    </piece>
-    <piece id="37566">
-      <classement>
-        <version date="04/05/2017 12:18:43" value="003221.2" />
-      </classement>
+      <disabled />
     </piece>
   </pieces>
 </db>
