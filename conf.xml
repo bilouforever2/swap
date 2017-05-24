@@ -14,6 +14,16 @@
 	<simulation>true</simulation>
 -->		
 
+	<date0>27/02/2014 15:19:00</date0>
+	<export enabled="false" dir="I:\Podcasts\" fIn="Y:\podTaf.txt" fOut="..\_tracks.txt" />
+	<import enabled="false" list="_hibernate" dateMin="01/01/1014" dateMax="20/05/2018" nblast="0" dLast="730,25" />
+	<hibernate enabled="false" list="_hibernate" dateMin="01/01/2014" dateMax="20/05/2018" nblast="3" dLast="730,25" />
+	<sort enabled="all" dureeMin="0" intervalle="7" ecouteMax="5" histo="28" deltaConst="false">
+		<album name="1 L'archipel pré-chrétien" extDelta="1182,82" extPente="365,25" />
+		<album name="RFI - La bande passante" enabled="no" />
+	</sort>
+	
+	<db purgemissing="false" />
 	
 	<!--	<i name="auto8_1" size="7400" />-->
 	<writePlayLists>true</writePlayLists>
@@ -99,7 +109,7 @@
 		<scan class="0" high="0" medium="11" low="12" />
 	</ordo>
 	<it>
-		<defaultFolder>Z:\Bernard\tmp\</defaultFolder>
+		<defaultFolder>Z:\bernard\tmp\</defaultFolder>
 		<delay>1000</delay>
 		<scanListLimit>false</scanListLimit>
 		<singleThread>false</singleThread>
@@ -162,12 +172,6 @@
 	<borderGranSlam>true</borderGranSlam>
 	<autoSelect>false</autoSelect>
 	
-	<export enabled="false" dir="L:\Podcasts\" fIn="Y:\podTaf.txt" fOut="..\_tracks.txt" />
-	<import enabled="false" dir="L:\Podcasts\" fIn="Y:\podTaf.txt" fOut="..\_tracks.txt" /> 
-	<sort enabled="once" dureeMin="18" intervalle="7" ecouteMax="5" histo="28" >
-		<album name="1 L'archipel pré-chrétien" enabled="no" />
-		<album name="RFI - La bande passante" enabled="no" />
-	</sort>
 	
 	 <!--pod nano 16 rose -->
 	
@@ -188,14 +192,14 @@
 		<trackCauseItemDetail>false</trackCauseItemDetail> 
 		<writeCause>-1</writeCause>
 	</html>
-	<date0>18/02/2014 15:49:00</date0>
+	
 	<rootIt>
 		<i name="auto" size="7400" />	
 	</rootIt>
 	<dir name="POD" ld="120000" lnb="300" lfd="12000"> 
 		
 	
-		<auto name="pod" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
+		<auto name="pod" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true" forfaitNegatif="0,001">
 			<target>7380</target>
 			<delta>6</delta>
 			<write>100</write>
@@ -213,7 +217,7 @@
 			</items>
 		</auto>
 	
-		<dir name="Histo" all="true" auto="pod" d="4727,93333333" maxdate="39,55694444" fd="118,66666667" nb="4" cascading="true" transmit="true">	 
+		<dir name="Histo" all="true" auto="pod" d="1704,53333333" maxdate="118,81736111" fd="330,8" nb="11" cascading="true" transmit="true">	 
 		
 			<list l="0" date="0" />
 			
@@ -221,8 +225,8 @@
 
 		
 		
-			<dir name="zero" all="true" auto="zero" d="120000" maxdate="51,66736111" fd="180,26666667" nb="1" cascading="false" transmit="true">	 
-				<auto name="zero" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
+			<dir name="zero" all="true" auto="zero" d="120000" maxdate="64,55333333" fd="113,46666667" nb="2" cascading="false" transmit="true">	 
+				<auto name="zero" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true" forfaitNegatif="0,001">
 					<target>6000</target>
 					<delta>6</delta>
 					<write>100</write> 
@@ -240,9 +244,9 @@
 				</auto>
 				<list l="0" date="0" />
 				<list l="1" fd="0" />
-					<dir name="all" auto="all" d="120000" maxdate="12,92777778" fd="277,38333333" nb="10" cascading="false" transmit="true">	 
-						<auto name="all" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
-							<target>5000</target>
+					<dir name="all" auto="all" d="120000" maxdate="15,77516667" fd="298,95" nb="10" cascading="false" transmit="true">	 
+						<auto name="all" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true" forfaitNegatif="0,001">
+							<target>5500</target>
 							<delta>6</delta>
 							<write>100</write> 
 							<cloop>20</cloop> 
@@ -269,7 +273,6 @@
 								<td nb="0" />
 							</list>
 							<list l="1" nb="0" />
-							<list l="1" nb="0" />
 							
 							
 							<dir name="RFI - La bande passante" all="false" date="25/12/2013 17:02:00"> 
@@ -282,120 +285,7 @@
 								<list l="1" fd="2400" d="2400" nb="0" />
 							</dir>	
 							
-							<dir name="L'ELOGE DU SAVOIR" all="false" date="13/02/2014"> 
-								<list l="0" maxdate="0" />
-								<list l="1" fd="2400" d="2400" nb="0" />
-							</dir>	
-							
-							
-							
-							<!--
-							
-							<dir name="LES NOUVEAUX CHEMINS DE LA CONNAISSANCE" all="false" date="14/02/2014"> 
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>
 						
-							<dir name="Là-bas si j'y suis" all="false" date="05/02/2014"> 
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-							
-						
-					
-						
-							
-							<dir name="La tête au carré" all="false" date="05/02/2014">
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-						
-							
-							<dir name="LA FABRIQUE DE L'HISTOIRE" all="false"> 
-								<list l="0" fd="2400" date="27/01/2014" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>
-							
-							
-								<dir name="DU GRAIN A MOUDRE" all="false" date="07/01/2014"> 
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>
-							
-								
-						
-								
-							
-						
-							
-							<dir name="A VOIX NUE" all="false" date="10/12/2013"> 
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-							
-							
-							<dir name="L'ELOGE DU SAVOIR" all="false" date="28/11/2013"> 
-								<list l="0" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>		
-						
-							
-							<dir name="La marche de l'histoire" all="false"> 
-								<list l="0" date="14/11/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-							<dir name="Là-bas si j'y suis" all="false">
-								<list l="0" date="14/11/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-							
-							
-							
-								
-						
-						
-						
-							<dir name="CONTINENT MUSIQUES" all="false"> 
-							<list l="0" fd="2400" d="2400" nb="20" date="29/08/2013" maxdate="0" />
-							<list l="1" nb="0" />
-						</dir>
-						
-							<dir name="LA FABRIQUE DE L'HISTOIRE" all="false"> 
-							<list l="0" fd="2400" d="2400" nb="20" date="20/08/2013" maxdate="0" />
-							<list l="1" nb="0" />
-						</dir>
-							
-							<dir name="LES NOUVEAUX CHEMINS DE LA CONNAISSANCE" all="false"> 
-								<list l="0" date="10/07/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>
-						
-							<dir name="Là-bas si j'y suis" all="false">
-								<list l="0" fd="2400" d="2400" nb="20" date="22/05/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-								
-							<dir name="La marche de l'histoire" all="false"> 
-								<list l="0" fd="2400" d="2400" nb="20" date="14/05/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>
-							
-							<dir name="La tête au carré" all="false">
-								<list l="0" fd="2400" d="2400" nb="20" date="30/04/2013" maxdate="0" />
-								<list l="1" nb="0" />
-							</dir>	
-							
-							<dir name="HITCHCOCK-TRUFFAUT SECRETS DE FABRICATION" all="false"> 
-							<list l="0" maxdate="0" />
-							<list l="1" nb="0" />
-						</dir>
-						<dir name="UN ETE AVEC PROUST" all="false"> 
-							<list l="0" maxdate="0" />
-							<list l="1" nb="0" />
-						</dir>
-							
-							-->
-
 						</dir>
 					
 				</dir>	
@@ -416,123 +306,7 @@
 		
 	</dir>
 
-		<!--
-		<dir name="POD" ld="120000" lnb="300" lfd="12000"> 
-		
 	
-		<auto name="pod" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
-			<target>14800</target>
-			<delta>6</delta>
-			<write>100</write>
-			<cloop>20</cloop>
-			<verif>4</verif>
-			<levels>
-				<level d="60" inf="0,3" sup="0,3" />			
-				<level d="-50" inf="0,1" sup="0,1" />
-			</levels>
-			<items>
-				<item type="maxdate" min="0" pente="30" coeff="1" />
-				<item type="d" min="0" pente="14500" coeff="1" />
-				<item type="fd" min="0" pente="300" coeff="1" />
-				<item type="nb" min="1" pente="10" coeff="1" />
-			</items>
-		</auto>
-	
-		<dir name="Histo" all="true" auto="pod" d="13677,3" maxdate="92,04930556" fd="930,88333333" nb="29" cascading="true" transmit="true">	 
-		
-			<list l="0" date="0" />
-			<dir name="vendee chronique" all="false">		
-				<list l="0" fd="180" d="24000" nb="5" maxdate="28/08/2012" />
-				<list l="1" fd="0" nb="0" />
-			</dir>		
-
-			<dir name="vendee hebdo" all="false">		
-				<list l="0" fd="24000" d="24000" nb="2" maxdate="28/08/2012" />
-				<list l="1" fd="0" nb="0" />
-			</dir>		
-
-			<dir name="7 La construction du surhomme" all="false">  
-				<list l="0" fd="180" c="2400" d="2400" nb="2" />
-				<list l="1" fd="2400" d="2400" nb="0" />
-			</dir>				
-		
-			<dir name="zero" all="true" auto="zero" d="6899,35" maxdate="3000" fd="240,58333333" nb="8" cascading="false" transmit="true">	 
-				<auto name="zero" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
-					<target>8000</target>
-					<delta>6</delta>
-					<write>100</write> 
-					<cloop>20</cloop> 
-					<verif>4</verif>
-					<levels> 
-						<level d="60" inf="0,3" sup="0,3" />			 
-						<level d="-50" inf="0,1" sup="0,1" />
-					</levels>
-					<items>
-						<item type="fd" min="0" pente="300" coeff="1" />
-						<item type="nb" min="1" pente="10" coeff="1" />
-						<item type="d" min="0" pente="8000" coeff="1" />
-					</items>					
-				</auto>
-				<list l="0" date="0" />
-				<list l="1" fd="0" />
-				
-				<dir name="all" auto="all" d="5349,21666667" maxdate="29,54930556" fd="662,01666667" nb="19" cascading="false" transmit="true">	 
-					<auto name="all" selectFix="true" selectAbs="true" pertinentAll="false" pertinentExclu="false" stopAll="false" checkStrict="true" checkSelect="true" checkEvol="true">
-						<target>5000</target>
-						<delta>6</delta>
-						<write>100</write> 
-						<cloop>20</cloop> 
-						<verif>4</verif>
-						<levels> 
-							<level d="60" inf="0,3" sup="0,3" />			
-							<level d="-50" inf="0,1" sup="0,1" />
-						</levels>
-						<items>
-							<item type="fd" min="0" pente="300" coeff="1" />
-							<item type="nb" min="1" pente="10" coeff="1" />
-							<item type="maxdate" min="0" pente="14" coeff="1" />
-							<item type="d" min="0" pente="5000" coeff="1" />
-						</items>					
-					</auto>
-				
-					<list l="0" date="0">
-						<td nb="10" d="120000" fd="600" maxdate2="14" />
-						<td />	
-					</list>
-					<list l="1" nb="0" />
-					<dir name="histo" serial="true" date="10/11/2012" maxdate="0">
-						<list l="0" d="12000" fd="2400">
-							<td nb="10">20</td>
-							<td nb="0" />
-						</list>
-						<list l="1" nb="0" />
-					</dir>
-					
-				
-					
-
-					
-				</dir>
-				
-			
-			</dir>
-			
-			
-			
-		</dir>
-		
-		<dir name="last" c="300" cascading="false" transmit="true">
-		
-			<list l="0" nb="1" fd="300" date="0" />	
-			<list l="1" nb="0" />	
-			<dir name="info" c="400">
-				<list l="0" nb="1" fd="60" date="0" />	
-				<list l="1" nb="0" />	
-			</dir>
-		</dir>
-		
-	</dir>
-	-->
 	
 	
 </root>
